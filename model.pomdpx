@@ -1,0 +1,31 @@
+<?xml version='1.0' encoding='ISO-8859-1'?>
+
+
+<pomdpx version='0.1' id='test' xmlns:='http://www.w3.org/2001/XMLSchema-instance' xsi:noNamespaceSchemaLocation='pomdpx.xsd'>
+
+
+	<Description> This is a pomdpx file for a partially observable MDP</Description>
+
+
+	<Discount>0.95</Discount>
+
+
+	<Variable>
+		<StateVar vnamePrev="state0" vnameCurr="state1" fullyObs="false">
+			<NumValues>343000</NumValues>
+		</StateVar>
+
+		<ActionVar vname="action">
+			<NumValues>5</NumValues>
+		</ActionVar>
+
+		<ObsVar vname="observation">
+			<NumValues>1540</NumValues>
+		</ObsVar>
+
+		<RewardVar vname="reward"/>
+
+	</Variable>
+
+
+	<InitialStateBelief>
