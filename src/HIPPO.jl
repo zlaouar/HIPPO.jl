@@ -41,14 +41,38 @@ POMDPs.actionindex(m::TargetSearchPOMDP, a) = actionind[a]
 
 const actiondir = Dict(:left=>SVector(-1,0), :right=>SVector(1,0), :up=>SVector(0, 1), :down=>SVector(0,-1))
 const actionind = Dict(:left=>1, :right=>2, :up=>3, :down=>4)
+const actionvals = values(actiondir)
 
 function bounce(m::TargetSearchPOMDP, pos, offset)
     new = clamp.(pos + offset, SVector(1,1), m.size)
 end
 
 function POMDPs.transition(m::TargetSearchPOMDP, s, a)
-    newrobot = bounce(m, s.robot, actiondir[a])
+    robotlocs = [s.robot]
+    robotprobs = Float64[0.0]
+    
+    
+    pop!(tmpactions, a)
+    for change in actionvals
+        newrobot = bounce(m, s.robot, change)
 
+        if newrobot == s.robot # robot bounced off wall 
+            
+        else 
+
+        end
+
+    end
+    
+
+
+    states = TSState[]
+    probs = Float64[]
+    for (r, rp) in zip(robotlocs, robotprobs)
+        push!(states, TSState(r, target))
+        push!(probs, )
+    end
+    return SparseCat(states, probs)
 
 end
 
