@@ -13,3 +13,15 @@ function targetsearch_observations(size)
 end
 
 POMDPs.observations(m::TargetSearchPOMDP) = targetsearch_observations(m.size) 
+
+function POMDPs.observation(m::TargetSearchPOMDP, a, sp)
+    obs = [sp,]
+    if norm(sp.robot-sp.target) == 1.0
+        return SparseCat(obs, probs)
+    elseif sp.robot == sp.target
+    
+    else
+
+    end
+
+end
