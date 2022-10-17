@@ -3,6 +3,7 @@ module HIPPO
 using POMDPs
 using POMDPTools
 using Distributions
+import POMDPTools:Uniform as Uni
 using Random
 using StaticArrays
 using Parameters
@@ -17,7 +18,7 @@ struct TSState
     target::SVector{2, Int}
 end
 
-struct TargetSearchPOMDP <: POMDP{TSState, Symbol, SVector{4,Int}}
+struct TargetSearchPOMDP <: POMDP{TSState, Symbol, BitArray{1}}
     size::SVector{2, Int}
     obstacles::Set{SVector{}}
     robot_init::SVector{2, Int}
@@ -41,7 +42,7 @@ include("observations.jl")
 POMDPs.discount(m::TargetSearchPOMDP) = 0.95
 POMDPs.stateindex(m::TargetSearchPOMDP, s) = LinearIndices((1:m.size[1], 1:m.size[2], 1:m.size[1], 1:m.size[2]))[s.robot..., s.target...]
 POMDPs.actionindex(m::TargetSearchPOMDP, a) = actionind[a]
-#POMDPs.obsindex(m::TargetSearchPOMDP, o) = m.obsindices
+
 
 const actiondir = Dict(:left=>SVector(-1,0), :right=>SVector(1,0), :up=>SVector(0, 1), :down=>SVector(0,-1))
 const actionind = Dict(:left=>1, :right=>2, :up=>3, :down=>4)
@@ -81,6 +82,26 @@ function POMDPs.transition(m::TargetSearchPOMDP, s, a)
 
 end
 
-POMDPs.isterminal(m::TargetSearchPOMDP, s) = s.target == s.robot
+function POMDPs.reward(m::TargetSearchPOMDP, s::TSState, a::Symbol, sp::TSState)
+    if sp.robot == sp.target # if target is found
+        return 100.0 
+    end
+
+    return -1.0 # running cost
+end
+
+function POMDPs.initialstate(m::TargetSearchPOMDP)
+    return POMDPTools.Uniform(TSState(m.robot_init, SVector(x, y)) for x in 1:m.size[1], y in 1:m.size[2])
+end
+
+#= function POMDPTools.ModelTools.render(m::TargetSearchPOMDP, step)
+    nx, ny = m.size
+    cells = []
+    target_marginal = zeros(nx, ny)
+    if haskey(step, :bp)
+
+end =#
+
+POMDPs.isterminal(m::TargetSearchPOMDP, s::TSState) = s.target == s.robot
 
 end # module
