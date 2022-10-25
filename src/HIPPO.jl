@@ -12,83 +12,98 @@ using Compose
 
 export 
     TargetSearchPOMDP,
-    TSState
+    TSState,
+    roi
 
 struct TSState
     robot::SVector{2, Int}
     target::SVector{2, Int}
 end
 
-struct roi
+#= struct roi
     maploc::SVector{2, Int}
     prob::Float64
 end
-
+ =#
 struct TargetSearchPOMDP <: POMDP{TSState, Symbol, BitArray{1}}
     size::SVector{2, Int}
     obstacles::Set{SVector{}}
     robot_init::SVector{2, Int}
     tprob::Float64
     targetloc::SVector{2, Int}
-    #rois::Set{}
+    rois::Dict{Vector{Int64}, Float64}
     #obsindices::Array{Union{Nothing,Int}, 4}
 end
 
-function TargetSearchPOMDP(;roipoints=[], size=(10,10), n_obstacles=8, rng::AbstractRNG=Random.MersenneTwister(20))
+function TargetSearchPOMDP(;roi_points=Dict(), size=(10,10), n_obstacles=8, rng::AbstractRNG=Random.MersenneTwister(20))
     obstacles = Set{SVector{2, Int}}()
     robot_init = SVector(rand(rng, 1:size[1]), rand(rng, 1:size[2]))
     tprob = 0.7
     targetloc = SVector(size)
-    #= for state in roisstates
-        push!(rois, TSState(robot_init, state))
-    end
-    rois = TSState[] =#
+    rois = roi_points
 
-    TargetSearchPOMDP(size, obstacles, robot_init, tprob, targetloc)
+    TargetSearchPOMDP(size, obstacles, robot_init, tprob, targetloc, rois)
 end
 
-POMDPs.states(m::TargetSearchPOMDP) = vec(collect(TSState(SVector(c[1],c[2]), SVector(c[3],c[4])) for c in Iterators.product(1:m.size[1], 1:m.size[2], 1:m.size[1], 1:m.size[2])))
+function POMDPs.states(m::TargetSearchPOMDP) 
+    nonterm = vec(collect(TSState(SVector(c[1],c[2]), SVector(c[3],c[4])) for c in Iterators.product(1:m.size[1], 1:m.size[2], 1:m.size[1], 1:m.size[2])))
+    return push!(nonterm, TSState([-1,-1],[-1,-1]))
+end
+
 POMDPs.actions(m::TargetSearchPOMDP) = (:left, :right, :up, :down)
 include("observations.jl")
 POMDPs.discount(m::TargetSearchPOMDP) = 0.95
-POMDPs.stateindex(m::TargetSearchPOMDP, s) = LinearIndices((1:m.size[1], 1:m.size[2], 1:m.size[1], 1:m.size[2]))[s.robot..., s.target...]
+
+function POMDPs.stateindex(m::TargetSearchPOMDP, s)
+    if s.robot == SA[-1,-1]
+        return m.size[1]^2 * m.size[2]^2 + 1
+    else 
+        return LinearIndices((1:m.size[1], 1:m.size[2], 1:m.size[1], 1:m.size[2]))[s.robot..., s.target...]
+    end
+end
+
 POMDPs.actionindex(m::TargetSearchPOMDP, a) = actionind[a]
 
 
 const actiondir = Dict(:left=>SVector(-1,0), :right=>SVector(1,0), :up=>SVector(0, 1), :down=>SVector(0,-1))
 const actionind = Dict(:left=>1, :right=>2, :up=>3, :down=>4)
 const actionvals = values(actiondir)
-const target = SVector()
+#const target = SVector()
 
 function bounce(m::TargetSearchPOMDP, pos, offset)
     new = clamp.(pos + offset, SVector(1,1), m.size)
 end
 
-function POMDPs.transition(m::TargetSearchPOMDP, s, a)
+#= function POMDPs.transition(m::TargetSearchPOMDP, s, a)
     if s.robot == s.target
         return Deterministic(TSState([-1,-1], [-1,-1]))
     end
 
     states = [TSState(s.robot, m.targetloc)]
     probs = Float64[0.0]
-    
-    #= if s.robot in m.rois
+    tprob = m.tprob
+    off_main_prob = m.tprob
+
+    if haskey(m.rois, s.robot)
         push!(states, TSState(SA[-1,-1], SA[-1,-1])) # terminal state for regions of interest
-        push!(probs, s.rois[s.robot].prob)
-    end =#
+        push!(probs, m.rois[s.robot])
+        remaining_prob = 1-m.rois[s.robot]
+        tprob = m.tprob * remaining_prob
+        off_main_prob += tprob
+    end
 
     for change in actionvals
         newrobot = bounce(m, s.robot, change)
 
         if change == actiondir[a]
             if newrobot == s.robot # robot bounced off wall 
-                probs[1] += m.tprob
+                probs[1] += tprob
             else 
-                push!(probs, m.tprob)
+                push!(probs, tprob)
                 push!(states, TSState(newrobot, m.targetloc))
             end
         else
-            tprob = (1-m.tprob)/(length(actions(m))-1)
+            tprob = (1-off_main_prob)/(length(actions(m))-1)
             if newrobot == s.robot # robot bounced off wall 
                 probs[1] += tprob
             else 
@@ -97,17 +112,57 @@ function POMDPs.transition(m::TargetSearchPOMDP, s, a)
             end
         end
     end
-    
+
+    return SparseCat(states, probs)
+
+end =#
+
+function POMDPs.transition(m::TargetSearchPOMDP, s, a)
+    #= if s.robot == s.target
+        return Deterministic(TSState([-1,-1], [-1,-1]))
+    end=#
+
+    states = TSState[]
+    probs = Float64[]
+    remaining_prob = 1.0
+
+    if haskey(m.rois, s.robot)
+        push!(states, TSState(SA[-1,-1], SA[-1,-1])) # terminal state for regions of interest
+        push!(probs, m.rois[s.robot])
+        #display(m.rois[s.robot])
+        remaining_prob = 1-m.rois[s.robot]
+    end
+
+
+    newrobot = bounce(m, s.robot, actiondir[a])
+
+    push!(states, TSState(newrobot, s.target))
+    push!(probs, remaining_prob)
+
+    #display(probs)
+    #display(SparseCat(states, probs))
+
     return SparseCat(states, probs)
 
 end
+function POMDPs.initialstate(m::TargetSearchPOMDP)
+    return Uni(TSState(m.robot_init, SVector(x, y)) for x in 1:m.size[1], y in 1:m.size[2])
+end
 
 function POMDPs.reward(m::TargetSearchPOMDP, s::TSState, a::Symbol, sp::TSState)
-    if sp.robot == sp.target # if target is found
-        return 100.0 
+    reward_running = -1.0
+    reward_target = 0.0
+    reward_roi = 0.0
+    if sp.robot == sp.target && sp.robot != SA[-1,-1]# if target is found
+        reward_running = 0.0
+        reward_target = 100.0 
+    end
+    if sp.robot == SA[-1,-1]
+        reward_running = 0.0
+        reward_roi = 0.0
     end
 
-    return -1.0 # running cost
+    return reward_running + reward_target + reward_roi # running cost
 end
 
 function POMDPs.initialstate(m::TargetSearchPOMDP)
@@ -118,10 +173,18 @@ function POMDPTools.ModelTools.render(m::TargetSearchPOMDP, step)
     nx, ny = m.size
     cells = []
     target_marginal = zeros(nx, ny)
+
+    if haskey(step, :bp) && !ismissing(step[:bp])
+        for sp in support(step[:bp])[1:end-1]
+            p = pdf(step[:bp], sp)
+            target_marginal[sp.target...] = p
+        end
+    end
     
     for x in 1:nx, y in 1:ny
         cell = cell_ctx((x,y), m.size)
-        target = compose(context(), rectangle(), stroke("gray"))
+        t_op = sqrt(target_marginal[x,y])
+        target = compose(context(), rectangle(), fillopacity(t_op), fill("lightblue"), stroke("gray"))
         compose!(cell, target)
         push!(cells, cell)
     end
@@ -146,6 +209,17 @@ function cell_ctx(xy, size)
     x, y = xy
     return context((x-1)/nx, (ny-y)/ny, 1/nx, 1/ny)
 end
-POMDPs.isterminal(m::TargetSearchPOMDP, s::TSState) = s.target == s.robot
 
-end # module
+function POMDPs.isterminal(m::TargetSearchPOMDP, s::TSState)  
+    if s.target == s.robot
+        return true
+    elseif s.robot == SA[-1,-1]
+        return true
+    else
+        return false
+    end
+end
+
+end
+
+# module
