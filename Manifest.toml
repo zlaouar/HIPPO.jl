@@ -86,12 +86,6 @@ git-tree-sha1 = "ded953804d019afa9a3f98981d99b33e3db7b6da"
 uuid = "944b1d66-785c-5afd-91f1-9de20f533193"
 version = "0.7.0"
 
-[[deps.ColorSchemes]]
-deps = ["ColorTypes", "ColorVectorSpace", "Colors", "FixedPointNumbers", "Random"]
-git-tree-sha1 = "1fd869cc3875b57347f7027521f561cf46d1fcd8"
-uuid = "35d6a980-a343-548e-a6ea-1d62b119f2f4"
-version = "3.19.0"
-
 [[deps.ColorTypes]]
 deps = ["FixedPointNumbers", "Random"]
 git-tree-sha1 = "eb7f0f8307f71fac7c606984ea5fb2817275d6e4"
@@ -155,14 +149,6 @@ git-tree-sha1 = "cace6d05f71aeefe7ffd6f955a0725271f2b6cd5"
 uuid = "e3df1716-f71e-5df9-9e2d-98e193103c45"
 version = "0.3.3"
 
-[[deps.DMUStudent]]
-deps = ["Base64", "ColorSchemes", "Colors", "CommonRLInterface", "Compose", "D3Trees", "DiscreteValueIteration", "Discretizers", "Distributions", "IntervalSets", "JSON", "Nettle", "POMDPModelTools", "POMDPModels", "POMDPPolicies", "POMDPSimulators", "POMDPs", "Parameters", "Printf", "ProgressMeter", "REPL", "Random", "StaticArrays", "Test", "UnicodePlots"]
-git-tree-sha1 = "0c0ef8f0a2cf2634cf15b17ea716bb7159506ee5"
-repo-rev = "master"
-repo-url = "https://github.com/zsunberg/DMUStudent.jl"
-uuid = "a176809d-bc77-421e-b60b-7b215d415e6e"
-version = "2.6.0"
-
 [[deps.DataAPI]]
 git-tree-sha1 = "1106fa7e1256b402a86a8e7b15c00c85036fef49"
 uuid = "9a962f9c-6df0-11e9-0e5d-c546b8b5ee8a"
@@ -200,12 +186,6 @@ deps = ["POMDPLinter", "POMDPTools", "POMDPs", "Printf", "SparseArrays"]
 git-tree-sha1 = "62d78a713948c4a95df289ca0eb8639697e1d2eb"
 uuid = "4b033969-44f6-5439-a48b-c11fa3648068"
 version = "0.4.6"
-
-[[deps.Discretizers]]
-deps = ["DataStructures", "SpecialFunctions", "Statistics", "StatsBase"]
-git-tree-sha1 = "88a41c96d120c5b76a549601e5800c5743715184"
-uuid = "6e83dbb3-75ca-525b-8ae2-3751f0dd50b4"
-version = "3.2.2"
 
 [[deps.Distributed]]
 deps = ["Random", "Serialization", "Sockets"]
@@ -320,10 +300,6 @@ version = "1.0.10+0"
 deps = ["Random"]
 uuid = "9fa8497b-333b-5362-9e8d-4d0656e87820"
 
-[[deps.GMP_jll]]
-deps = ["Artifacts", "Libdl"]
-uuid = "781609d7-10c4-51f6-84f2-b8444358ff6d"
-
 [[deps.GeoInterface]]
 deps = ["Extents"]
 git-tree-sha1 = "fb28b5dc239d0174d7297310ef7b84a11804dfab"
@@ -391,12 +367,6 @@ version = "0.5.1"
 [[deps.InteractiveUtils]]
 deps = ["Markdown"]
 uuid = "b77e0a4c-d291-57a0-90e8-8db25a27a240"
-
-[[deps.IntervalSets]]
-deps = ["Dates", "Random", "Statistics"]
-git-tree-sha1 = "3f91cd3f56ea48d4d2a75c2a65455c5fc74fa347"
-uuid = "8197267c-284f-5f27-9208-e0e47529a953"
-version = "0.7.3"
 
 [[deps.InverseFunctions]]
 deps = ["Test"]
@@ -593,18 +563,6 @@ git-tree-sha1 = "63831dcea5e11db1c0925efe5ef5fc01d528c522"
 uuid = "d9ec5142-1e00-5aa0-9d6a-321866360f50"
 version = "0.13.7"
 
-[[deps.Nettle]]
-deps = ["Libdl", "Nettle_jll"]
-git-tree-sha1 = "6fa48cbae828267848ee32c1bb31d1652e210d7d"
-uuid = "49dea1ee-f6fa-5aa6-9a11-8816cee7d4b9"
-version = "1.0.0"
-
-[[deps.Nettle_jll]]
-deps = ["Artifacts", "GMP_jll", "JLLWrappers", "Libdl", "Pkg"]
-git-tree-sha1 = "eca63e3847dad608cfa6a3329b95ef674c7160b4"
-uuid = "4c82536e-c426-54e4-b420-14f461c4ed8b"
-version = "3.7.2+0"
-
 [[deps.NetworkOptions]]
 uuid = "ca575930-c2e3-43a9-ace4-1e988b2c1908"
 
@@ -684,12 +642,6 @@ deps = ["CommonRLInterface", "Distributions", "LinearAlgebra", "POMDPLinter", "P
 git-tree-sha1 = "36d32d62e036ae8ebb9b8efe9e8658f902815700"
 uuid = "08074719-1b2a-587c-a292-00f91cc44415"
 version = "0.3.13"
-
-[[deps.POMDPModels]]
-deps = ["ColorSchemes", "Compose", "Distributions", "POMDPTools", "POMDPs", "Parameters", "Printf", "Random", "StaticArrays", "StatsBase"]
-git-tree-sha1 = "289a869e7a4816fc353e8a292328056a497e4efd"
-uuid = "355abbd5-f08e-5560-ac9e-8b5f2592a0ca"
-version = "0.4.16"
 
 [[deps.POMDPPolicies]]
 deps = ["Distributions", "LinearAlgebra", "POMDPTools", "POMDPs", "Parameters", "Random", "Reexport", "SparseArrays", "StatsBase"]

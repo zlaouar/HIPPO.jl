@@ -189,7 +189,7 @@ function POMDPTools.ModelTools.render(m::TargetSearchPOMDP, step)
         push!(cells, cell)
     end
     grid = compose(context(), linewidth(0.5mm), cells...)
-    outline = compose(context(), linewidth(1mm), rectangle(), fill("white"), stroke("gray"))
+    outline = compose(context(), linewidth(1mm), rectangle(), fill("black"), stroke("gray"))
 
     if haskey(step, :sp)
         robot_ctx = cell_ctx(step[:sp].robot, m.size)
