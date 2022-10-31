@@ -175,21 +175,28 @@ function POMDPTools.ModelTools.render(m::TargetSearchPOMDP, step)
     target_marginal = zeros(nx, ny)
 
     if haskey(step, :bp) && !ismissing(step[:bp])
-        for sp in support(step[:bp])[1:end-1]
+        for sp in support(step[:bp])
             p = pdf(step[:bp], sp)
-            target_marginal[sp.target...] = p
+            if sp.target != [-1,-1] # TO-DO Fix this
+                target_marginal[sp.target...] += p
+            end
         end
     end
-    
+
     for x in 1:nx, y in 1:ny
         cell = cell_ctx((x,y), m.size)
         t_op = sqrt(target_marginal[x,y])
+        # TO-DO Fix This
+        if t_op > 1.0
+            t_op = 0.999
+        end
+
         target = compose(context(), rectangle(), fillopacity(t_op), fill("lightblue"), stroke("gray"))
         compose!(cell, target)
         push!(cells, cell)
     end
     grid = compose(context(), linewidth(0.5mm), cells...)
-    outline = compose(context(), linewidth(1mm), rectangle(), fill("white"), stroke("gray"))
+    outline = compose(context(), linewidth(1mm), rectangle(), fill("black"), stroke("gray"))
 
     if haskey(step, :sp)
         robot_ctx = cell_ctx(step[:sp].robot, m.size)
