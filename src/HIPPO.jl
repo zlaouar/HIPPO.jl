@@ -50,7 +50,7 @@ function POMDPs.states(m::TargetSearchPOMDP)
     return push!(nonterm, TSState([-1,-1],[-1,-1]))
 end
 
-POMDPs.actions(m::TargetSearchPOMDP) = (:left, :right, :up, :down)
+POMDPs.actions(m::TargetSearchPOMDP) = (:left, :right, :up, :down, :stay)
 include("observations.jl")
 POMDPs.discount(m::TargetSearchPOMDP) = 0.95
 
@@ -65,8 +65,8 @@ end
 POMDPs.actionindex(m::TargetSearchPOMDP, a) = actionind[a]
 
 
-const actiondir = Dict(:left=>SVector(-1,0), :right=>SVector(1,0), :up=>SVector(0, 1), :down=>SVector(0,-1))
-const actionind = Dict(:left=>1, :right=>2, :up=>3, :down=>4)
+const actiondir = Dict(:left=>SVector(-1,0), :right=>SVector(1,0), :up=>SVector(0, 1), :down=>SVector(0,-1), :stay=>SVector(0,0))
+const actionind = Dict(:left=>1, :right=>2, :up=>3, :down=>4, :stay=>5)
 const actionvals = values(actiondir)
 #const target = SVector()
 
@@ -191,7 +191,7 @@ function POMDPTools.ModelTools.render(m::TargetSearchPOMDP, step)
             t_op = 0.999
         end
 
-        target = compose(context(), rectangle(), fillopacity(t_op), fill("lightblue"), stroke("gray"))
+        target = compose(context(), rectangle(), fillopacity(t_op), fill("yellow"), stroke("gray"))
         compose!(cell, target)
         push!(cells, cell)
     end

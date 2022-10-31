@@ -24,5 +24,5 @@ ds = DisplaySimulator()
 hr = HistoryRecorder()
 m1 = TargetSearchPOMDP()
 
-simulate(ds, m1, planner)
+h = simulate(hr, m1, planner)
 
