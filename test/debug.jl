@@ -16,7 +16,7 @@ m = TargetSearchPOMDP(roi_points=roi_points)
 
 transition(m, TSState([1,1], [10,10]), :left)
 
-solver = POMCPSolver()
+solver = POMCPSolver(max_depth=100, c=1.5)
 #solver = QMDPSolver(max_iterations=20,
 #                    belres=1e-3,
 #                    verbose=true
@@ -30,11 +30,11 @@ m1 = TargetSearchPOMDP()
 
 b0 = initialstate(m1)
 up = DiscreteUpdater(m1)
-b = initialize_belief(up, b0) 
+b = initialize_belief(up, b0)
 
 r_total = 0.0
 d = 1.0
-s = rand(initialstate(m1))
+s = TSState([10,1],[2,7])#rand(initialstate(m1))
 o = Nothing
 iter = 0
 max_fps = 10
@@ -47,7 +47,7 @@ while !isterminal(m1, s)
     r_total += d*r
     d *= discount(m1)
     b = update(up, b, a, o)
-    display(render(m, (sp = s,)))
+    display(render(m, (sp=s, bp=b)))
     sleep_until(tm += dt)
     iter += 1
     println(iter)
