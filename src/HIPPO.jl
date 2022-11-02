@@ -145,9 +145,6 @@ function POMDPs.transition(m::TargetSearchPOMDP, s, a)
     return SparseCat(states, probs)
 
 end
-function POMDPs.initialstate(m::TargetSearchPOMDP)
-    return Uni(TSState(m.robot_init, SVector(x, y)) for x in 1:m.size[1], y in 1:m.size[2])
-end
 
 function POMDPs.reward(m::TargetSearchPOMDP, s::TSState, a::Symbol, sp::TSState)
     reward_running = -1.0
