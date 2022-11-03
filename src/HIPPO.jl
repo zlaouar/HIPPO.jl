@@ -25,7 +25,7 @@ end
     prob::Float64
 end
  =#
-struct TargetSearchPOMDP <: POMDP{TSState, Symbol, BitArray{1}}
+mutable struct TargetSearchPOMDP <: POMDP{TSState, Symbol, BitArray{1}}
     size::SVector{2, Int}
     obstacles::Set{SVector{}}
     robot_init::SVector{2, Int}
