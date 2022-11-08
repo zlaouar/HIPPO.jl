@@ -10,7 +10,7 @@ using ParticleFilters
 
 sleep_until(t) = sleep(max(t-time(), 0.0))
 
-function custom_sim(m::TargetSearchPOMDP, m1::TargetSearchPOMDP, planner, b, sinit)
+function custom_sim(m::TargetSearchPOMDP, m1::TargetSearchPOMDP, planner, up, b, sinit)
     r_total = 0.0
     s = sinit
     o = Nothing
@@ -18,6 +18,7 @@ function custom_sim(m::TargetSearchPOMDP, m1::TargetSearchPOMDP, planner, b, sin
     max_fps = 10
     dt = 1/max_fps
     d = 1.0
+    sim_states = TSState[]
     while !isterminal(m1, s)
         tm = time()
         a = action(planner, b)
@@ -36,15 +37,18 @@ function custom_sim(m::TargetSearchPOMDP, m1::TargetSearchPOMDP, planner, b, sin
             m.rois = roi_points
             planner = solve(solver, m)
         end
+        push!(sim_states, s)
     end
-    return s,r_total
+    return s, r_total, sim_states
 end
 
+
+sinit = TSState([10,1],[2,7])#rand(initialstate(m1))
 roi_states = [[7,9],[7,10],[7,8]]
 probs = [0.8,0.8,0.8]
 roi_points = Dict(roi_states .=> probs)
 #m = TargetSearchPOMDP(roi_points=roi_points)
-m = TargetSearchPOMDP()
+m = TargetSearchPOMDP(sinit=sinit)
 mdp_solver = ValueIterationSolver() # creates the solver
 mdp_policy = solve(mdp_solver, UnderlyingMDP(m))
 
@@ -55,7 +59,8 @@ mdp_policy = solve(mdp_solver, UnderlyingMDP(m))
     if s.
 
 end =#
-solver = POMCPSolver(estimate_value=FORollout(mdp_policy), tree_queries=10000, max_time=0.2)
+solver = POMCPSolver(estimate_value=FORollout(mdp_policy), tree_queries=10000, max_time=0.2, c=3)
+#solver = POMCPSolver(tree_queries=10000, max_time=0.2, c=3)
 #solver = QMDPSolver(max_iterations=20,
 #                    belres=1e-3,
 #                    verbose=true
@@ -65,7 +70,7 @@ planner = solve(solver, m)
 
 ds = DisplaySimulator()
 hr = HistoryRecorder()
-m1 = TargetSearchPOMDP()
+m1 = TargetSearchPOMDP(sinit=sinit)
 
 b0 = initialstate(m)
 up = DiscreteUpdater(m)
@@ -73,13 +78,16 @@ b = initialize_belief(up, b0)
 
 N = 1000
 particle_up = BootstrapFilter(m, N)
+particle_b = initialize_belief(particle_up, b0)
 
 
-sinit = TSState([10,1],[2,7])#rand(initialstate(m1))
 
 
-#s,r_total  = custom_sim(m, m1, planner, b, sinit)
-h = simulate(ds, m1, planner)
+
+s,r_total,sim_states  = custom_sim(m, m1, planner, particle_up, particle_b, sinit)
+
+r_total
+#h = simulate(ds, m1, planner)
 #h = simulate(ds, m1, planner, particle_up, initialstate(m1), sinit)
 
 

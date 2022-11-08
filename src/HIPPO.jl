@@ -35,11 +35,11 @@ mutable struct TargetSearchPOMDP <: POMDP{TSState, Symbol, BitArray{1}}
     #obsindices::Array{Union{Nothing,Int}, 4}
 end
 
-function TargetSearchPOMDP(;roi_points=Dict(), size=(10,10), n_obstacles=8, rng::AbstractRNG=Random.MersenneTwister(20))
+function TargetSearchPOMDP(;roi_points=Dict(), size=(10,10), sinit=TSState([10,1],[2,7]), rng::AbstractRNG=Random.MersenneTwister(20))
     obstacles = Set{SVector{2, Int}}()
-    robot_init = SVector(rand(rng, 1:size[1]), rand(rng, 1:size[2]))
+    robot_init = sinit.robot
     tprob = 0.7
-    targetloc = SVector(size)
+    targetloc = sinit.target
     rois = roi_points
 
     TargetSearchPOMDP(size, obstacles, robot_init, tprob, targetloc, rois)
