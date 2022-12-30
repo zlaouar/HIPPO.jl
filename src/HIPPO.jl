@@ -32,17 +32,18 @@ mutable struct TargetSearchPOMDP <: POMDP{TSState, Symbol, BitArray{1}}
     tprob::Float64
     targetloc::SVector{2, Int}
     rois::Dict{Vector{Int64}, Float64}
+    reward::Matrix{Float64}
     #obsindices::Array{Union{Nothing,Int}, 4}
 end
 
-function TargetSearchPOMDP(;roi_points=Dict(), size=(10,10), sinit=TSState([10,1],[2,7]), rng::AbstractRNG=Random.MersenneTwister(20))
+function TargetSearchPOMDP(;enable_reward=false, roi_points=Dict(), size=(10,10), sinit=TSState([10,1],[2,7]), rng::AbstractRNG=Random.MersenneTwister(20), rewarddist=0)
     obstacles = Set{SVector{2, Int}}()
     robot_init = sinit.robot
     tprob = 0.7
     targetloc = sinit.target
     rois = roi_points
-
-    TargetSearchPOMDP(size, obstacles, robot_init, tprob, targetloc, rois)
+  
+    TargetSearchPOMDP(size, obstacles, robot_init, tprob, targetloc, rois, rewarddist)
 end
 
 function POMDPs.states(m::TargetSearchPOMDP) 
@@ -147,6 +148,12 @@ function POMDPs.transition(m::TargetSearchPOMDP, s, a)
 end
 
 function POMDPs.reward(m::TargetSearchPOMDP, s::TSState, a::Symbol, sp::TSState)
+    rmat = m.reward
+
+    correct_ind = reverse(s.robot)
+    xind = m.size[2]+1 - correct_ind[1]
+    inds = [xind, correct_ind[2]]
+    
     reward_running = -1.0
     reward_target = 0.0
     reward_roi = 0.0
@@ -158,8 +165,8 @@ function POMDPs.reward(m::TargetSearchPOMDP, s::TSState, a::Symbol, sp::TSState)
         reward_running = 0.0
         reward_roi = 0.0
     end
-
-    return reward_running + reward_target + reward_roi # running cost
+    #m.reward[inds...] = 0.0
+    return reward_running + reward_target + reward_roi + rmat[inds...] # running cost
 end
 
 function POMDPs.initialstate(m::TargetSearchPOMDP)

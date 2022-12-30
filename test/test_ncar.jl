@@ -7,3 +7,6 @@ struct map_database
     features::DataFrame
 end
 data = deserialize(joinpath(@__DIR__, "operator_database_NCAR_watertrail.dat"))
+myfig = heatmap(reverse(data.reward, dims=1))
+
+savefig(myfig,"rewardmap.png")
