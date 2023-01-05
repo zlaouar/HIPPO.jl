@@ -36,7 +36,7 @@ mutable struct TargetSearchPOMDP <: POMDP{TSState, Symbol, BitArray{1}}
     #obsindices::Array{Union{Nothing,Int}, 4}
 end
 
-function TargetSearchPOMDP(;enable_reward=false, roi_points=Dict(), size=(10,10), sinit=TSState([10,1],[2,7]), rng::AbstractRNG=Random.MersenneTwister(20), rewarddist=0)
+function TargetSearchPOMDP(;roi_points=Dict(), size=(10,10), sinit=TSState([10,1],[2,7]), rng::AbstractRNG=Random.MersenneTwister(20), rewarddist=Array{Float64}(undef, 0, 0))
     obstacles = Set{SVector{2, Int}}()
     robot_init = sinit.robot
     tprob = 0.7
@@ -166,7 +166,11 @@ function POMDPs.reward(m::TargetSearchPOMDP, s::TSState, a::Symbol, sp::TSState)
         reward_roi = 0.0
     end
     #m.reward[inds...] = 0.0
-    return reward_running + reward_target + reward_roi + rmat[inds...] # running cost
+    if !isempty(rmat)
+        return reward_running + reward_target + reward_roi + rmat[inds...] # running cost
+    else
+        reward_running + reward_target + reward_roi
+    end
 end
 
 function POMDPs.initialstate(m::TargetSearchPOMDP)
@@ -194,7 +198,7 @@ function POMDPTools.ModelTools.render(m::TargetSearchPOMDP, step)
         if t_op > 1.0
             t_op = 0.999
         end
-
+        roi = compose(context(), rectangle(), fill("transparent"), stroke("blue"))
         target = compose(context(), rectangle(), fillopacity(t_op), fill("yellow"), stroke("gray"))
         compose!(cell, target)
         push!(cells, cell)

@@ -6,6 +6,7 @@ using POMDPTools
 using DiscreteValueIteration
 using Profile
 using ParticleFilters
+using D3Trees
 
 
 sleep_until(t) = sleep(max(t-time(), 0.0))
@@ -63,7 +64,7 @@ roi_states = [[7,9],[7,10],[7,8]]
 probs = [0.8,0.8,0.8]
 roi_points = Dict(roi_states .=> probs)
 #msolve= TargetSearchPOMDP(roi_points=roi_points)
-msolve= TargetSearchPOMDP(sinit=sinit, size=(13,16), enable_reward=true, rewarddist=rewarddist)
+msolve= TargetSearchPOMDP(sinit=sinit, size=(13,16), rewarddist=rewarddist)
 mdp_solver = ValueIterationSolver() # creates the solver
 mdp_policy = solve(mdp_solver, UnderlyingMDP(msolve))
 
@@ -81,7 +82,7 @@ planner = solve(solver,msolve)
 
 ds = DisplaySimulator()
 hr = HistoryRecorder()
-msim = TargetSearchPOMDP(sinit=sinit, size=(13,16), enable_reward=true, rewarddist=rewarddist)
+msim = TargetSearchPOMDP(sinit=sinit, size=(13,16), rewarddist=rewarddist)
 
 b0 = initialstate(msolve)
 up = DiscreteUpdater(msolve)
@@ -93,11 +94,12 @@ particle_b = initialize_belief(particle_up, b0)
 
 
 
-
+#a, info = action_info(planner, Deterministic(TSState([13,14],[1,1])), tree_in_info=true)
+#inchrome(D3Tree(info[:tree], init_expand=3))
 
 s,r_total,sim_states  = custom_sim(msolve, msim, planner, particle_up, particle_b, sinit)
 
-r_total
+#r_total
 #h = simulate(ds, msim, planner)
 #h = simulate(ds, msim, planner, particle_up, initialstate(msim), sinit)
 
