@@ -181,6 +181,7 @@ function POMDPTools.ModelTools.render(m::TargetSearchPOMDP, step)
     nx, ny = m.size
     cells = []
     target_marginal = zeros(nx, ny)
+    rois = collect(keys(m.rois))
 
     if haskey(step, :bp) && !ismissing(step[:bp])
         for sp in support(step[:bp])
@@ -190,7 +191,6 @@ function POMDPTools.ModelTools.render(m::TargetSearchPOMDP, step)
             end
         end
     end
-
     for x in 1:nx, y in 1:ny
         cell = cell_ctx((x,y), m.size)
         t_op = sqrt(target_marginal[x,y])
@@ -198,9 +198,15 @@ function POMDPTools.ModelTools.render(m::TargetSearchPOMDP, step)
         if t_op > 1.0
             t_op = 0.999
         end
-        roi = compose(context(), rectangle(), fill("transparent"), stroke("blue"))
+        
         target = compose(context(), rectangle(), fillopacity(t_op), fill("yellow"), stroke("gray"))
-        compose!(cell, target)
+        if [x,y] in rois
+            roi = compose(context(), rectangle(), fill("transparent"), stroke("white"), linewidth(1.2mm))
+            compose!(cell, target, roi)
+        else
+            compose!(cell, target)
+        end
+
         push!(cells, cell)
     end
     grid = compose(context(), linewidth(0.5mm), cells...)

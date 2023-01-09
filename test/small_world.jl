@@ -43,12 +43,12 @@ function custom_sim(msolve::TargetSearchPOMDP, msim::TargetSearchPOMDP, planner,
     return s, r_total, sim_states
 end
 
-sinit = TSState([4,1],[2,5])#rand(initialstate(msim))
-roi_states = [[5,5]]
+sinit = TSState([4,1],[2,4])#rand(initialstate(msim))
+roi_states = [[4,4]]
 probs = [0.8]
 roi_points = Dict(roi_states .=> probs)
 #msolve= TargetSearchPOMDP(roi_points=roi_points)
-msolve= TargetSearchPOMDP(sinit=sinit, size=(5,5), roi_points=roi_points)
+msolve= TargetSearchPOMDP(sinit=sinit, size=(4,4), roi_points=roi_points)
 mdp_solver = ValueIterationSolver() # creates the solver
 mdp_policy = solve(mdp_solver, UnderlyingMDP(msolve))
 
@@ -66,7 +66,7 @@ planner = solve(solver,msolve)
 
 ds = DisplaySimulator()
 hr = HistoryRecorder()
-msim = TargetSearchPOMDP(sinit=sinit, size=(5,5))
+msim = TargetSearchPOMDP(sinit=sinit, size=(4,4), roi_points=roi_points)
 
 b0 = initialstate(msolve)
 up = DiscreteUpdater(msolve)
