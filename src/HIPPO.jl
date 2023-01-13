@@ -75,54 +75,7 @@ function bounce(m::TargetSearchPOMDP, pos, offset)
     new = clamp.(pos + offset, SVector(1,1), m.size)
 end
 
-#= function POMDPs.transition(m::TargetSearchPOMDP, s, a)
-    if s.robot == s.target
-        return Deterministic(TSState([-1,-1], [-1,-1]))
-    end
-
-    states = [TSState(s.robot, m.targetloc)]
-    probs = Float64[0.0]
-    tprob = m.tprob
-    off_main_prob = m.tprob
-
-    if haskey(m.rois, s.robot)
-        push!(states, TSState(SA[-1,-1], SA[-1,-1])) # terminal state for regions of interest
-        push!(probs, m.rois[s.robot])
-        remaining_prob = 1-m.rois[s.robot]
-        tprob = m.tprob * remaining_prob
-        off_main_prob += tprob
-    end
-
-    for change in actionvals
-        newrobot = bounce(m, s.robot, change)
-
-        if change == actiondir[a]
-            if newrobot == s.robot # robot bounced off wall 
-                probs[1] += tprob
-            else 
-                push!(probs, tprob)
-                push!(states, TSState(newrobot, m.targetloc))
-            end
-        else
-            tprob = (1-off_main_prob)/(length(actions(m))-1)
-            if newrobot == s.robot # robot bounced off wall 
-                probs[1] += tprob
-            else 
-                push!(probs, tprob)
-                push!(states, TSState(newrobot, m.targetloc))
-            end
-        end
-    end
-
-    return SparseCat(states, probs)
-
-end =#
-
 function POMDPs.transition(m::TargetSearchPOMDP, s, a)
-    #= if s.robot == s.target
-        return Deterministic(TSState([-1,-1], [-1,-1]))
-    end=#
-
     states = TSState[]
     probs = Float64[]
     remaining_prob = 1.0
@@ -130,7 +83,6 @@ function POMDPs.transition(m::TargetSearchPOMDP, s, a)
     if haskey(m.rois, s.robot)
         push!(states, TSState(SA[-1,-1], SA[-1,-1])) # terminal state for regions of interest
         push!(probs, m.rois[s.robot])
-        #display(m.rois[s.robot])
         remaining_prob = 1-m.rois[s.robot]
     end
 
@@ -140,20 +92,19 @@ function POMDPs.transition(m::TargetSearchPOMDP, s, a)
     push!(states, TSState(newrobot, s.target))
     push!(probs, remaining_prob)
 
-    #display(probs)
-    #display(SparseCat(states, probs))
 
     return SparseCat(states, probs)
 
 end
 
 function POMDPs.reward(m::TargetSearchPOMDP, s::TSState, a::Symbol, sp::TSState)
-    rmat = m.reward
-
+    rmat = deepcopy(m.reward)
+    #rmat = m.reward 
     correct_ind = reverse(s.robot)
     xind = m.size[2]+1 - correct_ind[1]
     inds = [xind, correct_ind[2]]
-    
+    m.reward[inds...] = 0.0
+
     reward_running = -1.0
     reward_target = 0.0
     reward_roi = 0.0
@@ -167,6 +118,7 @@ function POMDPs.reward(m::TargetSearchPOMDP, s::TSState, a::Symbol, sp::TSState)
     end
     #m.reward[inds...] = 0.0
     if !isempty(rmat)
+        #display(rmat[inds...])
         return reward_running + reward_target + reward_roi + rmat[inds...] # running cost
     else
         reward_running + reward_target + reward_roi
