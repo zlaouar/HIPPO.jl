@@ -7,6 +7,7 @@ using DiscreteValueIteration
 using Profile
 using ParticleFilters
 using D3Trees
+using Reel
 
 
 sleep_until(t) = sleep(max(t-time(), 0.0))
@@ -20,6 +21,8 @@ function custom_sim(msolve::TargetSearchPOMDP, msim::TargetSearchPOMDP, planner,
     dt = 1/max_fps
     d = 1.0
     sim_states = TSState[]
+
+    frames = Frames(MIME("image/png"), fps=2)
     while !isterminal(msim, s)
         tm = time()
         a = action(planner, b)
@@ -39,8 +42,9 @@ function custom_sim(msolve::TargetSearchPOMDP, msim::TargetSearchPOMDP, planner,
             planner = solve(solver,msolve)
         end
         push!(sim_states, s)
+        push!(frames, render(msim, (sp=s, bp=b)))
     end
-    return s, r_total, sim_states
+    return s, r_total, sim_states, frames
 end
 rewarddist = [-3.08638     1.04508  -38.9812     6.39193    7.2648     5.96755     9.32665   -9.62812   -0.114036    7.38693      3.39033   -5.17863  -12.7841;
 -8.50139     2.3827   -30.2106   -74.7224   -33.9783    -3.63283    -4.73628   -6.19297   -4.34958    -6.13309    -36.2926    -7.35857    0.417866;
@@ -97,7 +101,7 @@ particle_b = initialize_belief(particle_up, b0)
 #a, info = action_info(planner, Deterministic(TSState([13,14],[1,1])), tree_in_info=true)
 #inchrome(D3Tree(info[:tree], init_expand=3))
 
-s,r_total,sim_states  = custom_sim(msolve, msim, planner, particle_up, particle_b, sinit)
+s,r_total,sim_states,frames  = custom_sim(msolve, msim, planner, particle_up, particle_b, sinit)
 
 #r_total
 #h = simulate(ds, msim, planner)
@@ -109,3 +113,5 @@ s,r_total,sim_states  = custom_sim(msolve, msim, planner, particle_up, particle_
     display(render(m, (sp=h[i].s, bp=h[i].b)))
     sleep(0.1)
 end =#
+
+frames
