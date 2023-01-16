@@ -8,6 +8,7 @@ using Profile
 using ParticleFilters
 using D3Trees
 using Reel
+import Cairo, Fontconfig
 
 
 sleep_until(t) = sleep(max(t-time(), 0.0))
@@ -22,8 +23,9 @@ function custom_sim(msolve::TargetSearchPOMDP, msim::TargetSearchPOMDP, planner,
     d = 1.0
     sim_states = TSState[]
 
-    frames = Frames(MIME("image/png"), fps=2)
-    while !isterminal(msim, s)
+    frames = Frames(MIME("image/png"), fps=4)
+    #while !isterminal(msim, s)
+    for _ in 1:50
         tm = time()
         a = action(planner, b)
         s, o, r = @gen(:sp,:o,:r)(msim, s, a)
@@ -114,4 +116,3 @@ s,r_total,sim_states,frames  = custom_sim(msolve, msim, planner, particle_up, pa
     sleep(0.1)
 end =#
 
-frames
