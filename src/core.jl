@@ -15,7 +15,7 @@ mutable struct TargetSearchPOMDP <: POMDP{TSState, Symbol, BitArray{1}}
     #obsindices::Array{Union{Nothing,Int}, 4}
 end
 
-function TargetSearchPOMDP(;roi_points=Dict(), size=(10,10), sinit=TSState([10,1],[2,7],), rng::AbstractRNG=Random.MersenneTwister(20), rewarddist=Array{Float64}(undef, 0, 0))
+function TargetSearchPOMDP(sinit::TSState; roi_points=Dict(), size=(10,10), rewarddist=Array{Float64}(undef, 0, 0))
     obstacles = Set{SVector{2, Int}}()
     robot_init = sinit.robot
     tprob = 0.7

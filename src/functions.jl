@@ -50,12 +50,13 @@ function POMDPs.transition(m::TargetSearchPOMDP, s, a)
 end
 
 function POMDPs.reward(m::TargetSearchPOMDP, s::TSState, a::Symbol, sp::TSState)
-    rmat = deepcopy(m.reward)
-    #rmat = m.reward 
-    correct_ind = reverse(s.robot)
+    correct_ind = reverse(sp.robot)
     xind = m.size[2]+1 - correct_ind[1]
     inds = [xind, correct_ind[2]]
     #m.reward[inds...] = 0.0
+    visited = deepcopy(sp.visited)
+    lininds = LinearIndices((1:m.size[1], 1:m.size[2]))[inds...]
+    sp.visited[lininds] = 0
 
     reward_running = -1.0
     reward_target = 0.0
@@ -69,9 +70,9 @@ function POMDPs.reward(m::TargetSearchPOMDP, s::TSState, a::Symbol, sp::TSState)
         reward_roi = 0.0
     end
     #m.reward[inds...] = 0.0
-    if !isempty(rmat)
+    if !isempty(m.reward)
         #display(rmat[inds...])
-        return reward_running + reward_target + reward_roi + rmat[inds...] # running cost
+        return reward_running + reward_target + reward_roi + m.reward[inds...]*visited[lininds] # running cost
     else
         reward_running + reward_target + reward_roi
     end
