@@ -18,14 +18,14 @@ function custom_sim(msolve::TargetSearchPOMDP, msim::TargetSearchPOMDP, planner,
     s = sinit
     o = Nothing
     iter = 0
-    max_fps = 10
+    max_fps = 70
     dt = 1/max_fps
     d = 1.0
     sim_states = TSState[]
 
     frames = Frames(MIME("image/png"), fps=4)
     #while !isterminal(msim, s)
-    for _ in 1:50
+    for _ in 1:500
         tm = time()
         a = action(planner, b)
         s, o, r = @gen(:sp,:o,:r)(msim, s, a)
@@ -64,15 +64,19 @@ rewarddist = [-3.08638     1.04508  -38.9812     6.39193    7.2648     5.96755  
  4.5434      1.84961    5.05996    1.71024  -16.2119   -70.8986    -68.3217   -42.1496    13.7424     14.7261       1.78606    8.92938    0.35768;
  5.93137     2.38837    5.00692    2.17936   -6.58787  -48.8138    -27.0167   -10.6387     1.24938    21.9765       4.26369    6.6729     2.1039;
  6.35598     1.425      2.92712    4.96801   13.0207    -0.589068  -15.8313    10.7642    16.1614     15.3144       3.59158    7.8918     9.1199]
-mapsize = (4,4)
-sinit = TSState([1,1],[4,4],vec(trues(mapsize)))#rand(initialstate(msim))
+mapsize = (13,16)
+sinit = TSState([10,1],[13,16],vec(trues(mapsize)))#rand(initialstate(msim))
 #sinitBasic = TSStateBasic([1,1],[1,1])
 roi_states = [[2,2],[2,2],[7,8]]
 probs = [0.8,0.8,0.8]
 roi_points = Dict(roi_states .=> probs)
 #msolve= TargetSearchPOMDP(roi_points=roi_points)
-smallreward = [2.0 8.0; 1.0 2.0]
-msolve = TargetSearchPOMDP(sinit, size=mapsize, rewarddist=smallreward)
+smallreward = [800.0 2.0 2.0 -20.0;
+                2.0 2.0 2.0 2.0;
+                2.0 2.0 2.0 2.0;
+                1.0 2.0 2.0 2.0]
+
+msolve = TargetSearchPOMDP(sinit, size=mapsize, rewarddist=rewarddist)
 #msolveBasic = TSPOMDPBasic(sinit=sinitBasic, size=mapsize)
 #mdp_solver = ValueIterationSolver() # creates the solver
 #mdp_policy = solve(mdp_solver, UnderlyingMDP(msolveBasic))
@@ -107,11 +111,11 @@ planner = solve(solver,msolve)
 
 ds = DisplaySimulator()
 hr = HistoryRecorder()
-msim = TargetSearchPOMDP(sinit, size=mapsize, rewarddist=smallreward)
+msim = TargetSearchPOMDP(sinit, size=mapsize, rewarddist=rewarddist)
 
 b0 = initialstate(msolve)
-up = DiscreteUpdater(msolve)
-b = initialize_belief(up, b0)
+#up = DiscreteUpdater(msolve)
+#b = initialize_belief(up, b0)
 
 N = 1000
 particle_up = BootstrapFilter(msolve, N)

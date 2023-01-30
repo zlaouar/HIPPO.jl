@@ -55,8 +55,10 @@ function POMDPs.reward(m::TargetSearchPOMDP, s::TSState, a::Symbol, sp::TSState)
     inds = [xind, correct_ind[2]]
     #m.reward[inds...] = 0.0
     visited = deepcopy(sp.visited)
-    lininds = LinearIndices((1:m.size[1], 1:m.size[2]))[inds...]
-    sp.visited[lininds] = 0
+    if sp.robot != SA[-1,-1]
+        lininds = LinearIndices((1:m.size[1], 1:m.size[2]))[sp.robot...]
+        sp.visited[lininds] = 0
+    end
 
     reward_running = -1.0
     reward_target = 0.0
@@ -70,11 +72,11 @@ function POMDPs.reward(m::TargetSearchPOMDP, s::TSState, a::Symbol, sp::TSState)
         reward_roi = 0.0
     end
     #m.reward[inds...] = 0.0
-    if !isempty(m.reward)
-        #display(rmat[inds...])
+    #return reward_running + reward_target + reward_roi + m.reward[inds...]
+    if !isempty(m.reward) && sp.robot != SA[-1,-1]
         return reward_running + reward_target + reward_roi + m.reward[inds...]*visited[lininds] # running cost
     else
-        reward_running + reward_target + reward_roi
+        return reward_running + reward_target + reward_roi
     end
 end
 
