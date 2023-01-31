@@ -1,6 +1,6 @@
 function POMDPs.states(m::TargetSearchPOMDP) 
     nonterm = vec(collect(TSState(SVector(c[1],c[2]), SVector(c[3],c[4]), BitVector(d)) for c in Iterators.product(1:m.size[1], 1:m.size[2], 1:m.size[1], 1:m.size[2]) for d in Iterators.product(ntuple(s->[0,1],prod(m.size))...)))
-    return push!(nonterm, TSState([-1,-1],[-1,-1],falses(prod(m.size))))
+    return push!(nonterm, TSState([-1,-1],[-1,-1],trues(prod(m.size))))
 end
 
 POMDPs.actions(m::TargetSearchPOMDP) = (:left, :right, :up, :down, :stay)
@@ -81,7 +81,7 @@ function POMDPs.reward(m::TargetSearchPOMDP, s::TSState, a::Symbol, sp::TSState)
 end
 
 function POMDPs.initialstate(m::TargetSearchPOMDP)
-    return POMDPTools.Uniform(TSState(m.robot_init, SVector(x, y), falses(prod(m.size))) for x in 1:m.size[1], y in 1:m.size[2])
+    return POMDPTools.Uniform(TSState(m.robot_init, SVector(x, y), trues(prod(m.size))) for x in 1:m.size[1], y in 1:m.size[2])
 end
 
 function POMDPTools.ModelTools.render(m::TargetSearchPOMDP, step)
