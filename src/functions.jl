@@ -106,7 +106,7 @@ function POMDPTools.ModelTools.render(m::TargetSearchPOMDP, step)
             t_op = 0.999
         end
         
-        target = compose(context(), rectangle(), fillopacity(t_op), fill("yellow"), stroke("gray"))
+        target = compose(context(), rectangle(), fillopacity(t_op), fill("black"), stroke("gray"))
         if [x,y] in rois
             roi = compose(context(), rectangle(), fill("transparent"), stroke("white"), linewidth(1.2mm))
             compose!(cell, target, roi)
@@ -117,7 +117,44 @@ function POMDPTools.ModelTools.render(m::TargetSearchPOMDP, step)
         push!(cells, cell)
     end
     grid = compose(context(), linewidth(0.5mm), cells...)
-    outline = compose(context(), linewidth(1mm), rectangle(), fill("black"), stroke("gray"))
+    outline = compose(context(), linewidth(1mm), rectangle(), fill("white"), stroke("gray"))
+
+    if haskey(step, :sp)
+        robot_ctx = cell_ctx(step[:sp].robot, m.size)
+        robot = compose(robot_ctx, circle(0.5, 0.5, 0.5), fill("green"))
+        target_ctx = cell_ctx(step[:sp].target, m.size)
+        target = compose(target_ctx, circle(0.5, 0.5, 0.5), fill("orange"))
+    else
+        robot = nothing
+        target = nothing
+    end
+    sz = min(w,h)
+    return compose(context((w-sz)/2, (h-sz)/2, sz, sz), robot, target, grid, outline)
+end
+
+function normie(input, a)
+    return (input-minimum(a))/(maximum(a)-minimum(a))
+end
+
+function POMDPTools.ModelTools.render(m::TargetSearchPOMDP, step, plt_reward::Bool)
+    nx, ny = m.size
+    cells = []
+    rois = collect(keys(m.rois))
+    m.reward
+    for x in 1:nx, y in 1:ny
+        cell = cell_ctx((x,y), m.size)
+        target = compose(context(), rectangle(), fillopacity(normie(m.reward[y,x],m.reward)), fill("red"), stroke("gray"))
+        if [x,y] in rois
+            roi = compose(context(), rectangle(), fill("transparent"), stroke("white"), linewidth(1.2mm))
+            compose!(cell, target, roi)
+        else
+            compose!(cell, target)
+        end
+
+        push!(cells, cell)
+    end
+    grid = compose(context(), linewidth(0.5mm), cells...)
+    outline = compose(context(), linewidth(1mm), rectangle(), fill("white"), stroke("gray"))
 
     if haskey(step, :sp)
         robot_ctx = cell_ctx(step[:sp].robot, m.size)
