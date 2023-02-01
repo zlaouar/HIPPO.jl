@@ -98,12 +98,17 @@ function POMDPTools.ModelTools.render(m::TargetSearchPOMDP, step)
             end
         end
     end
+    norm_top = normalize(target_marginal)
     for x in 1:nx, y in 1:ny
         cell = cell_ctx((x,y), m.size)
-        t_op = sqrt(target_marginal[x,y])
+        t_op = norm_top[x,y]
         # TO-DO Fix This
         if t_op > 1.0
-            t_op = 0.999
+            if t_op < 1.001
+                t_op = 0.999
+            else
+                @error("t_op > 1.001", t_op)
+            end
         end
         
         target = compose(context(), rectangle(), fillopacity(t_op), fill("black"), stroke("gray"))

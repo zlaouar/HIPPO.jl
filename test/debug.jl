@@ -71,7 +71,7 @@ mapsize = (13,16)
 sinit = TSState([10,1],[13,16],vec(trues(mapsize)))#rand(initialstate(msim))
 #mapsize = (4,4)
 #sinit = TSState([1,1],[4,4],vec(trues(mapsize)))#rand(initialstate(msim))
-#sinitBasic = TSStateBasic([1,1],[1,1])
+sinitBasic = TSStateBasic([1,1],[1,1])
 roi_states = [[2,2],[2,2],[7,8]]
 probs = [0.8,0.8,0.8]
 roi_points = Dict(roi_states .=> probs)
@@ -82,9 +82,9 @@ smallreward = [800.0 2.0 2.0 -20.0;
                 1.0 2.0 2.0 2.0]
 
 msolve = TargetSearchPOMDP(sinit, size=mapsize, rewarddist=rewarddist)
-#msolveBasic = TSPOMDPBasic(sinit=sinitBasic, size=mapsize)
-#mdp_solver = ValueIterationSolver() # creates the solver
-#mdp_policy = solve(mdp_solver, UnderlyingMDP(msolveBasic))
+msolveBasic = TSPOMDPBasic(sinit=sinitBasic, size=mapsize)
+mdp_solver = ValueIterationSolver() # creates the solver
+mdp_policy = solve(mdp_solver, UnderlyingMDP(msolveBasic))
 
 rewarddist = [-3.08638     1.04508  -38.9812     6.39193    7.2648     5.96755     9.32665   -9.62812   -0.114036    7.38693      3.39033   -5.17863  -12.7841;
 -8.50139     2.3827   -30.2106   -74.7224   -33.9783    -3.63283    -4.73628   -6.19297   -4.34958    -6.13309    -36.2926    -7.35857    0.417866;
@@ -105,7 +105,7 @@ rewarddist = [-3.08638     1.04508  -38.9812     6.39193    7.2648     5.96755  
 
 
 #estimate_value=FORollout(mdp_policy)
-solver = POMCPSolver(tree_queries=10000, c=3)
+solver = POMCPSolver(estimate_value=FORollout(mdp_policy), tree_queries=10000, c=3)
 #solver = POMCPSolver(tree_queries=10000, max_time=0.2, c=3)
 #solver = QMDPSolver(max_iterations=20,
 #                    belres=1e-3,

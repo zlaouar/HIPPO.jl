@@ -11,15 +11,15 @@ using LinearAlgebra
 using Compose
 
 export 
-    #TSPOMDPBasic,
-    #TSStateBasic,
+    TSPOMDPBasic,
+    TSStateBasic,
 
     TargetSearchPOMDP,
     TSState
 
-#include("core_vanilla.jl")
-#include("functions_vanilla.jl")
-#include("observations_vanilla.jl")
+include("core_vanilla.jl")
+include("functions_vanilla.jl")
+include("observations_vanilla.jl")
 
 include("core.jl")
 include("functions.jl")
