@@ -98,7 +98,9 @@ function POMDPTools.ModelTools.render(m::TargetSearchPOMDP, step)
             end
         end
     end
+    display(target_marginal)
     norm_top = normalize(target_marginal)
+    display(norm_top)
     for x in 1:nx, y in 1:ny
         cell = cell_ctx((x,y), m.size)
         t_op = norm_top[x,y]

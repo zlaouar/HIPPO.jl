@@ -17,9 +17,9 @@ export
     TargetSearchPOMDP,
     TSState
 
-include("core_vanilla.jl")
-include("functions_vanilla.jl")
-include("observations_vanilla.jl")
+include("basic/core_vanilla.jl")
+include("basic/functions_vanilla.jl")
+include("basic/observations_vanilla.jl")
 
 include("core.jl")
 include("functions.jl")
