@@ -98,9 +98,9 @@ function POMDPTools.ModelTools.render(m::TargetSearchPOMDP, step)
             end
         end
     end
-    display(target_marginal)
+    #display(target_marginal)
     norm_top = normalize(target_marginal)
-    display(norm_top)
+    #display(norm_top)
     for x in 1:nx, y in 1:ny
         cell = cell_ctx((x,y), m.size)
         t_op = norm_top[x,y]
@@ -112,8 +112,15 @@ function POMDPTools.ModelTools.render(m::TargetSearchPOMDP, step)
                 @error("t_op > 1.001", t_op)
             end
         end
-        
-        target = compose(context(), rectangle(), fillopacity(t_op), fill("black"), stroke("gray"))
+        opval = t_op
+        if opval > 0.0 
+            opval = clamp(t_op*2,0.05,1.0)
+            if SA[x,y] in visited_states
+                opval = 0.0
+            end
+        end
+
+        target = compose(context(), rectangle(), fillopacity(opval), fill("orange"), stroke("gray"))
         if [x,y] in rois
             roi = compose(context(), rectangle(), fill("transparent"), stroke("white"), linewidth(1.2mm))
             compose!(cell, target, roi)
