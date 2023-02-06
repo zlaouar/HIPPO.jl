@@ -48,6 +48,9 @@ function custom_sim(msolve::TargetSearchPOMDP, msim::TargetSearchPOMDP, planner,
         push!(sim_states, s)
         push!(frames1, render(msim, (sp=s, bp=b)))
         push!(frames2, render(msim, (sp=s, bp=b), true))
+        if isterminal(msim, s)
+            break
+        end
     end
     return s, r_total, sim_states, frames1, frames2
 end
@@ -67,10 +70,10 @@ rewarddist = [-3.08638     1.04508  -38.9812     6.39193    7.2648     5.96755  
  4.5434      1.84961    5.05996    1.71024  -16.2119   -70.8986    -68.3217   -42.1496    13.7424     14.7261       1.78606    8.92938    0.35768;
  5.93137     2.38837    5.00692    2.17936   -6.58787  -48.8138    -27.0167   -10.6387     1.24938    21.9765       4.26369    6.6729     2.1039;
  6.35598     1.425      2.92712    4.96801   13.0207    -0.589068  -15.8313    10.7642    16.1614     15.3144       3.59158    7.8918     9.1199]
-#mapsize = (13,16)
-#sinit = TSState([10,1],[13,16],vec(trues(mapsize)))#rand(initialstate(msim))
-mapsize = (4,4)
-sinit = TSState([1,1],[4,4],vec(trues(mapsize)))#rand(initialstate(msim))
+mapsize = (13,16)
+sinit = TSState([10,1],[13,16],vec(trues(mapsize)))#rand(initialstate(msim))
+#mapsize = (4,4)
+#sinit = TSState([1,1],[4,4],vec(trues(mapsize)))#rand(initialstate(msim))
 sinitBasic = TSStateBasic([1,1],[1,1])
 roi_states = [[2,2],[2,2],[7,8]]
 probs = [0.8,0.8,0.8]
