@@ -85,6 +85,7 @@ function POMDPs.initialstate(m::TargetSearchPOMDP)
 end
 
 function POMDPTools.ModelTools.render(m::TargetSearchPOMDP, step)
+    #set_default_graphic_size(14cm,14cm)
     nx, ny = m.size
     cells = []
     target_marginal = zeros(nx, ny)
@@ -115,9 +116,6 @@ function POMDPTools.ModelTools.render(m::TargetSearchPOMDP, step)
         opval = t_op
         if opval > 0.0 
             opval = clamp(t_op*2,0.05,1.0)
-            if SA[x,y] in visited_states
-                opval = 0.0
-            end
         end
 
         target = compose(context(), rectangle(), fillopacity(opval), fill("orange"), stroke("gray"))
@@ -141,8 +139,12 @@ function POMDPTools.ModelTools.render(m::TargetSearchPOMDP, step)
     else
         robot = nothing
         target = nothing
-    end
+    end 
+    img = read(joinpath(@__DIR__,"..","drone.png"));
+    robot = compose(robot_ctx, bitmap("image/png",img, 0, 0, 1, 1))
+
     sz = min(w,h)
+    
     return compose(context((w-sz)/2, (h-sz)/2, sz, sz), robot, target, grid, outline)
 end
 
