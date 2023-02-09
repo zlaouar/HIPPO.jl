@@ -12,10 +12,15 @@ import Cairo, Fontconfig
 
 
 sleep_until(t) = sleep(max(t-time(), 0.0))
-function myfunc(pomdp, start_state, h, steps)
-    sidx = stateindex(policy.mdp, s)
-    aidx = policy.policy[sidx]
-    return policy.action_map[aidx]
+function myfunc(pomdp, s, h, steps)
+    #display(typeof(pomdp))
+    #display(typeof(start_state))
+    s = TSStateBasic(s.robot, s.target)
+    #sidx = stateindex(mdp_policy.mdp, s)
+    #aidx = mdp_policy.policy[sidx]
+    #return mdp_policy.action_map[aidx]
+
+    BasicPOMCP.rollout(BasicPOMCP.SolvedFORollout(mdp_policy, solver.rng), pomdp, s, h, steps)
 end
 
 p = FunctionPolicy(myfunc)
