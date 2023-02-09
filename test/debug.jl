@@ -12,8 +12,10 @@ import Cairo, Fontconfig
 
 
 sleep_until(t) = sleep(max(t-time(), 0.0))
-function myfunc()
-    return 1
+function myfunc(pomdp, start_state, h, steps)
+    sidx = stateindex(policy.mdp, s)
+    aidx = policy.policy[sidx]
+    return policy.action_map[aidx]
 end
 
 p = FunctionPolicy(myfunc)
@@ -112,7 +114,7 @@ end
 
 
     #estimate_value=FORollout(mdp_policy)
-    solver = POMCPSolver(estimate_value = myfunc(), tree_queries=10000, c=3)
+    solver = POMCPSolver(estimate_value = myfunc, tree_queries=10000, c=3)
     #solver = POMCPSolver(tree_queries=10000, max_time=0.2, c=3)
     #solver = QMDPSolver(max_iterations=20,
     #                    belres=1e-3,
