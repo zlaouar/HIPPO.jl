@@ -15,15 +15,20 @@ sleep_until(t) = sleep(max(t-time(), 0.0))
 function myfunc(pomdp, s, h, steps)
     #display(typeof(pomdp))
     #display(typeof(start_state))
-    s = TSStateBasic(s.robot, s.target)
+    newS = TSStateBasic(s.robot, s.target)
     #sidx = stateindex(mdp_policy.mdp, s)
     #aidx = mdp_policy.policy[sidx]
     #return mdp_policy.action_map[aidx]
-
-    BasicPOMCP.rollout(BasicPOMCP.SolvedFORollout(mdp_policy, solver.rng), pomdp, s, h, steps)
+    sim = RolloutSimulator(planner.rng, steps)
+    return POMDPs.simulate(sim, UnderlyingMDP(msolveBasic), mdp_policy, newS)
 end
 
-p = FunctionPolicy(myfunc)
+function rewardinds(m, s)
+    correct_ind = reverse(s.robot)
+    xind = m.size[2]+1 - correct_ind[1]
+    inds = [xind, correct_ind[2]]
+end
+
 function custom_sim(msolve::TargetSearchPOMDP, msim::TargetSearchPOMDP, planner, up, b, sinit)
     r_total = 0.0
     s = sinit
@@ -40,6 +45,7 @@ function custom_sim(msolve::TargetSearchPOMDP, msim::TargetSearchPOMDP, planner,
     #for _ in 1:500
         tm = time()
         a = action(planner, b)
+        msim.reward[rewardinds(msim,s)...] = 0.0 # remove reward at current state
         s, o, r = @gen(:sp,:o,:r)(msim, s, a)
         r_total += d*r
         d *= discount(msim)
@@ -85,7 +91,7 @@ end
     sinit = TSState([10,1],[13,16],vec(trues(mapsize)))#rand(initialstate(msim))
     #mapsize = (4,4)
     #sinit = TSState([1,1],[4,4],vec(trues(mapsize)))#rand(initialstate(msim))
-    sinitBasic = TSStateBasic([1,1],[1,1])
+    sinitBasic = TSStateBasic(sinit.robot,sinit.target)
     roi_states = [[2,2],[2,2],[7,8]]
     probs = [0.8,0.8,0.8]
     roi_points = Dict(roi_states .=> probs)
@@ -119,7 +125,9 @@ end
 
 
     #estimate_value=FORollout(mdp_policy)
-    solver = POMCPSolver(estimate_value = myfunc, tree_queries=10000, c=3)
+    #p = FunctionPolicy(myfunc)
+    #estimator = BasicPOMCP.SolvedFORollout(p, solver.rng)
+    solver = POMCPSolver(tree_queries=10000, c=3)
     #solver = POMCPSolver(tree_queries=10000, max_time=0.2, c=3)
     #solver = QMDPSolver(max_iterations=20,
     #                    belres=1e-3,
@@ -127,6 +135,7 @@ end
     #                   ) 
 
     planner = solve(solver,msolve)
+    #planner.solved_estimator = BasicPOMCP.SolvedFORollout(p, solver.rng)
 
     ds = DisplaySimulator()
     hr = HistoryRecorder()
