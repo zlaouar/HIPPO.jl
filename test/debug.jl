@@ -128,7 +128,7 @@ end
     #estimate_value=FORollout(mdp_policy)
     #p = FunctionPolicy(myfunc)
     #estimator = BasicPOMCP.SolvedFORollout(p, solver.rng)
-    solver = POMCPSolver(tree_queries=10000, c=3)
+    solver = POMCPSolver(estimate_value = BFORollout(mdp_policy), tree_queries=10000, c=3)
     #solver = POMCPSolver(tree_queries=10000, max_time=0.2, c=3)
     #solver = QMDPSolver(max_iterations=20,
     #                    belres=1e-3,
