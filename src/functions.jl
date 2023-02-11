@@ -142,6 +142,8 @@ function POMDPTools.ModelTools.render(m::TargetSearchPOMDP, step)
     end 
     img = read(joinpath(@__DIR__,"..","drone.png"));
     robot = compose(robot_ctx, bitmap("image/png",img, 0, 0, 1, 1))
+    person = read(joinpath(@__DIR__,"..","missingperson.png"));
+    target = compose(target_ctx, bitmap("image/png",person, 0, 0, 1, 1))
 
     sz = min(w,h)
     
@@ -156,7 +158,7 @@ function POMDPTools.ModelTools.render(m::TargetSearchPOMDP, step, plt_reward::Bo
     nx, ny = m.size
     cells = []
     rois = collect(keys(m.rois))
-    m.reward
+
     for x in 1:nx, y in 1:ny
         cell = cell_ctx((x,y), m.size)
         target = compose(context(), rectangle(), fillopacity(normie(m.reward[y,x],m.reward)), fill("red"), stroke("gray"))

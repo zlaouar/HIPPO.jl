@@ -38,19 +38,20 @@ function custom_sim(msolve::TargetSearchPOMDP, msim::TargetSearchPOMDP, planner,
     dt = 1/max_fps
     d = 1.0
     sim_states = TSState[]
-
-    frames1 = Frames(MIME("image/svg"), fps=4)
-    frames2 = Frames(MIME("image/svg"), fps=4)
-    while !isterminal(msim, s) || iter == 500
+    frames1 = []
+    #frames1 = Frames(MIME("image/png"), fps=4)
+    #frames2 = Frames(MIME("image/png"), fps=4)
+    while !isterminal(msim, s) && iter < 50
     #for _ in 1:500
         tm = time()
         a = action(planner, b)
-        msim.reward[rewardinds(msim,s)...] = 0.0 # remove reward at current state
+        #msim.reward[rewardinds(msim,s)...] = 0.0 # remove reward at current state
         s, o, r = @gen(:sp,:o,:r)(msim, s, a)
         r_total += d*r
         d *= discount(msim)
         b = update(up, b, a, o)
-        display(render(msim, (sp=s, bp=b)))
+        tmp = render(msim, (sp=s, bp=b))
+        display(tmp)
         sleep_until(tm += dt)
         iter += 1
         println(iter)
@@ -62,7 +63,7 @@ function custom_sim(msolve::TargetSearchPOMDP, msim::TargetSearchPOMDP, planner,
             planner = solve(solver, msolve)
         end
         push!(sim_states, s)
-        #push!(frames1, render(msim, (sp=s, bp=b)))
+        push!(frames1, tmp)
         #push!(frames2, render(msim, (sp=s, bp=b), true))
         #if isterminal(msim, s)
         #    break
@@ -155,6 +156,14 @@ end
     #inchrome(D3Tree(info[:tree], init_expand=3))
 
     s,r_total,sim_states,frames1,frames2 = custom_sim(msolve, msim, planner, particle_up, particle_b, sinit)
+
+    for (i,frame) in enumerate(frames1)
+        imgstr = "$i"
+        imgstr = lpad(imgstr, 2, '0') * ".svg"
+        draw(SVG(joinpath(@__DIR__,"../tmp/img/","$imgstr")), frames1[i])
+    end
+
+    display("hello")
 
 #end
 
