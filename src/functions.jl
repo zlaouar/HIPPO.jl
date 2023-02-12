@@ -33,7 +33,7 @@ function POMDPs.transition(m::TargetSearchPOMDP, s, a)
     remaining_prob = 1.0
 
     if haskey(m.rois, s.robot)
-        push!(states, TSState(SA[-1,-1], SA[-1,-1], s.visited)) # terminal state for regions of interest
+        push!(states, TSState(SA[-1,-1], SA[-1,-1], copy(s.visited))) # terminal state for regions of interest
         push!(probs, m.rois[s.robot])
         remaining_prob = 1-m.rois[s.robot]
     end
@@ -41,9 +41,14 @@ function POMDPs.transition(m::TargetSearchPOMDP, s, a)
 
     newrobot = bounce(m, s.robot, actiondir[a])
 
-    push!(states, TSState(newrobot, s.target, s.visited))
+    push!(states, TSState(newrobot, s.target, copy(s.visited)))
     push!(probs, remaining_prob)
 
+
+    for sp ∈ states
+        lininds = LinearIndices((1:m.size[1], 1:m.size[2]))[sp.robot...]
+        sp.visited[lininds] = 0
+    end
 
     return SparseCat(states, probs)
 
@@ -53,12 +58,7 @@ function POMDPs.reward(m::TargetSearchPOMDP, s::TSState, a::Symbol, sp::TSState)
     correct_ind = reverse(sp.robot)
     xind = m.size[2]+1 - correct_ind[1]
     inds = [xind, correct_ind[2]]
-    #m.reward[inds...] = 0.0
-    visited = deepcopy(sp.visited)
-    if sp.robot != SA[-1,-1]
-        lininds = LinearIndices((1:m.size[1], 1:m.size[2]))[sp.robot...]
-        sp.visited[lininds] = 0
-    end
+    lininds = LinearIndices((1:m.size[1], 1:m.size[2]))[sp.robot...]
 
     reward_running = -1.0
     reward_target = 0.0
@@ -74,7 +74,7 @@ function POMDPs.reward(m::TargetSearchPOMDP, s::TSState, a::Symbol, sp::TSState)
     #m.reward[inds...] = 0.0
     #return reward_running + reward_target + reward_roi + m.reward[inds...]
     if !isempty(m.reward) && sp.robot != SA[-1,-1]
-        return reward_running + reward_target + reward_roi + m.reward[inds...]*visited[lininds] # running cost
+        return reward_running + reward_target + reward_roi + m.reward[inds...]*s.visited[lininds] # running cost
     else
         return reward_running + reward_target + reward_roi
     end

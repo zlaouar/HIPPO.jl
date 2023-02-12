@@ -11,6 +11,7 @@ using LinearAlgebra
 using Compose
 using BasicPOMCP
 using MCTS
+using DiscreteValueIteration
 
 export 
     TSPOMDPBasic,

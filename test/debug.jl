@@ -12,15 +12,10 @@ import Cairo, Fontconfig
 
 
 sleep_until(t) = sleep(max(t-time(), 0.0))
-function myfunc(pomdp, s, h, steps)
+function myfunc(s)
     #display(typeof(pomdp))
     #display(typeof(start_state))
-    newS = TSStateBasic(s.robot, s.target)
-    #sidx = stateindex(mdp_policy.mdp, s)
-    #aidx = mdp_policy.policy[sidx]
-    #return mdp_policy.action_map[aidx]
-    sim = RolloutSimulator(planner.rng, steps)
-    return POMDPs.simulate(sim, UnderlyingMDP(msolveBasic), mdp_policy, newS)
+    return :up
 end
 
 function rewardinds(m, s)
@@ -41,11 +36,11 @@ function custom_sim(msolve::TargetSearchPOMDP, msim::TargetSearchPOMDP, planner,
     frames1 = []
     #frames1 = Frames(MIME("image/png"), fps=4)
     #frames2 = Frames(MIME("image/png"), fps=4)
-    while !isterminal(msim, s) && iter < 50
+    while !isterminal(msim, s) && iter < 500
     #for _ in 1:500
         tm = time()
         a = action(planner, b)
-        #msim.reward[rewardinds(msim,s)...] = 0.0 # remove reward at current state
+        msim.reward[rewardinds(msim,s)...] = 0.0 # remove reward at current state
         s, o, r = @gen(:sp,:o,:r)(msim, s, a)
         r_total += d*r
         d *= discount(msim)
@@ -69,7 +64,7 @@ function custom_sim(msolve::TargetSearchPOMDP, msim::TargetSearchPOMDP, planner,
         #    break
         #end
     end
-    return s, r_total, sim_states, frames1, frames2
+    return s, r_total, sim_states, frames1
 end
 #function main()
     rewarddist = [-3.08638     1.04508  -38.9812     6.39193    7.2648     5.96755     9.32665   -9.62812   -0.114036    7.38693      3.39033   -5.17863  -12.7841;
@@ -126,10 +121,10 @@ end
 
 
     #estimate_value=FORollout(mdp_policy)
-    #p = FunctionPolicy(myfunc)
+    p = FunctionPolicy(myfunc)
     #estimator = BasicPOMCP.SolvedFORollout(p, solver.rng)
-    solver = POMCPSolver(estimate_value = BFORollout(mdp_policy), tree_queries=10000, c=3)
-    #solver = POMCPSolver(estimate_value = FORollout(mdp_policy), tree_queries=10000, max_time=0.2, c=3)
+    solver = POMCPSolver(estimate_value = FORollout(p), tree_queries=10000, c=50)
+    #solver = POMCPSolver(tree_queries=10000, max_time=0.2, c=3)
     #solver = QMDPSolver(max_iterations=20,
     #                    belres=1e-3,
     #                    verbose=true
