@@ -37,7 +37,7 @@ function custom_sim(msolve::TargetSearchPOMDP, msim::TargetSearchPOMDP, planner,
     s = sinit
     o = Nothing
     iter = 0
-    max_fps = 150
+    max_fps = 3
     dt = 1/max_fps
     d = 1.0
     sim_states = TSState[]
@@ -131,8 +131,8 @@ rewarddist = [-3.08638     1.04508  -38.9812     6.39193    7.2648     5.96755  
 #estimate_value=FORollout(mdp_policy)
 p = FunctionPolicy(myfunc)
 #estimator = BasicPOMCP.SolvedFORollout(p, solver.rng)
-solver = POMCPSolver(estimate_value = FORollout(p), tree_queries=10000, c=50)
-#solver = POMCPSolver(tree_queries=10000, max_time=0.2, c=3)
+#solver = POMCPSolver(estimate_value = FORollout(p), tree_queries=10000, c=50)
+solver = POMCPSolver(estimate_value=BFORollout(mdp_policy), tree_queries=100, max_time=0.2, c=3)
 #solver = QMDPSolver(max_iterations=20,
 #                    belres=1e-3,
 #                    verbose=true

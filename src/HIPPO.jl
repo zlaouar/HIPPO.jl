@@ -21,8 +21,10 @@ export
     TSState,
 
     BFORollout,
+    SolvedBFORollout,
     estimate_value,
-    convert_estimator
+    convert_estimator,
+    simulate
 
 include(joinpath(@__DIR__,"basic","core_vanilla.jl"))
 include(joinpath(@__DIR__,"basic","functions_vanilla.jl"))
