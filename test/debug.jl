@@ -110,7 +110,7 @@ msolveBasic = TSPOMDPBasic(sinit=sinitBasic, size=mapsize)
 mdp_solver = ValueIterationSolver() # creates the solver
 mdp_policy = solve(mdp_solver, UnderlyingMDP(msolveBasic))
 
-rewarddist = [-3.08638     1.04508  -38.9812     6.39193    7.2648     5.96755     9.32665   -9.62812   -0.114036    7.38693      3.39033   -5.17863  -12.7841;
+#= rewarddist = [-3.08638     1.04508  -38.9812     6.39193    7.2648     5.96755     9.32665   -9.62812   -0.114036    7.38693      3.39033   -5.17863  -12.7841;
 -8.50139     2.3827   -30.2106   -74.7224   -33.9783    -3.63283    -4.73628   -6.19297   -4.34958    -6.13309    -36.2926    -7.35857    0.417866;
 -12.0669      7.54123  -22.8483   -47.2838   -53.8302   -25.5759    -36.2189    -4.93866   -4.9971    -12.1572     -15.8788   -23.9603   -15.3152;
 -11.2335     -5.6023   -32.8484   -58.316    -35.6942   -40.4131    -80.1317     4.50919    0.302756   -0.238148     7.76839    2.78539   39.5031;
@@ -126,13 +126,13 @@ rewarddist = [-3.08638     1.04508  -38.9812     6.39193    7.2648     5.96755  
 4.5434      1.84961    5.05996    1.71024  -16.2119   -70.8986    -68.3217   -42.1496    13.7424     14.7261       1.78606    8.92938    0.35768;
 5.93137     2.38837    5.00692    2.17936   -6.58787  -48.8138    -27.0167   -10.6387     1.24938    21.9765       4.26369    6.6729     2.1039;
 6.35598     1.425      2.92712    4.96801   13.0207    -0.589068  -15.8313    10.7642    16.1614     15.3144       3.59158    7.8918     9.1199]
-
+ =#
 
 #estimate_value=FORollout(mdp_policy)
 p = FunctionPolicy(myfunc)
 #estimator = BasicPOMCP.SolvedFORollout(p, solver.rng)
 #solver = POMCPSolver(estimate_value = FORollout(p), tree_queries=10000, c=50)
-solver = POMCPSolver(estimate_value=BFORollout(mdp_policy), tree_queries=100, max_time=0.2, c=3)
+solver = POMCPSolver(estimate_value=FORollout(p), tree_queries=1000, max_time=0.2, c=80)
 #solver = QMDPSolver(max_iterations=20,
 #                    belres=1e-3,
 #                    verbose=true

@@ -65,7 +65,7 @@ function POMDPs.reward(m::TargetSearchPOMDP, s::TSState, a::Symbol, sp::TSState)
     reward_roi = 0.0
     if sp.robot == sp.target && sp.robot != SA[-1,-1]# if target is found
         reward_running = 0.0
-        reward_target = 100.0 
+        reward_target = 1000.0 
     end
     if sp.robot == SA[-1,-1]
         reward_running = 0.0
