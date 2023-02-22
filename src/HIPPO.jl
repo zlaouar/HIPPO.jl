@@ -26,13 +26,13 @@ export
     convert_estimator,
     simulate
 
-include(joinpath(@__DIR__,"basic","core_vanilla.jl"))
-include(joinpath(@__DIR__,"basic","functions_vanilla.jl"))
-include(joinpath(@__DIR__,"basic","observations_vanilla.jl"))
+include(joinpath(@__DIR__,"basicPOMDP","core_vanilla.jl"))
+include(joinpath(@__DIR__,"basicPOMDP","functions_vanilla.jl"))
+include(joinpath(@__DIR__,"basicPOMDP","observations_vanilla.jl"))
 
-include("core.jl")
-include("functions.jl")
-include("observations.jl")
+include(joinpath(@__DIR__,"advPOMDP","core.jl"))
+include(joinpath(@__DIR__,"advPOMDP","functions.jl"))
+include(joinpath(@__DIR__,"advPOMDP","observations.jl"))
 
 include("value.jl")
 
