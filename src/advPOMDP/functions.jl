@@ -46,7 +46,7 @@ function POMDPs.transition(m::TargetSearchPOMDP, s, a)
 
 
     for sp ∈ states
-        lininds = LinearIndices((1:m.size[1], 1:m.size[2]))[sp.robot...]
+        lininds = LinearIndices((1:m.size[1], 1:m.size[2]))[s.robot...]
         sp.visited[lininds] = 0
     end
 
@@ -58,14 +58,14 @@ function POMDPs.reward(m::TargetSearchPOMDP, s::TSState, a::Symbol, sp::TSState)
     correct_ind = reverse(sp.robot)
     xind = m.size[2]+1 - correct_ind[1]
     inds = [xind, correct_ind[2]]
-    lininds = LinearIndices((1:m.size[1], 1:m.size[2]))[sp.robot...]
+    indsp = LinearIndices((1:m.size[1], 1:m.size[2]))[sp.robot...]
 
     reward_running = -1.0
     reward_target = 0.0
     reward_roi = 0.0
     if sp.robot == sp.target && sp.robot != SA[-1,-1]# if target is found
         reward_running = 0.0
-        reward_target = 1000.0 
+        reward_target = 100.0 
     end
     if sp.robot == SA[-1,-1]
         reward_running = 0.0
@@ -74,7 +74,7 @@ function POMDPs.reward(m::TargetSearchPOMDP, s::TSState, a::Symbol, sp::TSState)
     #m.reward[inds...] = 0.0
     #return reward_running + reward_target + reward_roi + m.reward[inds...]
     if !isempty(m.reward) && sp.robot != SA[-1,-1]
-        return reward_running + reward_target + reward_roi + m.reward[inds...]*s.visited[lininds] # running cost
+        return reward_running + reward_target + reward_roi + m.reward[inds...]*s.visited[indsp] # running cost
     else
         return reward_running + reward_target + reward_roi
     end
@@ -193,12 +193,4 @@ function cell_ctx(xy, size)
     return context((x-1)/nx, (ny-y)/ny, 1/nx, 1/ny)
 end
 
-function POMDPs.isterminal(m::TargetSearchPOMDP, s::TSState)  
-    if s.target == s.robot
-        return true
-    elseif s.robot == SA[-1,-1]
-        return true
-    else
-        return false
-    end
-end
+POMDPs.isterminal(m::TargetSearchPOMDP, s::TSState) = s.robot == SA[-1,-1]
