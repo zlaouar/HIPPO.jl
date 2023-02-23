@@ -140,9 +140,9 @@ function POMDPTools.ModelTools.render(m::TargetSearchPOMDP, step)
         robot = nothing
         target = nothing
     end 
-    img = read(joinpath(@__DIR__,"..","drone.png"));
+    img = read(joinpath(@__DIR__,"../..","drone.png"));
     robot = compose(robot_ctx, bitmap("image/png",img, 0, 0, 1, 1))
-    person = read(joinpath(@__DIR__,"..","missingperson.png"));
+    person = read(joinpath(@__DIR__,"../..","missingperson.png"));
     target = compose(target_ctx, bitmap("image/png",person, 0, 0, 1, 1))
 
     sz = min(w,h)

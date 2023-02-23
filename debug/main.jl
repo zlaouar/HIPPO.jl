@@ -1,80 +1,18 @@
 using HIPPO
 using POMDPs
-using QMDP
 using BasicPOMCP
 using POMDPTools
 using DiscreteValueIteration
 using Profile
 using ParticleFilters
 using D3Trees
-using Reel
-import Cairo, Fontconfig
+using WebSockets: readguarded, open
+using JSON
 
 
-function svgstogif(frames)
-    for (i,frame) in enumerate(frames1)
-        imgstr = "$i"
-        imgstr = lpad(imgstr, 2, '0') * ".svg"
-        draw(SVG(joinpath(@__DIR__,"../tmp/img/","$imgstr")), frame)
-    end
-end
+fixedpolicy(s) = :up
 
-sleep_until(t) = sleep(max(t-time(), 0.0))
-function myfunc(s)
-    #display(typeof(pomdp))
-    #display(typeof(start_state))
-    return :up
-end
 
-function rewardinds(m, s)
-    correct_ind = reverse(s.robot)
-    xind = m.size[2]+1 - correct_ind[1]
-    inds = [xind, correct_ind[2]]
-end
-
-function custom_sim(msolve::TargetSearchPOMDP, msim::TargetSearchPOMDP, planner, up, b, sinit)
-    r_total = 0.0
-    s = sinit
-    o = Nothing
-    iter = 0
-    max_fps = 3
-    dt = 1/max_fps
-    d = 1.0
-    sim_states = TSState[]
-    frames1 = []
-    #frames1 = Frames(MIME("image/png"), fps=4)
-    #frames2 = Frames(MIME("image/png"), fps=4)
-    while !isterminal(msim, s) && iter < 500
-    #for _ in 1:500
-        tm = time()
-        a = action(planner, b)
-        msim.reward[rewardinds(msim,s)...] = 0.0 # remove reward at current state
-        s, o, r = @gen(:sp,:o,:r)(msim, s, a)
-        r_total += d*r
-        d *= discount(msim)
-        b = update(up, b, a, o)
-        tmp = render(msim, (sp=s, bp=b))
-        display(tmp)
-        sleep_until(tm += dt)
-        iter += 1
-        println(iter)
-        if iter > 1000
-            roi_states = [[1,9],[1,10],[1,8]]
-            probs = [0.8,0.8,0.8]
-            roi_points = Dict(roi_states .=> probs)
-            msolve.rois = roi_points
-            planner = solve(solver, msolve)
-        end
-        push!(sim_states, s)
-        push!(frames1, tmp)
-        #push!(frames2, render(msim, (sp=s, bp=b), true))
-        #if isterminal(msim, s)
-        #    break
-        #end
-    end
-    return s, r_total, sim_states, frames1
-end
-#function main()
 rewarddist = [-3.08638     1.04508  -38.9812     6.39193    7.2648     5.96755     9.32665   -9.62812   -0.114036    7.38693      3.39033   -5.17863  -12.7841;
 -8.50139     2.3827   -30.2106   -74.7224   -33.9783    -3.63283    -4.73628   -6.19297   -4.34958    -6.13309    -36.2926    -7.35857    0.417866;
 -12.0669      7.54123  -22.8483   -47.2838   -53.8302   -25.5759    -36.2189    -4.93866   -4.9971    -12.1572     -15.8788   -23.9603   -15.3152;
@@ -99,7 +37,7 @@ sinitBasic = TSStateBasic(sinit.robot,sinit.target)
 roi_states = [[2,2],[2,2],[7,8]]
 probs = [0.8,0.8,0.8]
 roi_points = Dict(roi_states .=> probs)
-#msolve= TargetSearchPOMDP(roi_points=roi_points)
+
 smallreward = [800.0 2.0 2.0 -20.0;
                 2.0 2.0 2.0 2.0;
                 2.0 2.0 2.0 2.0;
@@ -110,26 +48,15 @@ msolveBasic = TSPOMDPBasic(sinit=sinitBasic, size=mapsize)
 mdp_solver = ValueIterationSolver() # creates the solver
 mdp_policy = solve(mdp_solver, UnderlyingMDP(msolveBasic))
 
-#estimate_value=FORollout(mdp_policy)
-p = FunctionPolicy(myfunc)
-#estimator = BasicPOMCP.SolvedFORollout(p, solver.rng)
-#solver = POMCPSolver(estimate_value = FORollout(p), tree_queries=10000, c=50)
-solver = POMCPSolver(estimate_value=FORollout(p), tree_queries=1000, max_time=0.2, c=80)
-#solver = QMDPSolver(max_iterations=20,
-#                    belres=1e-3,
-#                    verbose=true
-#                   ) 
-
+p = FunctionPolicy(fixedpolicy)
+solver = POMCPSolver(estimate_value=BFORollout(mdp_policy), tree_queries=1000, max_time=0.2, c=80)
 planner = solve(solver,msolve)
-#planner.solved_estimator = BasicPOMCP.SolvedFORollout(p, solver.rng)
 
 ds = DisplaySimulator()
 hr = HistoryRecorder()
 msim = TargetSearchPOMDP(sinit, size=mapsize, rewarddist=rewarddist)
 
 b0 = initialstate(msolve)
-#up = DiscreteUpdater(msolve)
-#b = initialize_belief(up, b0)
 
 N = 1000
 particle_up = BootstrapFilter(msolve, N)
@@ -140,14 +67,12 @@ particle_b = initialize_belief(particle_up, b0)
 #a, info = action_info(planner, Deterministic(TSState([13,14],[1,1])), tree_in_info=true)
 #inchrome(D3Tree(info[:tree], init_expand=3))
 
-s,r_total,sim_states,frames1 = custom_sim(msolve, msim, planner, particle_up, particle_b, sinit)
+s,r_total,sim_states,frames1 = customsim(msolve, msim, planner, particle_up, particle_b, sinit)
 
 
 display("hello")
 
-#end
 
-#main()
 #r_total
 #h = simulate(ds, msim, planner)
 #h = simulate(ds, msim, planner, particle_up, initialstate(msim), sinit)

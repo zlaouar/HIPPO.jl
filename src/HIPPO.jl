@@ -24,7 +24,9 @@ export
     SolvedBFORollout,
     estimate_value,
     convert_estimator,
-    simulate
+    simulate,
+
+    customsim
 
 include(joinpath(@__DIR__,"basicPOMDP","core_vanilla.jl"))
 include(joinpath(@__DIR__,"basicPOMDP","functions_vanilla.jl"))
@@ -33,6 +35,7 @@ include(joinpath(@__DIR__,"basicPOMDP","observations_vanilla.jl"))
 include(joinpath(@__DIR__,"advPOMDP","core.jl"))
 include(joinpath(@__DIR__,"advPOMDP","functions.jl"))
 include(joinpath(@__DIR__,"advPOMDP","observations.jl"))
+include(joinpath(@__DIR__,"advPOMDP", "helper.jl"))
 
 include("value.jl")
 
