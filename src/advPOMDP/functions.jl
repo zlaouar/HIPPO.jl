@@ -46,8 +46,8 @@ function POMDPs.transition(m::TargetSearchPOMDP, s, a)
 
 
     for sp ∈ states
-        lininds = LinearIndices((1:m.size[1], 1:m.size[2]))[s.robot...]
-        sp.visited[lininds] = 0
+        sind = LinearIndices((1:m.size[1], 1:m.size[2]))[s.robot...]
+        sp.visited[sind] = 0
     end
 
     return SparseCat(states, probs)
@@ -58,7 +58,7 @@ function POMDPs.reward(m::TargetSearchPOMDP, s::TSState, a::Symbol, sp::TSState)
     correct_ind = reverse(sp.robot)
     xind = m.size[2]+1 - correct_ind[1]
     inds = [xind, correct_ind[2]]
-    indsp = LinearIndices((1:m.size[1], 1:m.size[2]))[sp.robot...]
+    spind = LinearIndices((1:m.size[1], 1:m.size[2]))[sp.robot...]
 
     reward_running = -1.0
     reward_target = 0.0
@@ -74,7 +74,7 @@ function POMDPs.reward(m::TargetSearchPOMDP, s::TSState, a::Symbol, sp::TSState)
     #m.reward[inds...] = 0.0
     #return reward_running + reward_target + reward_roi + m.reward[inds...]
     if !isempty(m.reward) && sp.robot != SA[-1,-1]
-        return reward_running + reward_target + reward_roi + m.reward[inds...]*s.visited[indsp] # running cost
+        return reward_running + reward_target + reward_roi + m.reward[inds...]*s.visited[spind] # running cost
     else
         return reward_running + reward_target + reward_roi
     end
