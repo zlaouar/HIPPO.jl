@@ -6,7 +6,6 @@ using DiscreteValueIteration
 using Profile
 using ParticleFilters
 using D3Trees
-using WebSockets: readguarded, open
 using JSON
 
 

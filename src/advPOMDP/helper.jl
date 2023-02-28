@@ -31,11 +31,12 @@ function customsim(msolve::TargetSearchPOMDP, msim::TargetSearchPOMDP, planner, 
         tm = time()
         a = action(planner, b)
         msim.reward[rewardinds(msim,s)...] = 0.0 # remove reward at current state
+        print(rewardinds(msim,s))
         s, o, r = @gen(:sp,:o,:r)(msim, s, a)
         r_total += d*r
         d *= discount(msim)
         b = update(up, b, a, o)
-        tmp = render(msim, (sp=s, bp=b))
+        tmp = render(msim, (sp=s, bp=b), true)
         display(tmp)
         sleep_until(tm += dt)
         iter += 1

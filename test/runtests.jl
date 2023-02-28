@@ -27,15 +27,17 @@ sts = unique(getfield.(states(m), :robot))[1:end-1]
 acs = (:right, :up, :left, :down)
 rtotal = 0.0
 
-function rtotaltest(rtotal,s,acs)
-    for i ∈ 1:ns
-        a = acs[i]
-        sp = rand(transition(m, s, a))
-        rtotal += reward(m, s, a, sp)
-        println(reward(m, s, a, sp), ", a:", a)
-        s = sp
+@testset "rtotal" begin
+    function rtotaltest(rtotal,s,acs)
+        for i ∈ 1:ns
+            a = acs[i]
+            sp = rand(transition(m, s, a))
+            rtotal += reward(m, s, a, sp)
+            #println(reward(m, s, a, sp), ", a:", a)
+            println("s: ", s.visited, " | sp: ", sp.visited)
+            s = sp
+        end
+        return rtotal
     end
-    return rtotal
+    @test rtotaltest(rtotal,s,acs) == sum(rewarddist) - ns
 end
-
-@test rtotaltest(rtotal,s,acs) == sum(rewarddist) - ns
