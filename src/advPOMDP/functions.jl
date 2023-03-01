@@ -57,8 +57,13 @@ function POMDPs.reward(m::TargetSearchPOMDP, s::TSState, a::Symbol, sp::TSState)
     reward_target = 0.0
     reward_roi = 0.0
 
-    if isequal(sp.robot, SA[-1,-1])
+    if isequal(sp.robot, sp.target)# if target is found
+        reward_running = 0.0
+        reward_target = 100.0 
         return reward_running + reward_target + reward_roi
+    end
+    if isterminal(m, sp)
+        return 0.0
     end
 
     correct_ind = reverse(sp.robot)
@@ -66,16 +71,6 @@ function POMDPs.reward(m::TargetSearchPOMDP, s::TSState, a::Symbol, sp::TSState)
     inds = [xind, correct_ind[2]]
     spind = LinearIndices((1:m.size[1], 1:m.size[2]))[sp.robot...]
 
-    if sp.robot == sp.target && sp.robot != SA[-1,-1]# if target is found
-        reward_running = 0.0
-        reward_target = 100.0 
-    end
-    if sp.robot == SA[-1,-1]
-        reward_running = 0.0
-        reward_roi = 0.0
-    end
-    #m.reward[inds...] = 0.0
-    #return reward_running + reward_target + reward_roi + m.reward[inds...]
     if !isempty(m.reward) && sp.robot != SA[-1,-1]
         return reward_running + reward_target + reward_roi + m.reward[inds...]*s.visited[spind] # running cost
     end

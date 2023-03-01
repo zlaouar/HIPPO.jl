@@ -19,28 +19,24 @@ function customsim(msolve::TargetSearchPOMDP, msim::TargetSearchPOMDP, planner, 
     s = sinit
     o = Nothing
     iter = 0
-    max_fps = 3
+    max_fps = 10
     dt = 1/max_fps
     d = 1.0
     sim_states = TSState[]
     frames1 = []
-    #frames1 = Frames(MIME("image/png"), fps=4)
-    #frames2 = Frames(MIME("image/png"), fps=4)
     while !isterminal(msim, s) && iter < 500
-    #for _ in 1:500
         tm = time()
         a = action(planner, b)
         msim.reward[rewardinds(msim,s)...] = 0.0 # remove reward at current state
-        print(rewardinds(msim,s))
-        s, o, r = @gen(:sp,:o,:r)(msim, s, a)
+        sp, o, r = @gen(:sp,:o,:r)(msim, s, a)
         r_total += d*r
         d *= discount(msim)
         b = update(up, b, a, o)
-        tmp = render(msim, (sp=s, bp=b), true)
+        tmp = render(msim, (sp=sp, bp=b), true)
         display(tmp)
         sleep_until(tm += dt)
         iter += 1
-        println(iter)
+        println(iter,"- | s: ", s, " | sp:", sp, " | r:", r, " | o: ", o)
         if iter > 1000
             roi_states = [[1,9],[1,10],[1,8]]
             probs = [0.8,0.8,0.8]
@@ -48,12 +44,13 @@ function customsim(msolve::TargetSearchPOMDP, msim::TargetSearchPOMDP, planner, 
             msolve.rois = roi_points
             planner = solve(solver, msolve)
         end
-        push!(sim_states, s)
+        push!(sim_states, sp)
         push!(frames1, tmp)
+        s = sp
         #push!(frames2, render(msim, (sp=s, bp=b), true))
         #if isterminal(msim, s)
         #    break
         #end
     end
-    return s, r_total, sim_states, frames1
+    return r_total, sim_states, frames1
 end

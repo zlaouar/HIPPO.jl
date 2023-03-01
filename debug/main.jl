@@ -49,7 +49,7 @@ mdp_solver = ValueIterationSolver() # creates the solver
 mdp_policy = solve(mdp_solver, UnderlyingMDP(msolveBasic))
 
 p = FunctionPolicy(fixedpolicy)
-solver = POMCPSolver(estimate_value=BFORollout(mdp_policy), tree_queries=10000, max_time=0.2, c=5)
+solver = POMCPSolver(tree_queries=10000, max_time=0.2, c=5)
 planner = solve(solver,msolve)
 
 ds = DisplaySimulator()
@@ -67,7 +67,7 @@ particle_b = initialize_belief(particle_up, b0)
 #a, info = action_info(planner, Deterministic(TSState([13,14],[1,1])), tree_in_info=true)
 #inchrome(D3Tree(info[:tree], init_expand=3))
 
-s,r_total,sim_states,frames1 = customsim(msolve, msim, planner, particle_up, particle_b, sinit)
+r_total,sim_states,frames1 = customsim(msolve, msim, planner, particle_up, particle_b, sinit)
 
 
 display("Simulation Ended")
