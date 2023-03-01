@@ -28,6 +28,8 @@ export
 
     customsim
 
+include(joinpath(@__DIR__,"common.jl"))
+
 include(joinpath(@__DIR__,"basicPOMDP","core_vanilla.jl"))
 include(joinpath(@__DIR__,"basicPOMDP","functions_vanilla.jl"))
 include(joinpath(@__DIR__,"basicPOMDP","observations_vanilla.jl"))

@@ -9,7 +9,7 @@ using D3Trees
 using JSON
 
 
-fixedpolicy(s) = :up
+fixedpolicy(s) = :right
 
 
 rewarddist = [-3.08638     1.04508  -38.9812     6.39193    7.2648     5.96755     9.32665   -9.62812   -0.114036    7.38693      3.39033   -5.17863  -12.7841;
@@ -28,6 +28,7 @@ rewarddist = [-3.08638     1.04508  -38.9812     6.39193    7.2648     5.96755  
 4.5434      1.84961    5.05996    1.71024  -16.2119   -70.8986    -68.3217   -42.1496    13.7424     14.7261       1.78606    8.92938    0.35768;
 5.93137     2.38837    5.00692    2.17936   -6.58787  -48.8138    -27.0167   -10.6387     1.24938    21.9765       4.26369    6.6729     2.1039;
 6.35598     1.425      2.92712    4.96801   13.0207    -0.589068  -15.8313    10.7642    16.1614     15.3144       3.59158    7.8918     9.1199]
+rewarddist = abs.(rewarddist)
 mapsize = (13,16)
 sinit = TSState([10,1],[13,16],trues(prod(mapsize)))#rand(initialstate(msim))
 #mapsize = (4,4)
@@ -48,7 +49,7 @@ mdp_solver = ValueIterationSolver() # creates the solver
 mdp_policy = solve(mdp_solver, UnderlyingMDP(msolveBasic))
 
 p = FunctionPolicy(fixedpolicy)
-solver = POMCPSolver(estimate_value=BFORollout(mdp_policy), tree_queries=1000, max_time=0.2, c=80)
+solver = POMCPSolver(estimate_value=BFORollout(mdp_policy), tree_queries=10000, max_time=0.2, c=5)
 planner = solve(solver,msolve)
 
 ds = DisplaySimulator()
@@ -69,7 +70,7 @@ particle_b = initialize_belief(particle_up, b0)
 s,r_total,sim_states,frames1 = customsim(msolve, msim, planner, particle_up, particle_b, sinit)
 
 
-display("hello")
+display("Simulation Ended")
 
 
 #r_total

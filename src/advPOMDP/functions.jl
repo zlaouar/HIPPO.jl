@@ -17,12 +17,6 @@ end
 
 POMDPs.actionindex(m::TargetSearchPOMDP, a) = actionind[a]
 
-
-const actiondir = Dict(:left=>SVector(-1,0), :right=>SVector(1,0), :up=>SVector(0, 1), :down=>SVector(0,-1), :stay=>SVector(0,0))
-const actionind = Dict(:left=>1, :right=>2, :up=>3, :down=>4, :stay=>5)
-const actionvals = values(actiondir)
-#const target = SVector()
-
 function bounce(m::TargetSearchPOMDP, pos, offset)
     new = clamp.(pos + offset, SVector(1,1), m.size)
 end
@@ -32,6 +26,10 @@ function POMDPs.transition(m::TargetSearchPOMDP, s, a)
     probs = Float64[]
     remaining_prob = 1.0
 
+    if isequal(s.robot, s.target)
+        return Deterministic(TSState(SA[-1,-1], SA[-1,-1], s.visited))
+    end
+    
     if haskey(m.rois, s.robot)
         push!(states, TSState(SA[-1,-1], SA[-1,-1], copy(s.visited))) # terminal state for regions of interest
         push!(probs, m.rois[s.robot])
@@ -55,14 +53,19 @@ function POMDPs.transition(m::TargetSearchPOMDP, s, a)
 end
 
 function POMDPs.reward(m::TargetSearchPOMDP, s::TSState, a::Symbol, sp::TSState)
+    reward_running = -1.0
+    reward_target = 0.0
+    reward_roi = 0.0
+
+    if isequal(sp.robot, SA[-1,-1])
+        return reward_running + reward_target + reward_roi
+    end
+
     correct_ind = reverse(sp.robot)
     xind = m.size[2]+1 - correct_ind[1]
     inds = [xind, correct_ind[2]]
     spind = LinearIndices((1:m.size[1], 1:m.size[2]))[sp.robot...]
 
-    reward_running = -1.0
-    reward_target = 0.0
-    reward_roi = 0.0
     if sp.robot == sp.target && sp.robot != SA[-1,-1]# if target is found
         reward_running = 0.0
         reward_target = 100.0 
@@ -75,8 +78,6 @@ function POMDPs.reward(m::TargetSearchPOMDP, s::TSState, a::Symbol, sp::TSState)
     #return reward_running + reward_target + reward_roi + m.reward[inds...]
     if !isempty(m.reward) && sp.robot != SA[-1,-1]
         return reward_running + reward_target + reward_roi + m.reward[inds...]*s.visited[spind] # running cost
-    else
-        return reward_running + reward_target + reward_roi
     end
 end
 
@@ -154,6 +155,12 @@ function normie(input, a)
     return (input-minimum(a))/(maximum(a)-minimum(a))
 end
 
+function rewardinds(m, pos::SVector{2, Int64})
+    correct_ind = reverse(pos)
+    xind = m.size[2]+1 - correct_ind[1]
+    inds = [xind, correct_ind[2]]
+end
+
 function POMDPTools.ModelTools.render(m::TargetSearchPOMDP, step, plt_reward::Bool)
     nx, ny = m.size
     cells = []
@@ -161,7 +168,11 @@ function POMDPTools.ModelTools.render(m::TargetSearchPOMDP, step, plt_reward::Bo
 
     for x in 1:nx, y in 1:ny
         cell = cell_ctx((x,y), m.size)
-        target = compose(context(), rectangle(), fillopacity(normie(m.reward[y,x],m.reward)), fill("red"), stroke("gray"))
+        if iszero(m.reward[rewardinds(m,SA[x,y])...])
+            target = compose(context(), rectangle(), fill("black"), stroke("gray"))
+        else
+            target = compose(context(), rectangle(), fillopacity(normie(m.reward[rewardinds(m,SA[x,y])...],m.reward)), fill("red"), stroke("gray"))
+        end
         if [x,y] in rois
             roi = compose(context(), rectangle(), fill("transparent"), stroke("white"), linewidth(1.2mm))
             compose!(cell, target, roi)
@@ -185,12 +196,6 @@ function POMDPTools.ModelTools.render(m::TargetSearchPOMDP, step, plt_reward::Bo
     end
     sz = min(w,h)
     return compose(context((w-sz)/2, (h-sz)/2, sz, sz), robot, target, grid, outline)
-end
-
-function cell_ctx(xy, size)
-    nx, ny = size
-    x, y = xy
-    return context((x-1)/nx, (ny-y)/ny, 1/nx, 1/ny)
 end
 
 POMDPs.isterminal(m::TargetSearchPOMDP, s::TSState) = s.robot == SA[-1,-1]

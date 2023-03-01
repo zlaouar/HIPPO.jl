@@ -1,8 +1,9 @@
 using HIPPO
+using POMDPs
 using Test
 
-rewarddist = [1.0 2.0;
-              3.0 4.0]
+rewarddist = [3.0 3.0;
+              3.0 3.0]
 ns = length(rewarddist)
 mapsize = (2,2)
 sinit = TSState([1,1],[3,3],trues(prod(mapsize)))

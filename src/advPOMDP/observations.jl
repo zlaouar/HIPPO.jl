@@ -1,10 +1,3 @@
-const OBSERVATIONS = [BitVector([0,0,0,0,0]), 
-                    BitVector([1,0,0,0,0]), 
-                    BitVector([0,1,0,0,0]), 
-                    BitVector([0,0,1,0,0]), 
-                    BitVector([0,0,0,1,0]), 
-                    BitVector([0,0,0,0,1])]
-const obsind = Dict(OBSERVATIONS .=> 1:6)
 """
     observations(m::TargetSearchPOMDP)
 
@@ -47,16 +40,4 @@ function POMDPs.observation(m::TargetSearchPOMDP, a::Symbol, sp::TSState)
     probs = [1.0, 0.0, 0.0, 0.0, 0.0, 0.0]
     return SparseCat(OBSERVATIONS, probs)
 
-end
-
-function targetdir(sp)
-    if (sp.robot[1]-sp.target[1]) == 1 # target left of robot
-        return :left
-    elseif (sp.robot[1]-sp.target[1]) == -1 # target right of robot
-        return :right
-    elseif (sp.robot[2]-sp.target[2]) == 1 # target below robot
-        return :up
-    elseif (sp.robot[2]-sp.target[2]) == -1 # target above robot
-        return :down
-    end
 end

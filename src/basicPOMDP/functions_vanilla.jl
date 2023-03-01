@@ -18,11 +18,6 @@ end
 POMDPs.actionindex(m::TSPOMDPBasic, a) = actionind[a]
 
 
-const actiondir = Dict(:left=>SVector(-1,0), :right=>SVector(1,0), :up=>SVector(0, 1), :down=>SVector(0,-1), :stay=>SVector(0,0))
-const actionind = Dict(:left=>1, :right=>2, :up=>3, :down=>4, :stay=>5)
-const actionvals = values(actiondir)
-#const target = SVector()
-
 function bounce(m::TSPOMDPBasic, pos, offset)
     new = clamp.(pos + offset, SVector(1,1), m.size)
 end
@@ -129,18 +124,5 @@ function POMDPTools.ModelTools.render(m::TSPOMDPBasic, step)
     return compose(context((w-sz)/2, (h-sz)/2, sz, sz), robot, target, grid, outline)
 end
 
-function cell_ctx(xy, size)
-    nx, ny = size
-    x, y = xy
-    return context((x-1)/nx, (ny-y)/ny, 1/nx, 1/ny)
-end
 
-function POMDPs.isterminal(m::TSPOMDPBasic, s::TSStateBasic)  
-    if s.target == s.robot
-        return true
-    elseif s.robot == SA[-1,-1]
-        return true
-    else
-        return false
-    end
-end
+POMDPs.isterminal(m::TSPOMDPBasic, s::TSStateBasic) = s.robot == SA[-1,-1]

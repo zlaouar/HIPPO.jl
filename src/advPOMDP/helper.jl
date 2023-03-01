@@ -8,7 +8,7 @@ end
 
 sleep_until(t) = sleep(max(t-time(), 0.0))
 
-function rewardinds(m, s)
+function rewardinds(m, s::TSState)
     correct_ind = reverse(s.robot)
     xind = m.size[2]+1 - correct_ind[1]
     inds = [xind, correct_ind[2]]
