@@ -36,7 +36,7 @@ function customsim(msolve::TargetSearchPOMDP, msim::TargetSearchPOMDP, planner, 
         display(tmp)
         sleep_until(tm += dt)
         iter += 1
-        println(iter,"- | s: ", s, " | sp:", sp, " | r:", r, " | o: ", o)
+        #println(iter,"- | s: ", s, " | sp:", sp, " | r:", r, " | o: ", o)
         if iter > 1000
             roi_states = [[1,9],[1,10],[1,8]]
             probs = [0.8,0.8,0.8]

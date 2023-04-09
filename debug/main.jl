@@ -8,9 +8,11 @@ using ParticleFilters
 using D3Trees
 using JSON
 
+struct fixedpolicy <: Function end
 
-fixedpolicy(s) = :right
+(f::fixedpolicy)(pomdp, start_state, h, steps)  = :right
 
+f = fixedpolicy()
 
 rewarddist = [-3.08638     1.04508  -38.9812     6.39193    7.2648     5.96755     9.32665   -9.62812   -0.114036    7.38693      3.39033   -5.17863  -12.7841;
 -8.50139     2.3827   -30.2106   -74.7224   -33.9783    -3.63283    -4.73628   -6.19297   -4.34958    -6.13309    -36.2926    -7.35857    0.417866;
@@ -37,7 +39,7 @@ sinitBasic = TSStateBasic(sinit.robot,sinit.target)
 roi_states = [[2,2],[2,2],[7,8]]
 probs = [0.8,0.8,0.8]
 roi_points = Dict(roi_states .=> probs)
-
+  
 smallreward = [800.0 2.0 2.0 -20.0;
                 2.0 2.0 2.0 2.0;
                 2.0 2.0 2.0 2.0;
@@ -48,8 +50,8 @@ msolveBasic = TSPOMDPBasic(sinit=sinitBasic, size=mapsize)
 mdp_solver = ValueIterationSolver() # creates the solver
 mdp_policy = solve(mdp_solver, UnderlyingMDP(msolveBasic))
 
-p = FunctionPolicy(fixedpolicy)
-solver = POMCPSolver(tree_queries=10000, max_time=0.2, c=5)
+p = FunctionPolicy(f)
+solver = POMCPSolver(estimate_value=f, tree_queries=10000, max_time=0.2, c=5)
 planner = solve(solver,msolve)
 
 ds = DisplaySimulator()
