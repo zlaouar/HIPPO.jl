@@ -13,13 +13,19 @@ using JSON
 fixedpolicy(s) = :up
 
 # Function to just print whatever is passed
-function test_function(data, ws_client)
+function generate_path(data, ws_client)
     println("Received: ", data)
-    response = "received"
-    println("Sending back: ", response)
-    write(ws_client, """{"action": "rinaoToHippo", "args": "$response"}""")
+    reward_mat = data["reward_mat"]
+    msolve = TargetSearchPOMDP(sinit, size=mapsize, rewarddist=reward_mat)
+    planner = solve(solver,msolve)
+    _, sim_states, _ = customsim(msolve, msim, planner, particle_up, particle_b, sinit)
+    simpath = getfield.(sim_states, :robot)
+    # Call hunter gridcell to latlong conversion script
+    println("Sending path: ", simpath)
+    write(ws_client, """{"action": "hippoToWeb", "args": "$response"}""")
 end
   
+println("Opening port")
 open("ws://127.0.0.1:8083") do ws_client
     data, success = readguarded(ws_client)
     if success
@@ -29,8 +35,13 @@ open("ws://127.0.0.1:8083") do ws_client
         action = payload["action"]
         arguments = payload["args"]
 
+        println("Executing Action: ",action)
         # Decide which function to call based on serviceName
-        router = Dict("action1" => test_function, "action2" => test_function)
+        if action=="GeneratePath"
+            generate_path(arguments,ws_client)
+        end
+
+        #router = Dict("action1" => test_function, "action2" => test_function)
 
         router[action](arguments, ws_client)
     end
