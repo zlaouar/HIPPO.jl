@@ -22,5 +22,5 @@ function TargetSearchPOMDP(sinit::TSState; roi_points=Dict(), size=(10,10), rewa
     targetloc = sinit.target
     rois = roi_points
   
-    TargetSearchPOMDP(size, obstacles, robot_init, tprob, targetloc, rois, rewarddist)
+    TargetSearchPOMDP(size, obstacles, robot_init, tprob, targetloc, rois, copy(rewarddist))
 end

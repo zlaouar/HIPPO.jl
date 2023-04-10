@@ -6,6 +6,8 @@ function svgstogif(frames)
     end
 end
 
+struct fixedpolicy <: Function end
+
 sleep_until(t) = sleep(max(t-time(), 0.0))
 
 function rewardinds(m, s::TSState)
@@ -52,5 +54,5 @@ function customsim(msolve::TargetSearchPOMDP, msim::TargetSearchPOMDP, planner, 
         #    break
         #end
     end
-    return r_total, sim_states, frames1
+    return r_total, sim_states
 end
