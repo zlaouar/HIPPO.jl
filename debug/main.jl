@@ -8,11 +8,6 @@ using ParticleFilters
 using D3Trees
 using JSON
 
-
-(f::fixedpolicy)(x)  = :up
-
-f = fixedpolicy()
-
 rewarddist = [-3.08638     1.04508  -38.9812     6.39193    7.2648     5.96755     9.32665   -9.62812   -0.114036    7.38693      3.39033   -5.17863  -12.7841;
 -8.50139     2.3827   -30.2106   -74.7224   -33.9783    -3.63283    -4.73628   -6.19297   -4.34958    -6.13309    -36.2926    -7.35857    0.417866;
 -12.0669      7.54123  -22.8483   -47.2838   -53.8302   -25.5759    -36.2189    -4.93866   -4.9971    -12.1572     -15.8788   -23.9603   -15.3152;
@@ -49,11 +44,12 @@ msolveBasic = TSPOMDPBasic(sinit=sinitBasic, size=mapsize)
 mdp_solver = ValueIterationSolver() # creates the solver
 mdp_policy = solve(mdp_solver, UnderlyingMDP(msolveBasic))
 
-p = FunctionPolicy(f)
+p = FunctionPolicy(FixedPolicy())
+mdprollout = FORollout(TargetSearchMDPPolicy(mdp_policy))
 funcrollout = FORollout(p)
-mdprollout = FORollout(mdp_policy) # change MDP reward mat to pompdp reward mat
-#solver = POMCPSolver(estimate_value=mdprollout, tree_queries=10000, max_time=0.2, c=5)
-solver = POMCPSolver(tree_queries=10000, max_time=0.2, c=5)
+#mdprollout = FORollout(mdp_policy) # change MDP reward mat to pompdp reward mat
+solver = POMCPSolver(estimate_value=mdprollout, tree_queries=10000, max_time=0.2, c=5)
+#solver = POMCPSolver(tree_queries=10000, max_time=0.2, c=5)
 planner = solve(solver,msolve)
 
 ds = DisplaySimulator()

@@ -6,7 +6,18 @@ function svgstogif(frames)
     end
 end
 
-struct fixedpolicy <: Function end
+struct FixedPolicy <: Function end
+
+(::FixedPolicy)(s) = :up
+
+struct TargetSearchMDPPolicy{P} <: Policy
+    vi_policy::P
+end
+
+function POMDPs.action(p::TargetSearchMDPPolicy, s)
+    newS = TSStateBasic(s.robot, s.target)
+    return action(p.vi_policy, newS)
+end
 
 sleep_until(t) = sleep(max(t-time(), 0.0))
 
