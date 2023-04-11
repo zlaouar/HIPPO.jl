@@ -26,7 +26,9 @@ export
     convert_estimator,
     simulate,
 
-    customsim
+    customsim,
+
+    fixedpolicy
 
 include(joinpath(@__DIR__,"common.jl"))
 

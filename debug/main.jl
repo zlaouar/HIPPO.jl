@@ -50,7 +50,10 @@ mdp_solver = ValueIterationSolver() # creates the solver
 mdp_policy = solve(mdp_solver, UnderlyingMDP(msolveBasic))
 
 p = FunctionPolicy(f)
-solver = POMCPSolver(estimate_value=FORollout(p), tree_queries=10000, max_time=0.2, c=5)
+funcrollout = FORollout(p)
+mdprollout = FORollout(mdp_policy) # change MDP reward mat to pompdp reward mat
+#solver = POMCPSolver(estimate_value=mdprollout, tree_queries=10000, max_time=0.2, c=5)
+solver = POMCPSolver(tree_queries=10000, max_time=0.2, c=5)
 planner = solve(solver,msolve)
 
 ds = DisplaySimulator()
