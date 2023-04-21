@@ -12,6 +12,7 @@ using Compose
 using BasicPOMCP
 using MCTS
 using DiscreteValueIteration
+using Reel, Cairo, Fontconfig
 
 export 
     TSPOMDPBasic,

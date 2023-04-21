@@ -15,7 +15,8 @@ fixedpolicy(s) = :up
 # Function to just print whatever is passed
 function generate_path(data, ws_client)
     println("Received: ", data)
-    reward_mat = data["reward_mat"]
+    reward_mat = data["gridRewards"]
+    location_dict = data["locationDict"]
     msolve = TargetSearchPOMDP(sinit, size=mapsize, rewarddist=reward_mat)
     planner = solve(solver,msolve)
     _, sim_states, _ = customsim(msolve, msim, planner, particle_up, particle_b, sinit)
@@ -26,7 +27,7 @@ function generate_path(data, ws_client)
 end
   
 println("Opening port")
-open("ws://127.0.0.1:8083") do ws_client
+open("ws://127.0.0.1:8082") do ws_client
     data, success = readguarded(ws_client)
     if success
         # Parse data as JSON {serviceName, args}
@@ -37,7 +38,7 @@ open("ws://127.0.0.1:8083") do ws_client
 
         println("Executing Action: ",action)
         # Decide which function to call based on serviceName
-        if action=="GeneratePath"
+        if action=="CalculatePath"
             generate_path(arguments,ws_client)
         end
 
@@ -85,8 +86,8 @@ msolveBasic = TSPOMDPBasic(sinit=sinitBasic, size=mapsize)
 mdp_solver = ValueIterationSolver() # creates the solver
 mdp_policy = solve(mdp_solver, UnderlyingMDP(msolveBasic))
 
-p = FunctionPolicy(fixedpolicy)
-solver = POMCPSolver(estimate_value=FORollout(p), tree_queries=1000, max_time=0.2, c=80)
+mdprollout = FORollout(TargetSearchMDPPolicy(mdp_policy))
+solver = POMCPSolver(estimate_value=mdp_policy, tree_queries=1000, max_time=0.2, c=80)
 planner = solve(solver,msolve)
 
 ds = DisplaySimulator()
@@ -103,8 +104,6 @@ particle_b = initialize_belief(particle_up, b0)
 
 #a, info = action_info(planner, Deterministic(TSState([13,14],[1,1])), tree_in_info=true)
 #inchrome(D3Tree(info[:tree], init_expand=3))
-
-s,r_total,sim_states,frames1 = customsim(msolve, msim, planner, particle_up, particle_b, sinit)
 
 
 display("hello")

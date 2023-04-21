@@ -67,7 +67,7 @@ particle_b = initialize_belief(particle_up, b0)
 #a, info = action_info(planner, Deterministic(TSState([13,14],[1,1])), tree_in_info=true)
 #inchrome(D3Tree(info[:tree], init_expand=3))
 
-r_total,sim_states = customsim(msolve, msim, planner, particle_up, particle_b, sinit)
+r_total,sim_states,rewardframes, belframes = customsim(msolve, msim, planner, particle_up, particle_b, sinit)
 
 
 display("Simulation Ended")
@@ -84,3 +84,4 @@ display("Simulation Ended")
     sleep(0.1)
 end =#
 
+#write("reward.gif", rewardframes)

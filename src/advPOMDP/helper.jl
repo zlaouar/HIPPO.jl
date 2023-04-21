@@ -36,7 +36,9 @@ function customsim(msolve::TargetSearchPOMDP, msim::TargetSearchPOMDP, planner, 
     dt = 1/max_fps
     d = 1.0
     sim_states = TSState[]
-    frames1 = []
+    #frames1 = []
+    rewardframes = Frames(MIME("image/png"), fps=10)
+    belframes = Frames(MIME("image/png"), fps=10)
     while !isterminal(msim, s) && iter < 500
         tm = time()
         a = action(planner, b)
@@ -45,8 +47,9 @@ function customsim(msolve::TargetSearchPOMDP, msim::TargetSearchPOMDP, planner, 
         r_total += d*r
         d *= discount(msim)
         b = update(up, b, a, o)
-        tmp = render(msim, (sp=sp, bp=b), true)
-        display(tmp)
+        belframe = render(msim, (sp=sp, bp=b))
+        rewardframe = render(msim, (sp=sp, bp=b), true)
+        display(rewardframe)
         sleep_until(tm += dt)
         iter += 1
         #println(iter,"- | s: ", s, " | sp:", sp, " | r:", r, " | o: ", o)
@@ -58,12 +61,14 @@ function customsim(msolve::TargetSearchPOMDP, msim::TargetSearchPOMDP, planner, 
             planner = solve(solver, msolve)
         end
         push!(sim_states, sp)
-        push!(frames1, tmp)
+        push!(belframes, belframe)
+        push!(rewardframes, rewardframe)
+
         s = sp
         #push!(frames2, render(msim, (sp=s, bp=b), true))
         #if isterminal(msim, s)
         #    break
         #end
     end
-    return r_total, sim_states
+    return r_total, sim_states, rewardframes, belframes
 end
