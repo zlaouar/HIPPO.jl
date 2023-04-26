@@ -1,31 +1,10 @@
-function svgstogif(frames)
-    for (i,frame) in enumerate(frames1)
-        imgstr = "$i"
-        imgstr = lpad(imgstr, 2, '0') * ".svg"
-        draw(SVG(joinpath(@__DIR__,"../tmp/img/","$imgstr")), frame)
-    end
-end
-
-struct FixedPolicy <: Function end
-
-(::FixedPolicy)(s) = :up
-
-struct TargetSearchMDPPolicy{P} <: Policy
-    vi_policy::P
-end
-
-function POMDPs.action(p::TargetSearchMDPPolicy, s)
-    newS = TSStateBasic(s.robot, s.target)
-    return action(p.vi_policy, newS)
-end
-
-sleep_until(t) = sleep(max(t-time(), 0.0))
-
 function rewardinds(m, s::TSState)
     correct_ind = reverse(s.robot)
     xind = m.size[2]+1 - correct_ind[1]
     inds = [xind, correct_ind[2]]
 end
+
+sleep_until(t) = sleep(max(t-time(), 0.0))
 
 function customsim(msolve::TargetSearchPOMDP, msim::TargetSearchPOMDP, planner, up, b, sinit)
     r_total = 0.0
