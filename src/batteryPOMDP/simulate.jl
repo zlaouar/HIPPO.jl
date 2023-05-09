@@ -6,26 +6,68 @@ end
 
 sleep_until(t) = sleep(max(t-time(), 0.0))
 
-function customsim(msolve::TSPOMDPBattery, msim::TSPOMDPBattery, planner, up, b, sinit)
-    r_total = 0.0
-    s = sinit
-    o = Nothing
-    iter = 0
-    max_fps = 10
-    dt = 1/max_fps
-    d = 1.0
-    sim_states = TSStateBattery[]
-    belframes = Frames(MIME("image/png"), fps=10)
-    while !isterminal(msim, s) && iter < 500
+function getaction(state::SVector{2, Int}, goal::SVector{2, Int})
+    println(state[1], goal[1])
+    if state[1] > goal[1]
+        return :left
+    elseif state[2] < goal[2]
+        return :up
+    elseif state[1] < goal[1] 
+        return :right
+    elseif state[2] > goal[2] 
+        return :down
+    else
+        return :stay
+    end
+end
+
+function returnToLand!(msim, sp, up, b, r_total, sim_states, belframes, d, dt)
+    s = sp
+    while sp.robot != msim.robot_init
         tm = time()
-        a = action(planner, b)
+        a = getaction(sp.robot, msim.robot_init)
         sp, o, r = @gen(:sp,:o,:r)(msim, s, a)
+        println("state: ", s)
+        println("action: ", a)
         r_total += d*r
         d *= discount(msim)
         b = update(up, b, a, o)
         belframe = render(msim, (sp=sp, bp=b))
         display(belframe)
-        println(s)
+        #println("tm: ", tm, " dt: ", dt)
+        sleep_until(tm += dt)
+        push!(sim_states, sp)
+        push!(belframes, belframe)
+
+        s = sp
+        
+    end
+end
+
+function customsim(msolve::TSPOMDPBattery, msim::TSPOMDPBattery, planner, up, b, sinit)
+    r_total = 0.0
+    s = sinit
+    o = Nothing
+    iter = 0
+    max_fps = 7
+    dt = 1/max_fps
+    d = 1.0
+    sim_states = TSStateBattery[]
+    belframes = Frames(MIME("image/png"), fps=10)
+    sp = sinit
+    while !isterminal(msim, s) && iter < 500 && s.battery != 0
+        tm = time()
+        a = action(planner, b)
+        sp, o, r = @gen(:sp,:o,:r)(msim, s, a)
+        println("_____________________________")
+        println("state: ", s)
+        println("action: ", a)
+        println("reward: ", r)
+        r_total += d*r
+        d *= discount(msim)
+        b = update(up, b, a, o)
+        belframe = render(msim, (sp=sp, bp=b))
+        display(belframe)
         sleep_until(tm += dt)
         iter += 1
         #println(iter,"- | s: ", s, " | sp:", sp, " | r:", r, " | o: ", o)
@@ -38,5 +80,7 @@ function customsim(msolve::TSPOMDPBattery, msim::TSPOMDPBattery, planner, up, b,
         #    break
         #end
     end
+    returnToLand!(msim, sp, up, b, r_total, sim_states, belframes, d, dt)
+    println("current battery: ", s.battery, " - required battery: ", dist(s.robot, msim.robot_init))
     return r_total, sim_states, belframes
 end

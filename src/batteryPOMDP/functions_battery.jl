@@ -27,9 +27,9 @@ function POMDPs.transition(m::TSPOMDPBattery, s, a)
     probs = Float64[]
     remaining_prob = 1.0
 
-    if isequal(s.robot, s.target)
-        return Deterministic(TSStateBattery(SA[-1,-1], SA[-1,-1], s.battery))
-    end
+    #if isequal(s.robot, s.target)
+    #    return Deterministic(TSStateBattery(SA[-1,-1], SA[-1,-1], s.battery))
+    #end
 
     if haskey(m.rois, s.robot)
         push!(states, TSStateBattery(SA[-1,-1], SA[-1,-1])) # terminal state for regions of interest
@@ -52,7 +52,7 @@ function POMDPs.reward(m::TSPOMDPBattery, s::TSStateBattery, a::Symbol, sp::TSSt
     reward_running = -1.0
     reward_target = 0.0
     reward_roi = 0.0
-    cost_batt = 0.0
+    #cost_batt = 0.0
 
     if sp.robot == sp.target && sp.robot != SA[-1,-1]# if target is found
         reward_running = 0.0
@@ -62,14 +62,15 @@ function POMDPs.reward(m::TSPOMDPBattery, s::TSStateBattery, a::Symbol, sp::TSSt
         reward_running = 0.0
         reward_roi = 0.0
     end
-    if sp.battery == 0
-        cost_batt = -10_000
-    end
+    #= if sp.battery <= 0 && sp.robot != m.robot_init
+        cost_batt = -10_000.0
+    end =#
         
-    return reward_running + reward_target + reward_roi + cost_batt
+    return reward_running + reward_target + reward_roi #+ cost_batt
 end
 
 function POMDPs.initialstate(m::TSPOMDPBattery)
+    #return Deterministic(TSStateBattery(m.robot_init,m.targetloc,m.maxbatt))
     return POMDPTools.Uniform(TSStateBattery(m.robot_init, SVector(x, y), z) for x in 1:m.size[1], y in 1:m.size[2], z in 1:m.maxbatt)
 end
 
@@ -122,4 +123,12 @@ function POMDPTools.ModelTools.render(m::TSPOMDPBattery, step)
 end
 
 
-POMDPs.isterminal(m::TSPOMDPBattery, s::TSStateBattery) = s.robot == SA[-1,-1]
+#POMDPs.isterminal(m::TSPOMDPBattery, s::TSStateBattery) = s.robot == SA[-1,-1]
+function dist(curr, start)
+    sum(abs.(curr-start))
+end
+
+function POMDPs.isterminal(m::TSPOMDPBattery, s::TSStateBattery)
+    required_batt = dist(s.robot, m.robot_init)
+    return required_batt == s.battery 
+end

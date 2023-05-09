@@ -19,9 +19,9 @@ function targetdir(sp)
     elseif (sp.robot[1]-sp.target[1]) == -1 # target right of robot
         return :right
     elseif (sp.robot[2]-sp.target[2]) == 1 # target below robot
-        return :up
-    elseif (sp.robot[2]-sp.target[2]) == -1 # target above robot
         return :down
+    elseif (sp.robot[2]-sp.target[2]) == -1 # target above robot
+        return :up
     end
 end
 

@@ -16,6 +16,7 @@ maxbatt = 10
 sinit = TSStateBattery([1,1],[4,4],maxbatt) #rand(initialstate(msim))
 
 
+
 msolve = TSPOMDPBattery(sinit, size=mapsize, maxbatt=maxbatt)
 #mdp_solver = ValueIterationSolver() # creates the solver
 #mdp_policy = solve(mdp_solver, UnderlyingMDP(msolve))
@@ -24,7 +25,7 @@ msolve = TSPOMDPBattery(sinit, size=mapsize, maxbatt=maxbatt)
 #mdprollout = FORollout(TargetSearchMDPPolicy(mdp_policy))
 #funcrollout = FORollout(p)
 #mdprollout = FORollout(mdp_policy) # change MDP reward mat to pompdp reward mat
-solver = POMCPSolver(tree_queries=10000, max_time=0.2, c=5)
+solver = POMCPSolver(tree_queries=10_000, max_time=0.2, c=20000)
 #solver = POMCPSolver(tree_queries=10000, max_time=0.2, c=5)
 planner = solve(solver,msolve)
 
