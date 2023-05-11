@@ -6,8 +6,11 @@ end
 
 sleep_until(t) = sleep(max(t-time(), 0.0))
 
+#= struct SimHist
+    x::Matrix{Float64}
+end =#
+
 function getaction(state::SVector{2, Int}, goal::SVector{2, Int})
-    println(state[1], goal[1])
     if state[1] > goal[1]
         return :left
     elseif state[2] < goal[2]
@@ -29,6 +32,7 @@ function returnToLand!(msim, sp, up, b, r_total, sim_states, belframes, d, dt)
         sp, o, r = @gen(:sp,:o,:r)(msim, s, a)
         println("state: ", s)
         println("action: ", a)
+        println("obs: ", o)
         r_total += d*r
         d *= discount(msim)
         b = update(up, b, a, o)
@@ -62,7 +66,8 @@ function customsim(msolve::TSPOMDPBattery, msim::TSPOMDPBattery, planner, up, b,
         println("_____________________________")
         println("state: ", s)
         println("action: ", a)
-        println("reward: ", r)
+        #println("reward: ", r)
+        println("obs: ", o)
         r_total += d*r
         d *= discount(msim)
         b = update(up, b, a, o)
@@ -80,7 +85,8 @@ function customsim(msolve::TSPOMDPBattery, msim::TSPOMDPBattery, planner, up, b,
         #    break
         #end
     end
-    returnToLand!(msim, sp, up, b, r_total, sim_states, belframes, d, dt)
     println("current battery: ", s.battery, " - required battery: ", dist(s.robot, msim.robot_init))
+
+    returnToLand!(msim, sp, up, b, r_total, sim_states, belframes, d, dt)
     return r_total, sim_states, belframes
 end

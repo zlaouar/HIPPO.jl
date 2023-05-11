@@ -29,11 +29,13 @@ export customsim
 export TSPOMDPBasic, TSStateBasic
 include(joinpath(@__DIR__,"basicPOMDP","functions_vanilla.jl"))
 include(joinpath(@__DIR__,"basicPOMDP","observations_vanilla.jl"))
+=#
 
 include(joinpath(@__DIR__,"advPOMDP","core.jl"))
 export TargetSearchPOMDP, TSState
 include(joinpath(@__DIR__,"advPOMDP","functions.jl"))
-include(joinpath(@__DIR__,"advPOMDP","observations.jl")) =#
+include(joinpath(@__DIR__,"advPOMDP","observations.jl")) 
+include(joinpath(@__DIR__,"advPOMDP","simulate.jl"))
 
 include(joinpath(@__DIR__,"helper.jl"))
 export FixedPolicy, TargetSearchMDPPolicy

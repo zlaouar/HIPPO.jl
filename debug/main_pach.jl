@@ -6,45 +6,7 @@ using DiscreteValueIteration
 using Profile
 using ParticleFilters
 using D3Trees
-using WebSockets: readguarded, open
 using JSON
-
-
-fixedpolicy(s) = :up
-
-# Function to just print whatever is passed
-function generate_path(data, ws_client)
-    global rewarddist = hcat(data["gridRewards"]...)
-    
-    mapsize = size(rewarddist) #(13,16)
-    sinit = TSState([1,1], mapsize, vec(trues(mapsize)))#rand(initialstate(msim))
-    msolve = TargetSearchPOMDP(sinit, size=mapsize, rewarddist=rewarddist)
-
-    solver = POMCPSolver(tree_queries=1000, max_time=0.2, c=80)
-    msim = TargetSearchPOMDP(sinit, size=mapsize, rewarddist=rewarddist)
-
-    b0 = initialstate(msolve)
-
-    N = 1000
-    particle_up = BootstrapFilter(msolve, N)
-    particle_b = initialize_belief(particle_up, b0)
-    
-    #println("Received: ", data)
-    
-    location_dict = data["locationDict"]
-    println("rmat type: ", typeof(reward_mat))
-    println("rmat element type: ", typeof(reward_mat[1]))
-    msolve = TargetSearchPOMDP(sinit, size=mapsize, rewarddist=reward_mat)
-    planner = solve(solver,msolve)
-    _, sim_states, _ = customsim(msolve, msim, planner, particle_up, particle_b, sinit)
-    simpath = getfield.(sim_states, :robot)
-    # Call hunter gridcell to latlong conversion script
-    println("Sending path: ", simpath)
-    write(ws_client, """{"action": "hippoToWeb", "args": "$response"}""")
-end
-  
-
-#router = Dict("RequestReward" => reward_estimate_full, "NewObservation" => add_observation)
 
 #= rewarddist = [-3.08638     1.04508  -38.9812     6.39193    7.2648     5.96755     9.32665   -9.62812   -0.114036    7.38693      3.39033   -5.17863  -12.7841;
 -8.50139     2.3827   -30.2106   -74.7224   -33.9783    -3.63283    -4.73628   -6.19297   -4.34958    -6.13309    -36.2926    -7.35857    0.417866;
@@ -62,60 +24,53 @@ end
 4.5434      1.84961    5.05996    1.71024  -16.2119   -70.8986    -68.3217   -42.1496    13.7424     14.7261       1.78606    8.92938    0.35768;
 5.93137     2.38837    5.00692    2.17936   -6.58787  -48.8138    -27.0167   -10.6387     1.24938    21.9765       4.26369    6.6729     2.1039;
 6.35598     1.425      2.92712    4.96801   13.0207    -0.589068  -15.8313    10.7642    16.1614     15.3144       3.59158    7.8918     9.1199]
- =#
-
-
-println("Opening port")
-open("ws://127.0.0.1:8082") do ws_client
-    data, success = readguarded(ws_client)
-    if success
-        # Parse data as JSON {serviceName, args}
-        payload = JSON.parse(String(data))
-        # Access the payload.serviceName
-        action = payload["action"]
-        arguments = payload["args"]
-
-        println("Executing Action: ",action)
-        # Decide which function to call based on serviceName
-        if action=="CalculatePath"
-            generate_path(arguments,ws_client)
-        end
-
-        #router = Dict("action1" => test_function, "action2" => test_function)
-
-        router[action](arguments, ws_client)
-    end
-end
-
-
+rewarddist = abs.(rewarddist) =#
+mapsize = size(rewarddist)#(13,16)
+sinit = TSState([1,1],mapsize,trues(prod(mapsize)))#rand(initialstate(msim))
 #mapsize = (4,4)
-#sinit = TSState([1,1],[4,4],vec(trues(mapsize)))#rand(initialstate(msim))
-
-roi_states = [[2,2],[2,2],[7,8]]
+#sinit = TSState([1,1],[4,4],trues(prod(mapsize)))#rand(initialstate(msim))
+#sinitBasic = TSStateBasic(sinit.robot,sinit.target)
+#= roi_states = [[2,2],[2,2],[7,8]]
 probs = [0.8,0.8,0.8]
-roi_points = Dict(roi_states .=> probs)
-
-smallreward = [800.0 2.0 2.0 -20.0;
+roi_points = Dict(roi_states .=> probs) =#
+  
+#= smallreward = [800.0 2.0 2.0 -20.0;
                 2.0 2.0 2.0 2.0;
                 2.0 2.0 2.0 2.0;
-                1.0 2.0 2.0 2.0]
+                1.0 2.0 2.0 2.0] =#
 
+msolve = TargetSearchPOMDP(sinit, size=mapsize, rewarddist=rewarddist)
+#msolveBasic = TSPOMDPBasic(sinit=sinitBasic, size=mapsize)
+#mdp_solver = ValueIterationSolver() # creates the solver
+#mdp_policy = solve(mdp_solver, UnderlyingMDP(msolveBasic))
 
+p = FunctionPolicy(FixedPolicy())
+#mdprollout = FORollout(TargetSearchMDPPolicy(mdp_policy))
+funcrollout = FORollout(p)
+#mdprollout = FORollout(mdp_policy) # change MDP reward mat to pompdp reward mat
+solver = POMCPSolver(tree_queries=10000, max_time=0.2, c=5)
+#solver = POMCPSolver(tree_queries=10000, max_time=0.2, c=5)
 planner = solve(solver,msolve)
 
 ds = DisplaySimulator()
 hr = HistoryRecorder()
+msim = TargetSearchPOMDP(sinit, size=mapsize, rewarddist=rewarddist)
 
+b0 = initialstate(msolve)
 
-
+N = 1000
+particle_up = BootstrapFilter(msolve, N)
+particle_b = initialize_belief(particle_up, b0)
 
 
 
 #a, info = action_info(planner, Deterministic(TSState([13,14],[1,1])), tree_in_info=true)
 #inchrome(D3Tree(info[:tree], init_expand=3))
 
+r_total,sim_states,rewardframes, belframes = customsim(msolve, msim, planner, particle_up, particle_b, sinit)
 
-display("hello")
+
+display("Simulation Ended")
 
 
 #r_total
@@ -129,3 +84,4 @@ display("hello")
     sleep(0.1)
 end =#
 
+#write("reward.gif", rewardframes)
