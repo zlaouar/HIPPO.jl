@@ -13,7 +13,7 @@ using JSON
 #sinit = TSState([10,1],[13,16],trues(prod(mapsize)))#rand(initialstate(msim))
 mapsize = (4,4)
 maxbatt = 10
-sinit = TSStateBattery([1,1],[4,4],maxbatt) #rand(initialstate(msim))
+sinit = TSStateBattery([1,1],mapsize,maxbatt) #rand(initialstate(msim))
 
 
 

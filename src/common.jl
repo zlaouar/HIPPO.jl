@@ -31,3 +31,12 @@ function cell_ctx(xy, size)
     x, y = xy
     return context((x-1)/nx, (ny-y)/ny, 1/nx, 1/ny)
 end
+
+#@withkw struct problem
+#    probtype::String
+#end
+
+#function problem(;problem="beliefbias")
+    
+#    return problem()
+#end

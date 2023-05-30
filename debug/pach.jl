@@ -32,10 +32,10 @@ function generate_path(data, ws_client)
     #println("Received: ", data)
     
     location_dict = data["locationDict"]
-    println("rmat type: ", typeof(reward_mat))
-    println("rmat element type: ", typeof(reward_mat[1]))
-    msolve = TargetSearchPOMDP(sinit, size=mapsize, rewarddist=reward_mat)
-    planner = solve(solver,msolve)
+    println("rmat type: ", typeof(rewarddist))
+    println("rmat element type: ", typeof(rewarddist[1]))
+    msolve = TargetSearchPOMDP(sinit, size=mapsize, rewarddist=rewarddist)
+    global planner = solve(solver,msolve)
     _, sim_states, _ = customsim(msolve, msim, planner, particle_up, particle_b, sinit)
     simpath = getfield.(sim_states, :robot)
     # Call hunter gridcell to latlong conversion script
@@ -67,10 +67,12 @@ end
 
 println("Opening port")
 open("ws://127.0.0.1:8082") do ws_client
+    print("something")
     data, success = readguarded(ws_client)
     if success
         # Parse data as JSON {serviceName, args}
         payload = JSON.parse(String(data))
+        #print(payload)
         # Access the payload.serviceName
         action = payload["action"]
         arguments = payload["args"]

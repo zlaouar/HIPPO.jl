@@ -67,7 +67,7 @@ function POMDPs.reward(m::TargetSearchPOMDP, s::TSState, a::Symbol, sp::TSState)
     end
 
     correct_ind = reverse(sp.robot)
-    xind = m.size[2]+1 - correct_ind[1]
+    xind = m.size[1]+1 - correct_ind[1]
     inds = [xind, correct_ind[2]]
     spind = LinearIndices((1:m.size[1], 1:m.size[2]))[sp.robot...]
 
@@ -152,7 +152,7 @@ end
 
 function rewardinds(m, pos::SVector{2, Int64})
     correct_ind = reverse(pos)
-    xind = m.size[2]+1 - correct_ind[1]
+    xind = m.size[1]+1 - correct_ind[1]
     inds = [xind, correct_ind[2]]
 end
 

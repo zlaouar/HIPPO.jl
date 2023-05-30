@@ -1,6 +1,6 @@
 function rewardinds(m, s::TSState)
     correct_ind = reverse(s.robot)
-    xind = m.size[2]+1 - correct_ind[1]
+    xind = m.size[1]+1 - correct_ind[1]
     inds = [xind, correct_ind[2]]
 end
 
