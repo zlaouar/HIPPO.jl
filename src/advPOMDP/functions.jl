@@ -157,13 +157,13 @@ function rewardinds(m, pos::SVector{2, Int64})
 end
 
 function POMDPTools.ModelTools.render(m::TargetSearchPOMDP, step, plt_reward::Bool)
-    nx, ny = m.size
+    ny, nx = m.size
     cells = []
     rois = collect(keys(m.rois))
 
     for x in 1:nx, y in 1:ny
-        cell = cell_ctx((x,y), m.size)
-        if iszero(m.reward[rewardinds(m,SA[x,y])...])
+        cell = cell_ctx((x,y), reverse(m.size))
+        if iszero(m.reward[rewardinds(m, SA[x,y])...])
             target = compose(context(), rectangle(), fill("black"), stroke("gray"))
         else
             target = compose(context(), rectangle(), fillopacity(normie(m.reward[rewardinds(m,SA[x,y])...],m.reward)), fill("red"), stroke("gray"))
@@ -181,9 +181,9 @@ function POMDPTools.ModelTools.render(m::TargetSearchPOMDP, step, plt_reward::Bo
     outline = compose(context(), linewidth(1mm), rectangle(), fill("white"), stroke("gray"))
 
     if haskey(step, :sp)
-        robot_ctx = cell_ctx(step[:sp].robot, m.size)
+        robot_ctx = cell_ctx(step[:sp].robot, reverse(m.size))
         robot = compose(robot_ctx, circle(0.5, 0.5, 0.5), fill("green"))
-        target_ctx = cell_ctx(step[:sp].target, m.size)
+        target_ctx = cell_ctx(step[:sp].target, reverse(m.size))
         target = compose(target_ctx, circle(0.5, 0.5, 0.5), fill("orange"))
     else
         robot = nothing
