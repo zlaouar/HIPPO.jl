@@ -14,6 +14,7 @@ using BasicPOMCP
 using MCTS
 using DiscreteValueIteration
 using Reel, Cairo, Fontconfig
+using AbstractTrees
 
 
 include(joinpath(@__DIR__,"common.jl"))

@@ -4,6 +4,7 @@ authors = ["Zakariya Laouar <zala9003@colorado.edu>"]
 version = "0.1.0"
 
 [deps]
+AbstractTrees = "1520ce14-60c1-5f80-bbc7-55ef81b5835c"
 BasicPOMCP = "d721219e-3fc6-5570-a8ef-e5402f47c49e"
 BenchmarkTools = "6e4b80f9-dd63-53aa-95a3-0cdb28fa8baf"
 Cairo = "159f3aea-2a34-519c-b102-8c37f9878175"

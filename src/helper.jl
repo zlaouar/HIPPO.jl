@@ -19,4 +19,7 @@ function POMDPs.action(p::TargetSearchMDPPolicy, s)
     return action(p.vi_policy, newS)
 end
 
+function AbstractTrees.children(t::BasicPOMCP.POMCPObsNode)
+    return t.tree.children[t.node]
+end
 

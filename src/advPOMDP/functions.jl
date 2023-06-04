@@ -156,11 +156,13 @@ function rewardinds(m, pos::SVector{2, Int64})
     inds = [xind, correct_ind[2]]
 end
 
+set_default_graphic_size(18cm,14cm)
+
 function POMDPTools.ModelTools.render(m::TargetSearchPOMDP, step, plt_reward::Bool)
     ny, nx = m.size
     cells = []
     rois = collect(keys(m.rois))
-
+    
     for x in 1:nx, y in 1:ny
         cell = cell_ctx((x,y), reverse(m.size))
         if iszero(m.reward[rewardinds(m, SA[x,y])...])

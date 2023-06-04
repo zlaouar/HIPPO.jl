@@ -26,6 +26,7 @@ using JSON, FileIO
 6.35598     1.425      2.92712    4.96801   13.0207    -0.589068  -15.8313    10.7642    16.1614     15.3144       3.59158    7.8918     9.1199]
  =#
 rewarddist = load("rewardmat.jld2","rewarddist")
+rewarddist = rewarddist .+ abs(minimum(rewarddist)) .+ 0.01
 #rewarddist = abs.(rewarddist)
 mapsize = size(rewarddist) #(13,16)
 sinit = TSState([1,1], reverse(mapsize), vec(trues(mapsize)))#rand(initialstate(msim))
