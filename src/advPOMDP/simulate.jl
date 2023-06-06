@@ -20,7 +20,10 @@ function customsim(msolve::TargetSearchPOMDP, msim::TargetSearchPOMDP, planner, 
     belframes = Frames(MIME("image/png"), fps=10)
     while !isterminal(msim, s) && iter < 500
         tm = time()
-        a = action(planner, b)
+        _, info = action_info(planner, b, tree_in_info = true)
+        tree = info[:tree] # maybe set POMCP option tree_in_info = true
+        a_traj = extract_trajectory(root(tree))
+        a = first(a_traj)
         msim.reward[rewardinds(msim,s)...] = 0.0 # remove reward at current state
         sp, o, r = @gen(:sp,:o,:r)(msim, s, a)
         r_total += d*r

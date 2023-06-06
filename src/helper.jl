@@ -20,6 +20,12 @@ function POMDPs.action(p::TargetSearchMDPPolicy, s)
 end
 
 function AbstractTrees.children(t::BasicPOMCP.POMCPObsNode)
+    #
     return t.tree.children[t.node]
 end
 
+root(tree::POMCPTree) = POMCPObsNode(tree, 1)
+
+function extract_trajectory(node::POMCPObsNode)
+    #children
+end
