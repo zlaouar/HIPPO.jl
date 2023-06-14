@@ -22,7 +22,7 @@ function customsim(msolve::TargetSearchPOMDP, msim::TargetSearchPOMDP, planner, 
         tm = time()
         _, info = action_info(planner, b, tree_in_info = true)
         tree = info[:tree] # maybe set POMCP option tree_in_info = true
-        a_traj = extract_trajectory(root(tree))
+        a_traj = extract_trajectory(root(tree), 2)
         a = first(a_traj)
         msim.reward[rewardinds(msim,s)...] = 0.0 # remove reward at current state
         sp, o, r = @gen(:sp,:o,:r)(msim, s, a)
