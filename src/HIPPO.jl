@@ -15,6 +15,7 @@ using MCTS
 using DiscreteValueIteration
 using Reel, Cairo, Fontconfig
 using AbstractTrees
+using D3Trees
 
 
 include(joinpath(@__DIR__,"common.jl"))

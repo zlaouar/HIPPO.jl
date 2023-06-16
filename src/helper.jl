@@ -52,12 +52,27 @@ function extract_trajectory(node::BasicPOMCP.POMCPObsNode, depth)
     end
 
     oind = 1
-    for i in 1:depth
+    d = t.o_lookup
+    for i in 1:depth-1
+        # get all action indices that have a null observation child
+        #=inds = findall(x-> x==onull, getindex.(keys(d), 2))
+        ainds = getindex.(keys(d), 1)[inds]
+        aind = ainds[findmax(t.v[ainds])[2]] =#
+        # get observation from that action node
+
         avals = t.v[children[oind] .- lenb]
-        aind = findmax(avals)[2]
+        ainfo = findmax(avals)
+        aind = ainfo[2]
         a_traj[i] = t.a_labels[aind]
-        println("aind: ", aind, " | oind: ", oind)
-        oind = t.o_lookup[(aind,[0,0,0,0,0])]
+        println("aind: ", aind, " | avals: ", avals, " | oind: ", oind)
+        println(t.o_lookup)
+        try
+            oind = t.o_lookup[(aind,[0,0,0,0,0])]
+        catch e
+            inchrome(D3Tree(t))
+            error("no null observation")
+        end
+        println("____________________________________________________________")
         
     end
     return a_traj
