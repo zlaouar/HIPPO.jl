@@ -53,14 +53,36 @@ function extract_trajectory(node::BasicPOMCP.POMCPObsNode, depth)
 
     oind = 1
     d = t.o_lookup
-    for i in 1:depth-1
+    for i in 1:depth
         # get all action indices that have a null observation child
+        ainds = children[oind] .- lenb
+        an = t.n[ainds]
+        avals = t.v[ainds]
+
+        # TODO: break visit ties with value
+        _, aind = findmax(an) # find action with highest visit count
+        aind = ainds[aind]
+        a_traj[i] = t.a_labels[aind]
+
+        # get all observation indices that have the action as a parent
+        inds = findall(x-> x==aind, getindex.(keys(d), 1))
+        oinds = collect(values(d))[inds]
+        println(oinds)
+        try
+            oind = oinds[findmax(t.total_n[oinds])[2]] # get observation with highest visit count
+        catch e
+            inchrome(D3Tree(t))
+            error("no null observation")
+        end
+
+        #oinds = [t.o_lookup[(ainds[i], [0,0,0,0,0])] for i in eachindex(ainds)]
+
         #=inds = findall(x-> x==onull, getindex.(keys(d), 2))
         ainds = getindex.(keys(d), 1)[inds]
         aind = ainds[findmax(t.v[ainds])[2]] =#
         # get observation from that action node
 
-        avals = t.v[children[oind] .- lenb]
+        #= avals = t.v[children[oind] .- lenb]
         ainfo = findmax(avals)
         aind = ainfo[2]
         a_traj[i] = t.a_labels[aind]
@@ -72,7 +94,7 @@ function extract_trajectory(node::BasicPOMCP.POMCPObsNode, depth)
             inchrome(D3Tree(t))
             error("no null observation")
         end
-        println("____________________________________________________________")
+        println("____________________________________________________________") =#
         
     end
     return a_traj
