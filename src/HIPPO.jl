@@ -25,7 +25,7 @@ export TSPOMDPBattery, TSStateBattery
 include(joinpath(@__DIR__,"batteryPOMDP","functions_battery.jl"))
 include(joinpath(@__DIR__,"batteryPOMDP","observations_battery.jl"))
 include(joinpath(@__DIR__,"batteryPOMDP","simulate.jl"))
-export customsim
+
 
 #= include(joinpath(@__DIR__,"basicPOMDP","core_vanilla.jl"))
 export TSPOMDPBasic, TSStateBasic
@@ -38,6 +38,7 @@ export TargetSearchPOMDP, TSState
 include(joinpath(@__DIR__,"advPOMDP","functions.jl"))
 include(joinpath(@__DIR__,"advPOMDP","observations.jl")) 
 include(joinpath(@__DIR__,"advPOMDP","simulate.jl"))
+export customsim, predicted_path
 
 include(joinpath(@__DIR__,"helper.jl"))
 export FixedPolicy, TargetSearchMDPPolicy

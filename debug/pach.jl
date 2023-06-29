@@ -32,15 +32,15 @@ function generate_path(data, ws_client)
     
     #println("Received: ", data)
     
-    location_dict = data["locationDict"]
+    global location_dict = data["locationDict"]
     println("rmat type: ", typeof(rewarddist))
     println("rmat element type: ", typeof(rewarddist[1]))
     msolve = TargetSearchPOMDP(sinit, size=mapsize, rewarddist=rewarddist)
     global planner = solve(solver,msolve)
-    _, sim_states, _ = customsim(msolve, msim, planner, particle_up, particle_b, sinit)
-    simpath = getfield.(sim_states, :robot)
+    global atraj = predicted_path(msim, planner, particle_up, particle_b, sinit)
+
     # Call hunter gridcell to latlong conversion script
-    println("Sending path: ", simpath)
+    println("Sending path: ", atraj)
     write(ws_client, """{"action": "hippoToWeb", "args": "$response"}""")
 end
   

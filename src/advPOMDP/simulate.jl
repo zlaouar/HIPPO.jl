@@ -4,7 +4,49 @@ function rewardinds(m, s::TSState)
     inds = [xind, correct_ind[2]]
 end
 
+function remove_rewards(pomdp, s)
+    pomdp.reward[rewardinds(pomdp,s)...] = 0.0
+end
+
 sleep_until(t) = sleep(max(t-time(), 0.0))
+
+function generatelocation(atraj, robotloc)
+    loctraj = Vector{Vector{Float64}}(undef, length(atraj))
+    s
+    for i in eachindex(loctraj)
+        if atraj[i] == "left"
+            
+        else if atraj[i] == "left"
+        loctraj[i] = s.robot
+    end
+end
+
+function predicted_path(msim::TargetSearchPOMDP, planner, up, b, sinit)
+    r_total = 0.0
+    s = sinit
+    o = Nothing
+    d = 1.0
+
+    _, info = action_info(planner, b, tree_in_info = true)
+    tree = info[:tree] # maybe set POMCP option tree_in_info = true
+    a_traj = extract_trajectory(root(tree), 5)
+    println(a_traj)
+    a = first(a_traj)
+
+    remove_rewards(msim, s) # remove reward at current state
+    
+    sp, o, r = @gen(:sp,:o,:r)(msim, s, a)
+    r_total += d*r
+    d *= discount(msim)
+    b = update(up, b, a, o)
+
+    rewardframe = render(msim, (sp=sp, bp=b), true)
+    display(rewardframe)
+    
+    s = sp
+
+    return a_traj
+end
 
 function customsim(msolve::TargetSearchPOMDP, msim::TargetSearchPOMDP, planner, up, b, sinit)
     r_total = 0.0
