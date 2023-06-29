@@ -15,7 +15,8 @@ fixedpolicy(s) = :up
 # Function to just print whatever is passed
 function generate_path(data, ws_client)
     global rewarddist = hcat(data["gridRewards"]...)
-    
+    rewarddist = rewarddist .+ abs(minimum(rewarddist)) .+ 0.01
+
     mapsize = size(rewarddist) #(13,16)
     sinit = TSState([1,1], mapsize, vec(trues(mapsize)))#rand(initialstate(msim))
     msolve = TargetSearchPOMDP(sinit, size=mapsize, rewarddist=rewarddist)

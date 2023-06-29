@@ -53,7 +53,7 @@ msolve = TargetSearchPOMDP(sinit, size=mapsize, rewarddist=rewarddist)
 #mdprollout = FORollout(TargetSearchMDPPolicy(mdp_policy))
 #funcrollout = FORollout(p)
 #mdprollout = FORollout(mdp_policy) # change MDP reward mat to pompdp reward mat
-solver = POMCPSolver(tree_queries=100, max_time=0.2, c=5)
+solver = POMCPSolver(tree_queries=10000, max_time=0.2, c=5)
 #solver = POMCPSolver(tree_queries=10000, max_time=0.2, c=5)
 planner = solve(solver,msolve)
 
