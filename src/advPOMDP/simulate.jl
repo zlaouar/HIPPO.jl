@@ -10,15 +10,17 @@ end
 
 sleep_until(t) = sleep(max(t-time(), 0.0))
 
-function generatelocation(atraj, robotloc)
-    loctraj = Vector{Vector{Float64}}(undef, length(atraj))
-    s
+function generatelocation(m::TargetSearchPOMDP, atraj, robotloc)
+    loctraj = Vector{Vector{Int}}(undef, length(atraj))
     for i in eachindex(loctraj)
-        if atraj[i] == "left"
-            
-        else if atraj[i] == "left"
-        loctraj[i] = s.robot
+        newrobot = bounce(m, robotloc, actiondir[atraj[i]])
+        loctraj[i] = newrobot
     end
+    return loctraj
+end
+
+function loctostr(locvec)
+    return [join(locvec[i], ',') for i in eachindex(locvec)]
 end
 
 function predicted_path(msim::TargetSearchPOMDP, planner, up, b, sinit)
@@ -45,7 +47,7 @@ function predicted_path(msim::TargetSearchPOMDP, planner, up, b, sinit)
     
     s = sp
 
-    return a_traj
+    return loctostr(generatelocation(msim, a_traj, sinit.robot))
 end
 
 function customsim(msolve::TargetSearchPOMDP, msim::TargetSearchPOMDP, planner, up, b, sinit)
