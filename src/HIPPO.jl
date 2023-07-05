@@ -16,6 +16,7 @@ using DiscreteValueIteration
 using Reel, Cairo, Fontconfig
 using AbstractTrees
 using D3Trees
+using ParticleFilters
 
 
 include(joinpath(@__DIR__,"common.jl"))
@@ -38,7 +39,7 @@ export TargetSearchPOMDP, TSState
 include(joinpath(@__DIR__,"advPOMDP","functions.jl"))
 include(joinpath(@__DIR__,"advPOMDP","observations.jl")) 
 include(joinpath(@__DIR__,"advPOMDP","simulate.jl"))
-export customsim, predicted_path
+export HIPPOsimulate, predicted_path, HIPPOSimulator
 
 include(joinpath(@__DIR__,"helper.jl"))
 export FixedPolicy, TargetSearchMDPPolicy
