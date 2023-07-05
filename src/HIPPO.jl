@@ -39,7 +39,7 @@ export TargetSearchPOMDP, TSState
 include(joinpath(@__DIR__,"advPOMDP","functions.jl"))
 include(joinpath(@__DIR__,"advPOMDP","observations.jl")) 
 include(joinpath(@__DIR__,"advPOMDP","simulate.jl"))
-export HIPPOsimulate, predicted_path, HIPPOSimulator
+export simulateHIPPO, predicted_path, HIPPOSimulator
 
 include(joinpath(@__DIR__,"helper.jl"))
 export FixedPolicy, TargetSearchMDPPolicy

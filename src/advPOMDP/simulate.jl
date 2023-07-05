@@ -65,7 +65,7 @@ function HIPPOSimulator(msim::TargetSearchPOMDP, planner::POMCPPlanner, up::Basi
     return HIPPOSimulator(msim, planner, up, b, sinit, Frames(MIME("image/png"), fps=gif_fps), Frames(MIME("image/png"), fps=gif_fps), 1/max_fps)
 end
 
-function HIPPOsimulate(sim::HIPPOSimulator)
+function simulateHIPPO(sim::HIPPOSimulator)
     r_total = 0.0
     s = sim.sinit
     o = Nothing

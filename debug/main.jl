@@ -28,7 +28,7 @@ rewarddist = [-3.08638     1.04508  -38.9812     6.39193    7.2648     5.96755  
 #rewarddist = load("rewardmat.jld2","rewarddist")
 rewarddist = rewarddist .+ abs(minimum(rewarddist)) .+ 0.01
 #rewarddist = abs.(rewarddist)
-mapsize = size(rewarddist) #(13,16)
+mapsize = reverse(size(rewarddist)) #(13,16)
 sinit = TSState([1,1], reverse(mapsize), vec(trues(mapsize)))#rand(initialstate(msim))
 #mapsize = (13,16)
 #sinit = TSState([10,1],[13,16],trues(prod(mapsize)))#rand(initialstate(msim))
@@ -74,7 +74,7 @@ particle_b = initialize_belief(particle_up, b0)
 
 #r_total,sim_states,rewardframes, belframes = customsim(msolve, msim, planner, particle_up, particle_b, sinit)
 hipposim = HIPPOSimulator(msolve, planner, particle_up, particle_b, sinit, 10, 10)
-r_total = HIPPOsimulate(hipposim)
+r_total = simulateHIPPO(hipposim)
 
 
 display("Simulation Ended")

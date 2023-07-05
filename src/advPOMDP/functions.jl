@@ -66,13 +66,20 @@ function POMDPs.reward(m::TargetSearchPOMDP, s::TSState, a::Symbol, sp::TSState)
         return 0.0
     end
 
-    correct_ind = reverse(sp.robot)
-    xind = m.size[1]+1 - correct_ind[1]
-    inds = [xind, correct_ind[2]]
+    #correct_ind = reverse(sp.robot)
+    #xind = m.size[2]+1 - correct_ind[1]
+    #inds = [xind, correct_ind[2]]
+    inds = rewardinds(m, sp.robot)
     spind = LinearIndices((1:m.size[1], 1:m.size[2]))[sp.robot...]
 
     if !isempty(m.reward) && sp.robot != SA[-1,-1]
-        return reward_running + reward_target + reward_roi + m.reward[inds...]*s.visited[spind] # running cost
+
+        #return reward_running + reward_target + reward_roi + m.reward[inds...]*s.visited[spind] # running cost
+        try 
+            return reward_running + reward_target + reward_roi + m.reward[inds...]*s.visited[spind] # running cost
+        catch
+            @error("inds: $inds, | robot: $(sp.robot)")
+        end
     end
 end
 
@@ -152,14 +159,20 @@ end
 
 function rewardinds(m, pos::SVector{2, Int64})
     correct_ind = reverse(pos)
-    xind = m.size[1]+1 - correct_ind[1]
+    xind = m.size[2]+1 - correct_ind[1]
     inds = [xind, correct_ind[2]]
+    #= try 
+        m.reward[inds...]
+    catch
+        @error("inds: $inds, | robot: $pos")
+    end =#
+    return inds
 end
 
 set_default_graphic_size(18cm,14cm)
 
 function POMDPTools.ModelTools.render(m::TargetSearchPOMDP, step, plt_reward::Bool)
-    ny, nx = m.size
+    nx, ny = m.size
     cells = []
     rois = collect(keys(m.rois))
     
