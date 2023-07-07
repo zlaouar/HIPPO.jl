@@ -17,6 +17,7 @@ using Reel, Cairo, Fontconfig
 using AbstractTrees
 using D3Trees
 using ParticleFilters
+using ColorSchemes
 
 
 include(joinpath(@__DIR__,"common.jl"))
@@ -28,11 +29,13 @@ include(joinpath(@__DIR__,"batteryPOMDP","observations_battery.jl"))
 include(joinpath(@__DIR__,"batteryPOMDP","simulate.jl"))
 
 
-#= include(joinpath(@__DIR__,"basicPOMDP","core_vanilla.jl"))
+include(joinpath(@__DIR__,"basicPOMDP","core_vanilla.jl"))
 export TSPOMDPBasic, TSStateBasic
 include(joinpath(@__DIR__,"basicPOMDP","functions_vanilla.jl"))
 include(joinpath(@__DIR__,"basicPOMDP","observations_vanilla.jl"))
-=#
+include(joinpath(@__DIR__,"basicPOMDP","visualize.jl"))
+export GridWorldEnv, renderMDP
+
 
 include(joinpath(@__DIR__,"advPOMDP","core.jl"))
 export TargetSearchPOMDP, TSState
@@ -44,13 +47,13 @@ export simulateHIPPO, predicted_path, HIPPOSimulator
 include(joinpath(@__DIR__,"helper.jl"))
 export FixedPolicy, TargetSearchMDPPolicy
 
-include(joinpath(@__DIR__,"value.jl"))
-export 
-    BFORollout,
-    SolvedBFORollout,
-    estimate_value,
-    convert_estimator,
-    simulate
+#include(joinpath(@__DIR__,"value.jl"))
+#export 
+#    BFORollout,
+#    SolvedBFORollout,
+#    estimate_value,
+#    convert_estimator,
+#    simulate
 
 
 end

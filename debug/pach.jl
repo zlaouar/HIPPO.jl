@@ -17,7 +17,7 @@ function generate_path(data, ws_client)
     global rewarddist = hcat(data["gridRewards"]...)
     rewarddist = rewarddist .+ abs(minimum(rewarddist)) .+ 0.01
 
-    mapsize = size(rewarddist) #(13,16)
+    mapsize = reverse(size(rewarddist)) # (x,y)
     global sinit = TSState([1,1], mapsize, vec(trues(mapsize)))#rand(initialstate(msim))
     global msolve = TargetSearchPOMDP(sinit, size=mapsize, rewarddist=rewarddist)
     solver = POMCPSolver(tree_queries=1000, max_time=0.2, c=80)
@@ -35,7 +35,7 @@ function generate_path(data, ws_client)
     global locvec = predicted_path(msolve, planner, particle_up, particle_b, sinit)
     response = [location_dict[locvec[i]] for i in eachindex(locvec)]
     println("Sending path: ", response)
-    write(ws_client, """{"action": "returnPath", "args": "$response"}""")
+    write(ws_client, """{"action": "ReturnPath", "args": "$response"}""")
 end
   
 

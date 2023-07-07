@@ -32,6 +32,8 @@ function cell_ctx(xy, size)
     return context((x-1)/nx, (ny-y)/ny, 1/nx, 1/ny)
 end
 
+sleep_until(t) = sleep(max(t-time(), 0.0))
+
 #@withkw struct problem
 #    probtype::String
 #end

@@ -67,7 +67,6 @@ function extract_trajectory(node::BasicPOMCP.POMCPObsNode, depth)
         # get all observation indices that have the action as a parent
         inds = findall(x-> x==aind, getindex.(keys(d), 1))
         oinds = collect(values(d))[inds]
-        println(oinds)
         try
             oind = oinds[findmax(t.total_n[oinds])[2]] # get observation with highest visit count
         catch e

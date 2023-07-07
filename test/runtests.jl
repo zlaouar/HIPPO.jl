@@ -4,6 +4,7 @@ using Test
 
 rewarddist = [3.0 3.0;
               3.0 3.0]
+running_cost = -1.0
 ns = length(rewarddist)
 mapsize = (2,2)
 sinit = TSState([1,1],[3,3],trues(prod(mapsize)))
@@ -40,5 +41,5 @@ rtotal = 0.0
         end
         return rtotal
     end
-    @test rtotaltest(rtotal,s,acs) == sum(rewarddist) - ns
+    @test rtotaltest(rtotal,s,acs) == sum(rewarddist) + ns*running_cost - rewarddist[getind(sinit.robot)...]
 end

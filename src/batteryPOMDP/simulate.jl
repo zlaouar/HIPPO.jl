@@ -4,7 +4,6 @@ function rewardinds(m, s::TSStateBattery)
     inds = [xind, correct_ind[2]]
 end
 
-sleep_until(t) = sleep(max(t-time(), 0.0))
 
 #= struct SimHist
     x::Matrix{Float64}

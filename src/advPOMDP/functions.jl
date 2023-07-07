@@ -74,12 +74,12 @@ function POMDPs.reward(m::TargetSearchPOMDP, s::TSState, a::Symbol, sp::TSState)
 
     if !isempty(m.reward) && sp.robot != SA[-1,-1]
 
-        #return reward_running + reward_target + reward_roi + m.reward[inds...]*s.visited[spind] # running cost
-        try 
-            return reward_running + reward_target + reward_roi + m.reward[inds...]*s.visited[spind] # running cost
-        catch
-            @error("inds: $inds, | robot: $(sp.robot)")
-        end
+        return reward_running + reward_target + reward_roi + m.reward[inds...]*s.visited[spind] # running cost
+        #try 
+        #    return reward_running + reward_target + reward_roi + m.reward[inds...]*s.visited[spind] # running cost
+        #catch
+        #    @error("inds: $inds, | robot: $(sp.robot)")
+        #end
     end
 end
 
@@ -177,7 +177,7 @@ function POMDPTools.ModelTools.render(m::TargetSearchPOMDP, step, plt_reward::Bo
     rois = collect(keys(m.rois))
     
     for x in 1:nx, y in 1:ny
-        cell = cell_ctx((x,y), reverse(m.size))
+        cell = cell_ctx((x,y), m.size)
         if iszero(m.reward[rewardinds(m, SA[x,y])...])
             target = compose(context(), rectangle(), fill("black"), stroke("gray"))
         else
@@ -196,9 +196,9 @@ function POMDPTools.ModelTools.render(m::TargetSearchPOMDP, step, plt_reward::Bo
     outline = compose(context(), linewidth(1mm), rectangle(), fill("white"), stroke("gray"))
 
     if haskey(step, :sp)
-        robot_ctx = cell_ctx(step[:sp].robot, reverse(m.size))
+        robot_ctx = cell_ctx(step[:sp].robot, m.size)
         robot = compose(robot_ctx, circle(0.5, 0.5, 0.5), fill("green"))
-        target_ctx = cell_ctx(step[:sp].target, reverse(m.size))
+        target_ctx = cell_ctx(step[:sp].target, m.size)
         target = compose(target_ctx, circle(0.5, 0.5, 0.5), fill("orange"))
     else
         robot = nothing

@@ -1,14 +1,24 @@
-function rewardinds(m, s::TSState)
-    correct_ind = reverse(s.robot)
-    xind = m.size[1]+1 - correct_ind[1]
-    inds = [xind, correct_ind[2]]
+struct HIPPOSimulator 
+    msim::TargetSearchPOMDP
+    planner::POMCPPlanner
+    up::BasicParticleFilter
+    b::ParticleCollection
+    sinit::TSState
+    rewardframes::Frames
+    belframes::Frames
+    dt::Float64
+    max_iter::Int
+end
+
+function HIPPOSimulator(msim::TargetSearchPOMDP, planner::POMCPPlanner, up::BasicParticleFilter, b::ParticleCollection, sinit::TSState; 
+                max_fps=10, gif_fps=10, max_iter=500) 
+    return HIPPOSimulator(msim, planner, up, b, sinit, Frames(MIME("image/png"), fps=gif_fps), Frames(MIME("image/png"), fps=gif_fps), 1/max_fps, max_iter)
 end
 
 function remove_rewards(pomdp, s)
     pomdp.reward[rewardinds(pomdp,s)...] = 0.0
 end
 
-sleep_until(t) = sleep(max(t-time(), 0.0))
 
 function generatelocation(m::TargetSearchPOMDP, atraj, robotloc)
     loctraj = Vector{Vector{Int}}(undef, length(atraj))
@@ -23,64 +33,28 @@ function loctostr(locvec)
     return [join(locvec[i], ',') for i in eachindex(locvec)]
 end
 
-function predicted_path(msim::TargetSearchPOMDP, planner, up, b, sinit)
-    r_total = 0.0
-    s = sinit
-    o = Nothing
-    d = 1.0
-
-    _, info = action_info(planner, b, tree_in_info = true)
-    tree = info[:tree] # maybe set POMCP option tree_in_info = true
-    a_traj = extract_trajectory(root(tree), 5)
-    println(a_traj)
-    a = first(a_traj)
-
-    remove_rewards(msim, s) # remove reward at current state
-    
-    sp, o, r = @gen(:sp,:o,:r)(msim, s, a)
-    r_total += d*r
-    d *= discount(msim)
-    b = update(up, b, a, o)
-
-    rewardframe = render(msim, (sp=sp, bp=b), true)
-    display(rewardframe)
-    
-    s = sp
-
-    return loctostr(generatelocation(msim, a_traj, sinit.robot))
-end
-
-struct HIPPOSimulator 
-    msim::TargetSearchPOMDP
-    planner::POMCPPlanner
-    up::BasicParticleFilter
-    b::ParticleCollection
-    sinit::TSState
-    rewardframes::Frames
-    belframes::Frames
-    dt::Float64
-end
-
-function HIPPOSimulator(msim::TargetSearchPOMDP, planner::POMCPPlanner, up::BasicParticleFilter, b::ParticleCollection, sinit::TSState, max_fps, gif_fps) 
-    return HIPPOSimulator(msim, planner, up, b, sinit, Frames(MIME("image/png"), fps=gif_fps), Frames(MIME("image/png"), fps=gif_fps), 1/max_fps)
-end
 
 function simulateHIPPO(sim::HIPPOSimulator)
+    (;msim,max_iter) = sim 
     r_total = 0.0
     s = sim.sinit
     o = Nothing
     iter = 0
     d = 1.0
     b = sim.b
-    while !isterminal(sim.msim, s) && iter < 500
+    history = NamedTuple[]
+    while !isterminal(msim, s) && iter < max_iter
         tm = time()
-        _, info = action_info(sim.planner, sim.b, tree_in_info = true)
-        tree = info[:tree] # maybe set POMCP option tree_in_info = true
-        a_traj = extract_trajectory(root(tree), 5)
-        println(a_traj)
-        a = first(a_traj)
-        remove_rewards(sim.msim, s) # remove reward at current state
-        sp, o, r = @gen(:sp,:o,:r)(sim.msim, s, a)
+        #_, info = action_info(sim.planner, sim.b, tree_in_info = true)
+        #tree = info[:tree] # maybe set POMCP option tree_in_info = true
+        #a_traj = extract_trajectory(root(tree), 5)
+        #a = first(a_traj)
+
+
+        a, info = action_info(sim.planner, sim.b, tree_in_info = true)
+        remove_rewards(msim, s.robot) # remove reward at current state
+        #display(msim.reward)
+        sp, o, r = @gen(:sp,:o,:r)(msim, s, a)
         r_total += d*r
         d *= discount(sim.msim)
         b = update(sim.up, b, a, o)
@@ -99,9 +73,37 @@ function simulateHIPPO(sim::HIPPOSimulator)
         end
         push!(sim.rewardframes, rewardframe)
         push!(sim.belframes, belframe)
+        push!(history, (s=s, a=a, sp=sp, o=o, r=r, b=b, info=info))
         s = sp
     end
-    return r_total
+    return r_total, history
+end
+
+function predicted_path(msim::TargetSearchPOMDP, planner, up, b, sinit)
+    r_total = 0.0
+    s = sinit
+    o = Nothing
+    d = 1.0
+
+    _, info = action_info(planner, b, tree_in_info = true)
+    tree = info[:tree] # maybe set POMCP option tree_in_info = true
+    a_traj = extract_trajectory(root(tree), 5)
+    println(a_traj)
+    a = first(a_traj)
+
+    remove_rewards(msim, s.robot) # remove reward at current state
+    
+    sp, o, r = @gen(:sp,:o,:r)(msim, s, a)
+    r_total += d*r
+    d *= discount(msim)
+    b = update(up, b, a, o)
+
+    rewardframe = render(msim, (sp=sp, bp=b), true)
+    display(rewardframe)
+    
+    s = sp
+
+    return loctostr(generatelocation(msim, a_traj, sinit.robot))
 end
 
 function customsim(msolve::TargetSearchPOMDP, msim::TargetSearchPOMDP, planner, up, b, sinit)
