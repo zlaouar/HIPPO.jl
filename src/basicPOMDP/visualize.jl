@@ -2,11 +2,12 @@ mutable struct GridWorldEnv
     m::TSPOMDPBasic
     size::SVector{2, Int}
     rewards::Matrix{Float64}
-    state::SVector{2, Int}
+    robotInit::SVector{2, Int}
+    targetInit::SVector{2, Int}
 end
 
-function GridWorldEnv(m, rewards::Matrix{Float64}; size=(10,10))
-    return GridWorldEnv(m, SA[size[1], size[2]], rewards, SA[1,1])
+function GridWorldEnv(m, rewards::Matrix{Float64}, targetInit; size=(10,10), robotInit=(1,1))
+    return GridWorldEnv(m, SA[size[1], size[2]], rewards, robotInit, targetInit)
 end
 
 
@@ -27,12 +28,12 @@ function renderMDP(env::GridWorldEnv; color::Function=s->get(env.rewards, s, -0.
     m = env.m
     cells = []
     for s in observations(env)
-        r = m.reward[rewardinds(m, SA[s...])...]
+        r = env.rewards[rewardinds(m, SA[s...])...]
         clr = get(ColorSchemes.redgreensplit, (r+10.0)/20.0)
         cell = context((s[1]-1)/nx, (ny-s[2])/ny, 1/nx, 1/ny)
         if policy !== nothing
-            a = policy(s)
-            txt = compose(context(), text(0.5, 0.5, aarrow[a], hcenter, vcenter), stroke("black"))
+            a = policy(TSStateBasic(s, env.targetInit))
+            txt = compose(context(), Compose.text(0.5, 0.5, aarrow[a], hcenter, vcenter), stroke("black"))
             compose!(cell, txt)
         end
         clr = tocolor(r)
@@ -42,7 +43,7 @@ function renderMDP(env::GridWorldEnv; color::Function=s->get(env.rewards, s, -0.
     grid = compose(context(), linewidth(0.5mm), cells...)
     outline = compose(context(), linewidth(1mm), rectangle(), stroke("gray"))
 
-    s = env.state
+    s = env.robotInit
     agent_ctx = context((s[1]-1)/nx, (ny-s[2])/ny, 1/nx, 1/ny)
     agent = compose(agent_ctx, circle(0.5, 0.5, 0.4), fill("orange"))
 
@@ -59,5 +60,5 @@ function tocolor(r::Float64)
     return get(ColorSchemes.redgreensplit, frac)
 end
 
-const aarrow = Dict(3=>'↑', 1=>'←', SA[0,-1]=>'↓', SA[1,0]=>'→')
+const aarrow = Dict(:up=>'↑', :left=>'←', :down=>'↓', :right=>'→', :stay=>'⊙')
 

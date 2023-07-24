@@ -29,8 +29,8 @@ smallreward = [800.0 2.0 2.0 -20.0;
                 2.0 2.0 2.0 2.0;
                 2.0 2.0 2.0 2.0;
                 1.0 2.0 2.0 2.0]
-#rewarddist = smallreward
-rewarddist = load("rewardmat.jld2","rewarddist")
+rewarddist = smallreward
+#rewarddist = load("rewardmat.jld2","rewarddist")
 rewarddist = rewarddist .+ abs(minimum(rewarddist)) .+ 0.01
 #rewarddist = abs.(rewarddist)
 mapsize = reverse(size(rewarddist)) #(13,16)
@@ -49,14 +49,14 @@ roi_points = Dict(roi_states .=> probs)
 msolve = TargetSearchPOMDP(sinit, size=mapsize, rewarddist=rewarddist)
 msolveBasic = TSPOMDPBasic(sinit=sinitBasic, size=mapsize)
 mdp_solver = ValueIterationSolver() # creates the solver
-#mdp_policy = solve(mdp_solver, UnderlyingMDP(msolveBasic))
+mdp_policy = solve(mdp_solver, UnderlyingMDP(msolveBasic))
 
 #p = FunctionPolicy(FixedPolicy())
-#mdprollout = FORollout(TargetSearchMDPPolicy(mdp_policy))
+mdprollout = FORollout(TargetSearchMDPPolicy(mdp_policy))
 #funcrollout = FORollout(p)
 #mdprollout = FORollout(mdp_policy) # change MDP reward mat to pompdp reward mat
-#solver = POMCPSolver(estimate_value = mdprollout, tree_queries=10000, max_time=0.2, c=5)
-solver = POMCPSolver(tree_queries=10000, max_time=0.2, c=5)
+solver = POMCPSolver(estimate_value = mdprollout, tree_queries=10000, max_time=0.2, c=5)
+#solver = POMCPSolver(tree_queries=10000, max_time=0.2, c=5)
 planner = solve(solver,msolve)
 
 ds = DisplaySimulator()
@@ -79,13 +79,14 @@ rewards = Dict(SA[8,8]=> 10.0,
                    SA[2,3]=>  1.0,
                    SA[7,6]=> -5.0)
 
-#gw = GridWorldEnv(msolveBasic, rewarddist, size=mapsize)
+gw = GridWorldEnv(msolveBasic, rewarddist, sinit.target, size=mapsize, robotInit=sinit.robot)
+vi_policy = s -> action(mdp_policy, s)
 # display(HIPPO.renderMDP(gw, color = s -> mdp_policy.util[s]))
-#display(HIPPO.renderMDP(gw))
+display(HIPPO.renderMDP(gw, policy = vi_policy))
 
 #r_total,sim_states,rewardframes, belframes = customsim(msolve, msim, planner, particle_up, particle_b, sinit)
-hipposim = HIPPOSimulator(msolve, planner, particle_up, particle_b, sinit, max_fps=10, max_iter=40)
-r_total, hist = simulateHIPPO(hipposim)
+#hipposim = HIPPOSimulator(msolve, planner, particle_up, particle_b, sinit, max_fps=5, max_iter=40)
+#r_total, hist = simulateHIPPO(hipposim)
 
 
 
