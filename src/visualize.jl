@@ -62,3 +62,17 @@ end
 
 const aarrow = Dict(:up=>'↑', :left=>'←', :down=>'↓', :right=>'→', :stay=>'⊙')
 
+
+function renderVIPolicy(policy, mdp, s)
+    gw = GridWorldEnv(mdp, rewarddist, s.target, size=mapsize, robotInit=s.robot)
+    vi_policy = s -> action(policy, s)
+    display(HIPPO.renderMDP(gw, policy = vi_policy))
+end
+
+function rendhist(hist, m; delay=0.1)
+    for h ∈ hist
+        remove_rewards(m, h.s.robot)
+        display(render(m, h, true))
+        sleep(delay)
+    end
+end 

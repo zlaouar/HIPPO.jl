@@ -33,8 +33,8 @@ include(joinpath(@__DIR__,"basicPOMDP","core_vanilla.jl"))
 export TSPOMDPBasic, TSStateBasic
 include(joinpath(@__DIR__,"basicPOMDP","functions_vanilla.jl"))
 include(joinpath(@__DIR__,"basicPOMDP","observations_vanilla.jl"))
-include(joinpath(@__DIR__,"basicPOMDP","visualize.jl"))
-export GridWorldEnv, renderMDP
+include(joinpath(@__DIR__,"visualize.jl"))
+export rendhist
 
 
 include(joinpath(@__DIR__,"advPOMDP","core.jl"))

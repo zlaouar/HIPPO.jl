@@ -34,7 +34,7 @@ rewarddist = smallreward
 rewarddist = rewarddist .+ abs(minimum(rewarddist)) .+ 0.01
 #rewarddist = abs.(rewarddist)
 mapsize = reverse(size(rewarddist)) #(13,16)
-sinit = TSState([1,1], mapsize, vec(trues(mapsize)))#rand(initialstate(msim))
+sinit = TSState([2,1], mapsize, vec(trues(mapsize)))#rand(initialstate(msim))
 #mapsize = (13,16)
 #sinit = TSState([10,1],[13,16],trues(prod(mapsize)))#rand(initialstate(msim))
 #mapsize = (4,4)
@@ -48,15 +48,16 @@ roi_points = Dict(roi_states .=> probs)
 
 msolve = TargetSearchPOMDP(sinit, size=mapsize, rewarddist=rewarddist)
 msolveBasic = TSPOMDPBasic(sinit=sinitBasic, size=mapsize)
-mdp_solver = ValueIterationSolver() # creates the solver
-mdp_policy = solve(mdp_solver, UnderlyingMDP(msolveBasic))
+#mdp_solver = ValueIterationSolver() # creates the solver
+#mdp_policy = solve(mdp_solver, UnderlyingMDP(msolveBasic))
 
-#p = FunctionPolicy(FixedPolicy())
-mdprollout = FORollout(TargetSearchMDPPolicy(mdp_policy))
-#funcrollout = FORollout(p)
+p = FunctionPolicy(FixedPolicy())
+#mdprollout = FORollout(TargetSearchMDPPolicy(mdp_policy))
+funcrollout = FORollout(p)
 #mdprollout = FORollout(mdp_policy) # change MDP reward mat to pompdp reward mat
-solver = POMCPSolver(estimate_value = mdprollout, tree_queries=10000, max_time=0.2, c=5)
-#solver = POMCPSolver(tree_queries=10000, max_time=0.2, c=5)
+#solver = POMCPSolver(estimate_value = mdprollout, tree_queries=10000, max_time=0.2, c=500)
+solver = POMCPSolver(estimate_value = funcrollout, tree_queries=10000, max_time=0.2, c=5)
+
 planner = solve(solver,msolve)
 
 ds = DisplaySimulator()
@@ -73,31 +74,16 @@ particle_b = initialize_belief(particle_up, b0)
 
 #a, info = action_info(planner, Deterministic(TSState([13,4],mapsize,vec(trues(mapsize)))), tree_in_info=true)
 #inchrome(D3Tree(info[:tree], init_expand=3))
-rewards = Dict(SA[8,8]=> 10.0,
-                   SA[3,1]=> -2.0,
-                   SA[4,3]=>-10.0,
-                   SA[2,3]=>  1.0,
-                   SA[7,6]=> -5.0)
 
-gw = GridWorldEnv(msolveBasic, rewarddist, sinit.target, size=mapsize, robotInit=sinit.robot)
-vi_policy = s -> action(mdp_policy, s)
-# display(HIPPO.renderMDP(gw, color = s -> mdp_policy.util[s]))
-display(HIPPO.renderMDP(gw, policy = vi_policy))
+
+
+
 
 #r_total,sim_states,rewardframes, belframes = customsim(msolve, msim, planner, particle_up, particle_b, sinit)
-#hipposim = HIPPOSimulator(msolve, planner, particle_up, particle_b, sinit, max_fps=5, max_iter=40)
-#r_total, hist = simulateHIPPO(hipposim)
+hipposim = HIPPOSimulator(msolve, planner, particle_up, particle_b, sinit, max_fps=5, max_iter=40)
+r_total, hist = simulateHIPPO(hipposim)
 
-
-
-
-
-function rendhist(hist, m)
-    for h ∈ hist
-        display(render(m, h, true))
-        sleep(0.1)
-    end
-end 
+#renderVIPolicy(mdp_policy, msolveBasic, sinitBasic) # render MDP policy
 
 
 println("Total Reward: ", r_total)
@@ -110,6 +96,9 @@ println("Total Reward: ", r_total)
 
 #@profview action(planner, initialstate(m))
 
+
+mrender = TargetSearchPOMDP(sinit, size=mapsize, rewarddist=rewarddist)
+rendhist(hist, mrender, delay=0.2)
 
 #= for i in 1:length(h)
     display(render(m, (sp=h[i].s, bp=h[i].b)))

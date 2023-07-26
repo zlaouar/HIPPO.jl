@@ -58,8 +58,9 @@ function simulateHIPPO(sim::HIPPOSimulator)
         r_total += d*r
         d *= discount(sim.msim)
         b = update(sim.up, b, a, o)
-        belframe = render(sim.msim, (sp=sp, bp=sim.b))
-        rewardframe = render(sim.msim, (sp=sp, bp=sim.b), true)
+        belframe = render(sim.msim, (sp=sp, bp=b))
+
+        rewardframe = render(sim.msim, (sp=sp, bp=b), true)
         display(rewardframe)
         sleep_until(tm += sim.dt)
         iter += 1
@@ -73,7 +74,7 @@ function simulateHIPPO(sim::HIPPOSimulator)
         end
         push!(sim.rewardframes, rewardframe)
         push!(sim.belframes, belframe)
-        push!(history, (s=s, a=a, sp=sp, o=o, r=r, b=b, info=info))
+        push!(history, (s=s, a=a, sp=sp, o=o, r=r, bp=b, info=info))
         s = sp
     end
     return r_total, history
