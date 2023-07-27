@@ -28,10 +28,20 @@ rewarddist = [-3.08638     1.04508  -38.9812     6.39193    7.2648     5.96755  
 smallreward = [800.0 2.0 2.0 -20.0;
                 2.0 2.0 2.0 2.0;
                 2.0 2.0 2.0 2.0;
-                1.0 2.0 2.0 2.0]
+                2.0 2.0 2.0 2.0;
+                2.0 2.0 2.0 2.0;
+                2.0 2.0 2.0 2.0]
+hallway = [80.0 80.0;
+           50.0 50.0;
+           20.0 20.0;
+           -100.0 -100.0;
+           0.0 0.0;
+           0.0 0.0;
+           0.0 0.0]
 rewarddist = smallreward
+rewarddist = hallway
 #rewarddist = load("rewardmat.jld2","rewarddist")
-rewarddist = rewarddist .+ abs(minimum(rewarddist)) .+ 0.01
+#rewarddist = rewarddist .+ abs(minimum(rewarddist)) .+ 0.01
 #rewarddist = abs.(rewarddist)
 mapsize = reverse(size(rewarddist)) #(13,16)
 sinit = TSState([2,1], mapsize, vec(trues(mapsize)))#rand(initialstate(msim))
@@ -55,8 +65,10 @@ p = FunctionPolicy(FixedPolicy())
 #mdprollout = FORollout(TargetSearchMDPPolicy(mdp_policy))
 funcrollout = FORollout(p)
 #mdprollout = FORollout(mdp_policy) # change MDP reward mat to pompdp reward mat
-#solver = POMCPSolver(estimate_value = mdprollout, tree_queries=10000, max_time=0.2, c=500)
-solver = POMCPSolver(estimate_value = funcrollout, tree_queries=10000, max_time=0.2, c=5)
+#solver = POMCPSolver(estimate_value = mdprollout, tree_queries=10000, max_time=0.2, c=5) # mdp policy rollout
+solver = POMCPSolver(estimate_value = funcrollout, tree_queries=10000, max_time=0.2, c=5) # up rollout
+#solver = POMCPSolver(tree_queries=10_000, max_time=0.2, c=5) # random
+
 
 planner = solve(solver,msolve)
 
@@ -80,7 +92,7 @@ particle_b = initialize_belief(particle_up, b0)
 
 
 #r_total,sim_states,rewardframes, belframes = customsim(msolve, msim, planner, particle_up, particle_b, sinit)
-hipposim = HIPPOSimulator(msolve, planner, particle_up, particle_b, sinit, max_fps=5, max_iter=40)
+hipposim = HIPPOSimulator(msolve, planner, particle_up, particle_b, sinit, max_fps=10, max_iter=60)
 r_total, hist = simulateHIPPO(hipposim)
 
 #renderVIPolicy(mdp_policy, msolveBasic, sinitBasic) # render MDP policy
@@ -97,8 +109,8 @@ println("Total Reward: ", r_total)
 #@profview action(planner, initialstate(m))
 
 
-mrender = TargetSearchPOMDP(sinit, size=mapsize, rewarddist=rewarddist)
-rendhist(hist, mrender, delay=0.2)
+#mrender = TargetSearchPOMDP(sinit, size=mapsize, rewarddist=rewarddist)
+#rendhist(hist, mrender, delay=0.2)
 
 #= for i in 1:length(h)
     display(render(m, (sp=h[i].s, bp=h[i].b)))

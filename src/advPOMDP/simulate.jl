@@ -64,7 +64,7 @@ function simulateHIPPO(sim::HIPPOSimulator)
         display(rewardframe)
         sleep_until(tm += sim.dt)
         iter += 1
-        #println(iter,"- | s: ", s, " | sp:", sp, " | r:", r, " | o: ", o)
+        println(iter,"- | s: ", s, " | sp:", sp, " | r:", r, " | o: ", o)
         if iter > 1000
             roi_states = [[1,9],[1,10],[1,8]]
             probs = [0.8,0.8,0.8]
@@ -81,10 +81,10 @@ function simulateHIPPO(sim::HIPPOSimulator)
 end
 
 function predicted_path(msim::TargetSearchPOMDP, planner, up, b, sinit)
-    r_total = 0.0
+    # r_total = 0.0
     s = sinit
-    o = Nothing
-    d = 1.0
+    # o = Nothing
+    # d = 1.0
 
     _, info = action_info(planner, b, tree_in_info = true)
     tree = info[:tree] # maybe set POMCP option tree_in_info = true
@@ -95,8 +95,8 @@ function predicted_path(msim::TargetSearchPOMDP, planner, up, b, sinit)
     remove_rewards(msim, s.robot) # remove reward at current state
     
     sp, o, r = @gen(:sp,:o,:r)(msim, s, a)
-    r_total += d*r
-    d *= discount(msim)
+    # r_total += d*r
+    # d *= discount(msim)
     b = update(up, b, a, o)
 
     rewardframe = render(msim, (sp=sp, bp=b), true)
@@ -104,7 +104,7 @@ function predicted_path(msim::TargetSearchPOMDP, planner, up, b, sinit)
     
     s = sp
 
-    return loctostr(generatelocation(msim, a_traj, sinit.robot))
+    return loctostr(generatelocation(msim, a_traj, sinit.robot)), b, s
 end
 
 function customsim(msolve::TargetSearchPOMDP, msim::TargetSearchPOMDP, planner, up, b, sinit)
