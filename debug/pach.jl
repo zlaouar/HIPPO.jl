@@ -28,11 +28,11 @@ function generate_path(data, ws_client)
     
     
     global location_dict = data["locationDict"]
-    println("rmat type: ", typeof(rewarddist))
-    println("rmat element type: ", typeof(rewarddist[1]))
+    println("rmat size: ", size(rewarddist))
 
     global planner = solve(solver,msolve)
     global locvec = predicted_path(msolve, planner, particle_up, particle_b, sinit)
+    @info locvec
     response = [location_dict[locvec[i]] for i in eachindex(locvec)]
     println("Sending path: ", response)
     write(ws_client, """{"action": "ReturnPath", "args": "$response"}""")
@@ -42,7 +42,6 @@ end
 
 println("Opening port")
 open("ws://127.0.0.1:8082") do ws_client
-    print("something")
     data, success = readguarded(ws_client)
     if success
         # Parse data as JSON {serviceName, args}

@@ -10,6 +10,14 @@ struct HIPPOSimulator
     max_iter::Int
 end
 
+mutable struct PachSimulator 
+    msim::TargetSearchPOMDP
+    planner::POMCPPlanner
+    up::BasicParticleFilter
+    b::ParticleCollection
+    sinit::TSState
+end
+
 function HIPPOSimulator(msim::TargetSearchPOMDP, planner::POMCPPlanner, up::BasicParticleFilter, b::ParticleCollection, sinit::TSState; 
                 max_fps=10, gif_fps=10, max_iter=500) 
     return HIPPOSimulator(msim, planner, up, b, sinit, Frames(MIME("image/png"), fps=gif_fps), Frames(MIME("image/png"), fps=gif_fps), 1/max_fps, max_iter)
@@ -80,11 +88,9 @@ function simulateHIPPO(sim::HIPPOSimulator)
     return r_total, history
 end
 
-function predicted_path(msim::TargetSearchPOMDP, planner, up, b, sinit)
-    # r_total = 0.0
+function predicted_path(sim::PachSimulator)
+    (;msim,planner,sinit,b,up) = sim
     s = sinit
-    # o = Nothing
-    # d = 1.0
 
     _, info = action_info(planner, b, tree_in_info = true)
     tree = info[:tree] # maybe set POMCP option tree_in_info = true
@@ -95,8 +101,6 @@ function predicted_path(msim::TargetSearchPOMDP, planner, up, b, sinit)
     remove_rewards(msim, s.robot) # remove reward at current state
     
     sp, o, r = @gen(:sp,:o,:r)(msim, s, a)
-    # r_total += d*r
-    # d *= discount(msim)
     b = update(up, b, a, o)
 
     rewardframe = render(msim, (sp=sp, bp=b), true)
