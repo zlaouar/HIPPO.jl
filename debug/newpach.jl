@@ -15,16 +15,16 @@ function generate_path(data, ws_client)
     rewarddist = rewarddist .+ abs(minimum(rewarddist)) .+ 0.01
 
     mapsize = reverse(size(rewarddist)) # (x,y)
-    sinit = TSState([1,1], mapsize, vec(trues(mapsize)))#rand(initialstate(msim))
+    sinit = TSState([1, 1], mapsize, vec(trues(mapsize)))#rand(initialstate(msim))
     msolve = TargetSearchPOMDP(sinit, size=mapsize, rewarddist=rewarddist)
     solver = POMCPSolver(tree_queries=1000, max_time=0.2, c=80)
     b0 = initialstate(msolve)
     N = 1000
     particle_up = BootstrapFilter(msolve, N)
     particle_b = initialize_belief(particle_up, b0)
-    
 
-    planner = solve(solver,msolve)
+
+    planner = solve(solver, msolve)
 
     pachSim = PachSimulator(msolve, planner, particle_up, particle_b, sinit)
 
@@ -37,21 +37,21 @@ function generate_path(data, ws_client)
 
     response = [location_dict[locvec[i]] for i in eachindex(locvec)]
     println("Sending path: ", response)
-    write(ws_client, """{"action": "ReturnPath", "args": "$response"}""")
+    write(ws_client, JSON.json(Dict("action" => "ReturnPath", "args" => Dict("flightPath" => response))))
 end
-  
+
 function initialize()
     mapsize = reverse(size(rewarddist)) # (x,y)
-    sinit = TSState([1,1], mapsize, vec(trues(mapsize)))#rand(initialstate(msim))
+    sinit = TSState([1, 1], mapsize, vec(trues(mapsize)))#rand(initialstate(msim))
     msolve = TargetSearchPOMDP(sinit, size=mapsize, rewarddist=rewarddist)
     solver = POMCPSolver(tree_queries=1000, max_time=0.2, c=80)
     b0 = initialstate(msolve)
     N = 1000
     particle_up = BootstrapFilter(msolve, N)
     particle_b = initialize_belief(particle_up, b0)
-    
 
-    planner = solve(solver,msolve)
+
+    planner = solve(solver, msolve)
 
     pachSim = PachSimulator(msolve, planner, particle_up, particle_b, sinit)
 
@@ -71,9 +71,9 @@ function main()
                 action = payload["action"]
                 arguments = payload["args"]
 
-                println("Executing Action: ",action)
-                
-                if action=="CalculatePath"
+                println("Executing Action: ", action)
+
+                if action == "CalculatePath"
                     generate_path(arguments, ws_client)
                 end
             end
