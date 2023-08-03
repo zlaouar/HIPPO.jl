@@ -27,7 +27,7 @@ function POMDPs.transition(m::TargetSearchPOMDP, s, a)
     remaining_prob = 1.0
 
     if isequal(s.robot, s.target)
-        return Deterministic(TSState(SA[-1,-1], SA[-1,-1], s.visited))
+        return Deterministic(TSState(SA[-1,-1], copy(s.target), s.visited))
     end
     
     if haskey(m.rois, s.robot)

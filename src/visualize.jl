@@ -76,3 +76,12 @@ function rendhist(hist, m; delay=0.1)
         sleep(delay)
     end
 end 
+
+function rendhist(hist, m, rewarddist; delay=0.1)
+    m.reward = rewarddist
+    for h ∈ hist
+        remove_rewards(m, h.sp.robot)
+        display(render(m, h, true))
+        sleep(delay)
+    end
+end 

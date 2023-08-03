@@ -58,8 +58,7 @@ function simulateHIPPO(sim::HIPPOSimulator)
         #a_traj = extract_trajectory(root(tree), 5)
         #a = first(a_traj)
 
-
-        a, info = action_info(sim.planner, sim.b, tree_in_info = true)
+        a, info = action_info(sim.planner, b, tree_in_info = true)
         remove_rewards(msim, s.robot) # remove reward at current state
         #display(msim.reward)
         sp, o, r = @gen(:sp,:o,:r)(msim, s, a)

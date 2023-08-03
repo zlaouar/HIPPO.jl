@@ -38,10 +38,10 @@ hallway = [80.0 80.0;
            0.0 0.0;
            0.0 0.0;
            0.0 0.0]
-rewarddist = smallreward
-rewarddist = hallway
+#rewarddist = smallreward
+#rewarddist = hallway
 #rewarddist = load("rewardmat.jld2","rewarddist")
-#rewarddist = rewarddist .+ abs(minimum(rewarddist)) .+ 0.01
+rewarddist = rewarddist .+ abs(minimum(rewarddist)) .+ 0.01
 #rewarddist = abs.(rewarddist)
 mapsize = reverse(size(rewarddist)) #(13,16)
 sinit = TSState([2,1], mapsize, vec(trues(mapsize)))#rand(initialstate(msim))
@@ -58,15 +58,15 @@ roi_points = Dict(roi_states .=> probs)
 
 msolve = TargetSearchPOMDP(sinit, size=mapsize, rewarddist=rewarddist)
 msolveBasic = TSPOMDPBasic(sinit=sinitBasic, size=mapsize)
-#mdp_solver = ValueIterationSolver() # creates the solver
-#mdp_policy = solve(mdp_solver, UnderlyingMDP(msolveBasic))
+mdp_solver = ValueIterationSolver() # creates the solver
+mdp_policy = solve(mdp_solver, UnderlyingMDP(msolveBasic))
 
 p = FunctionPolicy(FixedPolicy())
-#mdprollout = FORollout(TargetSearchMDPPolicy(mdp_policy))
+mdprollout = FORollout(TargetSearchMDPPolicy(mdp_policy))
 funcrollout = FORollout(p)
 #mdprollout = FORollout(mdp_policy) # change MDP reward mat to pompdp reward mat
-#solver = POMCPSolver(estimate_value = mdprollout, tree_queries=10000, max_time=0.2, c=5) # mdp policy rollout
-solver = POMCPSolver(estimate_value = funcrollout, tree_queries=10000, max_time=0.2, c=5) # up rollout
+solver = POMCPSolver(estimate_value = mdprollout, tree_queries=10000, max_time=0.2, c=5) # mdp policy rollout
+#solver = POMCPSolver(estimate_value = funcrollout, tree_queries=10000, max_time=0.2, c=5) # up rollout
 #solver = POMCPSolver(tree_queries=10_000, max_time=0.2, c=5) # random
 
 
@@ -92,7 +92,7 @@ particle_b = initialize_belief(particle_up, b0)
 
 
 #r_total,sim_states,rewardframes, belframes = customsim(msolve, msim, planner, particle_up, particle_b, sinit)
-hipposim = HIPPOSimulator(msolve, planner, particle_up, particle_b, sinit, max_fps=10, max_iter=60)
+hipposim = HIPPOSimulator(msolve, planner, particle_up, particle_b, sinit, max_fps=10, max_iter=typemax(Int64))
 r_total, hist = simulateHIPPO(hipposim)
 
 #renderVIPolicy(mdp_policy, msolveBasic, sinitBasic) # render MDP policy

@@ -22,6 +22,8 @@ function targetdir(sp)
         return :down
     elseif (sp.robot[2]-sp.target[2]) == -1 # target above robot
         return :up
+    else
+        error("Invalid state")
     end
 end
 
