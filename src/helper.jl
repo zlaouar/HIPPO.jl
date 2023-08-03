@@ -15,7 +15,7 @@ struct TargetSearchMDPPolicy{P} <: Policy
 end
 
 function POMDPs.action(p::TargetSearchMDPPolicy, s)
-    newS = TSStateBasic(s.robot, s.target)
+    newS = BasicState(s.robot, s.target)
     return action(p.vi_policy, newS)
 end
 

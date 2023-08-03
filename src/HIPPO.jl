@@ -20,33 +20,50 @@ using ParticleFilters
 using ColorSchemes
 
 
-include(joinpath(@__DIR__,"common.jl"))
+include("common.jl")
 
-include(joinpath(@__DIR__,"batteryPOMDP","core_battery.jl"))
-export TSPOMDPBattery, TSStateBattery
-include(joinpath(@__DIR__,"batteryPOMDP","functions_battery.jl"))
-include(joinpath(@__DIR__,"batteryPOMDP","observations_battery.jl"))
-include(joinpath(@__DIR__,"batteryPOMDP","simulate.jl"))
+#include(joinpath(@__DIR__,"batteryPOMDP","core_battery.jl"))
+#export TSPOMDPBattery, TSStateBattery
+#include(joinpath(@__DIR__,"batteryPOMDP","functions_battery.jl"))
+#include(joinpath(@__DIR__,"batteryPOMDP","observations_battery.jl"))
+#include(joinpath(@__DIR__,"batteryPOMDP","simulate.jl"))
 
 
-include(joinpath(@__DIR__,"basicPOMDP","core_vanilla.jl"))
-export TSPOMDPBasic, TSStateBasic
+#include(joinpath(@__DIR__,"advPOMDP","core.jl"))
+#export TargetSearchPOMDP, TSState
+#include(joinpath(@__DIR__,"advPOMDP","functions.jl"))
+#include(joinpath(@__DIR__,"advPOMDP","observations.jl")) 
+
+
+include(joinpath(@__DIR__,"metaPOMDP","core.jl"))
+include(joinpath(@__DIR__,"metaPOMDP","functions.jl"))
+include(joinpath(@__DIR__,"metaPOMDP","observations.jl")) 
+export BasicPOMDP,
+       RewardPOMDP, 
+       BatteryPOMDP, 
+       FullPOMDP,
+       BasicState,
+       RewardState, 
+       BatteryState,
+       FullState
+
+include(joinpath(@__DIR__,"metaPOMDP","simulate.jl"))
+export simulateHIPPO, 
+       predicted_path,
+       HIPPOSimulator, 
+       PachSimulator
+
+#include(joinpath(@__DIR__,"basicPOMDP","core_vanilla.jl"))
+#export TSPOMDPBasic, TSStateBasic
 include(joinpath(@__DIR__,"basicPOMDP","functions_vanilla.jl"))
-include(joinpath(@__DIR__,"basicPOMDP","observations_vanilla.jl"))
-include(joinpath(@__DIR__,"visualize.jl"))
-export rendhist
+#include(joinpath(@__DIR__,"basicPOMDP","observations_vanilla.jl"))
 
-
-include(joinpath(@__DIR__,"advPOMDP","core.jl"))
-export TargetSearchPOMDP, TSState
-include(joinpath(@__DIR__,"advPOMDP","functions.jl"))
-include(joinpath(@__DIR__,"advPOMDP","observations.jl")) 
-include(joinpath(@__DIR__,"advPOMDP","simulate.jl"))
-export simulateHIPPO, predicted_path, HIPPOSimulator, PachSimulator
 
 include(joinpath(@__DIR__,"helper.jl"))
 export FixedPolicy, TargetSearchMDPPolicy
 
+include("visualize.jl")
+export rendhist
 #include(joinpath(@__DIR__,"value.jl"))
 #export 
 #    BFORollout,

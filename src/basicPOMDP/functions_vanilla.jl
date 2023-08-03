@@ -1,13 +1,9 @@
-function POMDPs.states(m::TSPOMDPBasic) 
-    nonterm = vec(collect(TSStateBasic(SVector(c[1],c[2]), SVector(c[3],c[4])) for c in Iterators.product(1:m.size[1], 1:m.size[2], 1:m.size[1], 1:m.size[2])))
-    return push!(nonterm, TSStateBasic([-1,-1],[-1,-1]))
+function POMDPs.states(m::BasicPOMDP) 
+    nonterm = vec(collect(BasicState(SVector(c[1],c[2]), SVector(c[3],c[4])) for c in Iterators.product(1:m.size[1], 1:m.size[2], 1:m.size[1], 1:m.size[2])))
+    return push!(nonterm, BasicState([-1,-1],[-1,-1]))
 end
 
-POMDPs.actions(m::TSPOMDPBasic) = (:left, :right, :up, :down, :stay)
-
-POMDPs.discount(m::TSPOMDPBasic) = 0.95
-
-function POMDPs.stateindex(m::TSPOMDPBasic, s)
+function POMDPs.stateindex(m::BasicPOMDP, s)
     if s.robot == SA[-1,-1]
         return m.size[1]^2 * m.size[2]^2 + 1
     else 
@@ -15,20 +11,18 @@ function POMDPs.stateindex(m::TSPOMDPBasic, s)
     end
 end
 
-POMDPs.actionindex(m::TSPOMDPBasic, a) = actionind[a]
 
-
-function bounce(m::TSPOMDPBasic, pos, offset)
-    new = clamp.(pos + offset, SVector(1,1), m.size)
-end
-
-function POMDPs.transition(m::TSPOMDPBasic, s, a)
-    states = TSStateBasic[]
+function POMDPs.transition(m::BasicPOMDP, s, a)
+    states = BasicState[]
     probs = Float64[]
     remaining_prob = 1.0
 
+    if isequal(s.robot, s.target)
+        return Deterministic(BasicState(SA[-1,-1], copy(s.target)))
+    end
+
     if haskey(m.rois, s.robot)
-        push!(states, TSStateBasic(SA[-1,-1], SA[-1,-1])) # terminal state for regions of interest
+        push!(states, BasicState(SA[-1,-1], SA[-1,-1])) # terminal state for regions of interest
         push!(probs, m.rois[s.robot])
         remaining_prob = 1-m.rois[s.robot]
     end
@@ -36,7 +30,7 @@ function POMDPs.transition(m::TSPOMDPBasic, s, a)
 
     newrobot = bounce(m, s.robot, actiondir[a])
 
-    push!(states, TSStateBasic(newrobot, s.target))
+    push!(states, BasicState(newrobot, s.target))
     push!(probs, remaining_prob)
 
 
@@ -44,39 +38,30 @@ function POMDPs.transition(m::TSPOMDPBasic, s, a)
 
 end
 
-function POMDPs.reward(m::TSPOMDPBasic, s::TSStateBasic, a::Symbol, sp::TSStateBasic)
-    rmat = deepcopy(m.reward)
-    #rmat = m.reward 
-    correct_ind = reverse(s.robot)
-    xind = m.size[2]+1 - correct_ind[1]
-    inds = [xind, correct_ind[2]]
-    #m.reward[inds...] = 0.0
-
+function POMDPs.reward(m::BasicPOMDP, s::BasicState, a::Symbol, sp::BasicState)
     reward_running = -1.0
     reward_target = 0.0
     reward_roi = 0.0
-    if sp.robot == sp.target && sp.robot != SA[-1,-1]# if target is found
+
+    if isequal(sp.robot, sp.target) # if target is found
         reward_running = 0.0
         reward_target = 100.0 
+        return reward_running + reward_target
     end
+
     if sp.robot == SA[-1,-1]
         reward_running = 0.0
         reward_roi = 0.0
     end
-    #m.reward[inds...] = 0.0
-    if !isempty(rmat)
-        #display(rmat[inds...])
-        return reward_running + reward_target + reward_roi + rmat[inds...] # running cost
-    else
-        reward_running + reward_target + reward_roi
-    end
+
+    return reward_running + reward_target + reward_roi
 end
 
-function POMDPs.initialstate(m::TSPOMDPBasic)
-    return POMDPTools.Uniform(TSStateBasic(m.robot_init, SVector(x, y)) for x in 1:m.size[1], y in 1:m.size[2])
+function POMDPs.initialstate(m::BasicPOMDP)
+    return POMDPTools.Uniform(BasicState(m.robot_init, SVector(x, y)) for x in 1:m.size[1], y in 1:m.size[2])
 end
 
-function POMDPTools.ModelTools.render(m::TSPOMDPBasic, step)
+function POMDPTools.ModelTools.render(m::BasicPOMDP, step)
     nx, ny = m.size
     cells = []
     target_marginal = zeros(nx, ny)
@@ -125,4 +110,4 @@ function POMDPTools.ModelTools.render(m::TSPOMDPBasic, step)
 end
 
 
-POMDPs.isterminal(m::TSPOMDPBasic, s::TSStateBasic) = s.robot == SA[-1,-1]
+POMDPs.isterminal(m::BasicPOMDP, s::BasicState) = s.robot == SA[-1,-1]

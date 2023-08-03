@@ -1,5 +1,5 @@
 mutable struct GridWorldEnv
-    m::TSPOMDPBasic
+    m::BasicPOMDP
     size::SVector{2, Int}
     rewards::Matrix{Float64}
     robotInit::SVector{2, Int}
