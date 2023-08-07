@@ -1,9 +1,9 @@
 struct HIPPOSimulator 
-    msim::TargetSearchPOMDP
+    msim::RewardPOMDP
     planner::POMCPPlanner
     up::BasicParticleFilter
     b::ParticleCollection
-    sinit::TSState
+    sinit::RewardState
     rewardframes::Frames
     belframes::Frames
     dt::Float64
@@ -11,11 +11,11 @@ struct HIPPOSimulator
 end
 
 mutable struct PachSimulator 
-    msim::TargetSearchPOMDP
+    msim::RewardPOMDP
     planner::POMCPPlanner
     up::BasicParticleFilter
     b::ParticleCollection
-    sinit::TSState
+    sinit::RewardState
 end
 
 function HIPPOSimulator(msim::TargetSearchPOMDP, planner::POMCPPlanner, up::BasicParticleFilter, b::ParticleCollection, sinit::TSState; 

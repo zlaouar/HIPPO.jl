@@ -44,47 +44,42 @@ hallway = [80.0 80.0;
 rewarddist = rewarddist .+ abs(minimum(rewarddist)) .+ 0.01
 #rewarddist = abs.(rewarddist)
 mapsize = reverse(size(rewarddist)) #(13,16)
-sinit = TSState([2,1], mapsize, vec(trues(mapsize)))#rand(initialstate(msim))
+sinit = RewardState([2,1], mapsize, vec(trues(mapsize)))#rand(initialstate(msim))
 #mapsize = (13,16)
-#sinit = TSState([10,1],[13,16],trues(prod(mapsize)))#rand(initialstate(msim))
+#sinit = RewardState([10,1],[13,16],trues(prod(mapsize)))#rand(initialstate(msim))
 #mapsize = (4,4)
-#sinit = TSState([1,1],[4,4],trues(prod(mapsize)))#rand(initialstate(msim))
-sinitBasic = TSStateBasic(sinit.robot,sinit.target)
-roi_states = [[2,2],[2,2],[7,8]]
-probs = [0.8,0.8,0.8]
-roi_points = Dict(roi_states .=> probs)
+#sinit = RewardState([1,1],[4,4],trues(prod(mapsize)))#rand(initialstate(msim))
+#sinitBasic = BasicState(sinit.robot,sinit.target)
+#roi_states = [[2,2],[2,2],[7,8]]
+#probs = [0.8,0.8,0.8]
+#roi_points = Dict(roi_states .=> probs)
   
 
 
-msolve = TargetSearchPOMDP(sinit, size=mapsize, rewarddist=rewarddist)
-msolveBasic = TSPOMDPBasic(sinit=sinitBasic, size=mapsize)
-mdp_solver = ValueIterationSolver() # creates the solver
-mdp_policy = solve(mdp_solver, UnderlyingMDP(msolveBasic))
+msolve = RewardPOMDP(sinit, size=mapsize, rewarddist=rewarddist)
+#msolveBasic = TSPOMDPBasic(sinit=sinitBasic, size=mapsize)
+#mdp_solver = ValueIterationSolver() # creates the solver
+#mdp_policy = solve(mdp_solver, UnderlyingMDP(msolveBasic))
 
 p = FunctionPolicy(FixedPolicy())
-mdprollout = FORollout(TargetSearchMDPPolicy(mdp_policy))
+#mdprollout = FORollout(TargetSearchMDPPolicy(mdp_policy))
 funcrollout = FORollout(p)
 #mdprollout = FORollout(mdp_policy) # change MDP reward mat to pompdp reward mat
-solver = POMCPSolver(estimate_value = mdprollout, tree_queries=10000, max_time=0.2, c=5) # mdp policy rollout
+#solver = POMCPSolver(estimate_value = mdprollout, tree_queries=10000, max_time=0.2, c=5) # mdp policy rollout
 #solver = POMCPSolver(estimate_value = funcrollout, tree_queries=10000, max_time=0.2, c=5) # up rollout
-#solver = POMCPSolver(tree_queries=10_000, max_time=0.2, c=5) # random
+solver = POMCPSolver(tree_queries=10_000, max_time=0.2, c=5) # random
 
 
 planner = solve(solver,msolve)
 
-ds = DisplaySimulator()
-hr = HistoryRecorder()
-msim = TargetSearchPOMDP(sinit, size=mapsize, rewarddist=rewarddist)
-
 b0 = initialstate(msolve)
-
 N = 1000
 particle_up = BootstrapFilter(msolve, N)
 particle_b = initialize_belief(particle_up, b0)
 
 
 
-#a, info = action_info(planner, Deterministic(TSState([13,4],mapsize,vec(trues(mapsize)))), tree_in_info=true)
+#a, info = action_info(planner, Deterministic(RewardState([13,4],mapsize,vec(trues(mapsize)))), tree_in_info=true)
 #inchrome(D3Tree(info[:tree], init_expand=3))
 
 

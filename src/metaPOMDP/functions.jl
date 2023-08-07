@@ -18,6 +18,10 @@ function POMDPs.initialstate(m::FullPOMDP)
     return POMDPTools.Uniform(FullState(m.robot_init, SVector(x, y), trues(prod(m.size)), z) for x in 1:m.size[1], y in 1:m.size[2], z in 1:m.maxbatt)
 end
 
+function POMDPs.initialstate(m::RewardPOMDP)
+    return POMDPTools.Uniform(RewardState(m.robot_init, SVector(x, y), trues(prod(m.size))) for x in 1:m.size[1], y in 1:m.size[2])
+end
+
 """
     actions
 """
@@ -83,7 +87,58 @@ function POMDPs.reward(m::FullPOMDP, s::FullState, a::Symbol, sp::FullState)
     end
 end
 
+function POMDPs.transition(m::RewardPOMDP, s, a)
+    states = RewardState[]
+    probs = Float64[]
+    remaining_prob = 1.0
 
+    if isequal(s.robot, s.target)
+        return Deterministic(RewardState(SA[-1,-1], copy(s.target), s.visited))
+    end
+    
+    if haskey(m.rois, s.robot)
+        push!(states, RewardState(SA[-1,-1], SA[-1,-1], copy(s.visited))) # terminal state for regions of interest
+        push!(probs, m.rois[s.robot])
+        remaining_prob = 1-m.rois[s.robot]
+    end
+
+
+    newrobot = bounce(m, s.robot, actiondir[a])
+
+    push!(states, RewardState(newrobot, s.target, copy(s.visited)))
+    push!(probs, remaining_prob)
+
+
+    for sp ∈ states
+        sind = LinearIndices((1:m.size[1], 1:m.size[2]))[s.robot...]
+        sp.visited[sind] = 0
+    end
+
+    return SparseCat(states, probs)
+
+end
+
+function POMDPs.reward(m::RewardPOMDP, s::RewardState, a::Symbol, sp::RewardState)
+    reward_running = -1.0
+    reward_target = 0.0
+    reward_roi = 0.0
+
+    if isequal(sp.robot, sp.target)# if target is found
+        reward_running = 0.0
+        reward_target = 100.0 
+        return reward_running + reward_target + reward_roi
+    end
+    if isterminal(m, sp)
+        return 0.0
+    end
+
+    inds = rewardinds(m, sp.robot)
+    spind = LinearIndices((1:m.size[1], 1:m.size[2]))[sp.robot...]
+
+    if !isempty(m.reward) && sp.robot != SA[-1,-1]
+        return reward_running + reward_target + reward_roi + m.reward[inds...]*s.visited[spind] # running cost
+    end
+end
 function POMDPTools.ModelTools.render(m::FullPOMDP, step)
     #set_default_graphic_size(14cm,14cm)
     nx, ny = m.size
@@ -168,7 +223,7 @@ end
 
 set_default_graphic_size(18cm,14cm)
 
-function POMDPTools.ModelTools.render(m::FullPOMDP, step, plt_reward::Bool)
+function POMDPTools.ModelTools.render(m::TargetSearchPOMDP, step, plt_reward::Bool)
     nx, ny = m.size
     cells = []
     rois = collect(keys(m.rois))
@@ -213,3 +268,5 @@ function POMDPs.isterminal(m::FullPOMDP, s::FullState)
     required_batt = dist(s.robot, m.robot_init)
     return required_batt == s.battery || s.robot == SA[-1,-1] 
 end
+
+POMDPs.isterminal(m::RewardPOMDP, s::TSState) = s.robot == SA[-1,-1]

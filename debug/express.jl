@@ -38,11 +38,11 @@ hallway = [80.0 80.0;
            0.0 0.0;
            0.0 0.0;
            0.0 0.0]
-rewarddist = smallreward
+#rewarddist = smallreward
 #rewarddist = hallway
 #rewarddist = load("rewardmat.jld2","rewarddist")
-rewarddist = rewarddist .+ abs(minimum(rewarddist)) .+ 0.01
-#rewarddist = abs.(rewarddist)
+#rewarddist = rewarddist .+ abs(minimum(rewarddist)) .+ 0.01
+rewarddist = abs.(rewarddist)
 mapsize = reverse(size(rewarddist)) #(13,16)
 maxbatt = 20
 sinit = FullState([2,1], mapsize, vec(trues(mapsize)), maxbatt)#rand(initialstate(msim))
