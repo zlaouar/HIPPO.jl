@@ -233,7 +233,7 @@ function POMDPTools.ModelTools.render(m::TargetSearchPOMDP, step, plt_reward::Bo
         if iszero(m.reward[rewardinds(m, SA[x,y])...])
             target = compose(context(), rectangle(), fill("black"), stroke("gray"))
         else
-            target = compose(context(), rectangle(), fillopacity(normie(m.reward[rewardinds(m,SA[x,y])...],m.reward)), fill("red"), stroke("gray"))
+            target = compose(context(), rectangle(), fillopacity(normie(m.reward[rewardinds(m,SA[x,y])...],m.reward)), fill("green"), stroke("gray"))
         end
         if [x,y] in rois
             roi = compose(context(), rectangle(), fill("transparent"), stroke("white"), linewidth(1.2mm))
@@ -249,9 +249,9 @@ function POMDPTools.ModelTools.render(m::TargetSearchPOMDP, step, plt_reward::Bo
 
     if haskey(step, :sp)
         robot_ctx = cell_ctx(step[:sp].robot, m.size)
-        robot = compose(robot_ctx, circle(0.5, 0.5, 0.5), fill("green"))
+        robot = compose(robot_ctx, circle(0.5, 0.5, 0.5), fill("blue"))
         target_ctx = cell_ctx(step[:sp].target, m.size)
-        target = compose(target_ctx, circle(0.5, 0.5, 0.5), fill("orange"))
+        target = compose(target_ctx, star(0.5,0.5,0.5,5,0.5), fill("orange"))
     else
         robot = nothing
         target = nothing

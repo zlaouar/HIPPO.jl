@@ -1,9 +1,9 @@
-struct HIPPOSimulator 
-    msim::RewardPOMDP
+Base.@kwdef struct HIPPOSimulator 
+    msim::TargetSearchPOMDP
     planner::POMCPPlanner
     up::BasicParticleFilter
     b::ParticleCollection
-    sinit::RewardState
+    sinit::TSState
     rewardframes::Frames
     belframes::Frames
     dt::Float64
@@ -62,15 +62,16 @@ function simulateHIPPO(sim::HIPPOSimulator)
         #display(msim.reward)
         sp, o, r = @gen(:sp,:o,:r)(msim, s, a)
         r_total += d*r
-        d *= discount(sim.msim)
+        d *= discount(msim)
         b = update(sim.up, b, a, o)
-        belframe = render(sim.msim, (sp=sp, bp=b))
+        belframe = render(msim, (sp=sp, bp=b))
 
-        rewardframe = render(sim.msim, (sp=sp, bp=b), true)
+        rewardframe = render(msim, (sp=sp, bp=b), true)
         display(rewardframe)
         sleep_until(tm += sim.dt)
         iter += 1
-        println(iter,"- | s: ", s, " | sp:", sp, " | r:", r, " | o: ", o)
+        #println(iter,"- | s: ", s, " | sp:", sp, " | r:", r, " | o: ", o)
+        println(iter,"- | battery: ", s.battery, " | dist_to_home: ", dist(s.robot, msim.robot_init))
         if iter > 1000
             roi_states = [[1,9],[1,10],[1,8]]
             probs = [0.8,0.8,0.8]
