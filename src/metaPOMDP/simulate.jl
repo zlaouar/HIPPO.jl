@@ -27,18 +27,29 @@ function remove_rewards(pomdp, s)
     pomdp.reward[rewardinds(pomdp,s)...] = 0.0
 end
 
+function convertinds(m::TargetSearchPOMDP, pos::Vector{Int})
+    correct_ind = reverse(pos)
+    xind = m.size[2]+1 - correct_ind[1]
+    inds = [xind, correct_ind[2]]
+    return inds
+end
+
 function generatelocation(m::TargetSearchPOMDP, atraj, robotloc)
     loctraj = Vector{Vector{Int}}(undef, length(atraj))
+    currloc = robotloc
     for i in eachindex(loctraj)
-        newrobot = bounce(m, robotloc, actiondir[atraj[i]])
+        newrobot = bounce(m, currloc, actiondir[atraj[i]])
         loctraj[i] = newrobot
+        currloc = newrobot
     end
+    loctraj = [convertinds(m, loc) for loc in loctraj]
     return loctraj
 end
 
 function loctostr(locvec)
     return [join(locvec[i], ',') for i in eachindex(locvec)]
 end
+
 
 
 function simulateHIPPO(sim::HIPPOSimulator)
@@ -95,8 +106,8 @@ function predicted_path(sim::PachSimulator)
     sp, o, r = @gen(:sp,:o,:r)(msim, s, a)
     b = update(up, b, a, o)
 
-    rewardframe = render(msim, (sp=sp, bp=b), true)
-    display(rewardframe)
+    #rewardframe = render(msim, (sp=sp, bp=b), true)
+    #display(rewardframe)
     
     s = sp
 

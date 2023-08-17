@@ -14,6 +14,8 @@ function generate_path(data, ws_client)
     rewarddist = hcat(data["gridRewards"]...)
     rewarddist = rewarddist .+ abs(minimum(rewarddist)) .+ 0.01
 
+    display(rewarddist)
+
     mapsize = reverse(size(rewarddist)) # (x,y)
     sinit = RewardState([1, 1], mapsize, vec(trues(mapsize)))#rand(initialstate(msim))
     msolve = RewardPOMDP(sinit, size=mapsize, rewarddist=rewarddist)
@@ -32,6 +34,7 @@ function generate_path(data, ws_client)
     location_dict = data["locationDict"]
 
     locvec, b, sinit = predicted_path(pachSim)
+    @info locvec
     pachSim.sinit = sinit
     pachSim.b = b
 
