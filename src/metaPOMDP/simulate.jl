@@ -75,16 +75,16 @@ function simulateHIPPO(sim::HIPPOSimulator)
         r_total += d*r
         d *= discount(msim)
         b = update(sim.up, b, a, o)
-        belframe = render(msim, (sp=sp, bp=b))
+        #belframe = render(msim, (sp=sp, bp=b))
 
-        rewardframe = render(msim, (sp=sp, bp=b), true)
-        display(rewardframe)
+        #rewardframe = render(msim, (sp=sp, bp=b), true)
+        #display(rewardframe)
         sleep_until(tm += sim.dt)
         iter += 1
         #println(iter,"- | s: ", s, " | sp:", sp, " | r:", r, " | o: ", o)
-        println(iter,"- | battery: ", sp.battery, " | dist_to_home: ", dist(sp.robot, msim.robot_init), " | s: ", sp.robot)
-        push!(sim.rewardframes, rewardframe)
-        push!(sim.belframes, belframe)
+        #println(iter,"- | battery: ", sp.battery, " | dist_to_home: ", dist(sp.robot, msim.robot_init), " | s: ", sp.robot)
+        #push!(sim.rewardframes, rewardframe)
+        #push!(sim.belframes, belframe)
         push!(history, (s=s, a=a, sp=sp, o=o, r=r, bp=b, info=info))
         s = sp
     end
@@ -97,7 +97,7 @@ function predicted_path(sim::PachSimulator)
 
     _, info = action_info(planner, b, tree_in_info = true)
     tree = info[:tree] # maybe set POMCP option tree_in_info = true
-    a_traj = extract_trajectory(root(tree), 5)
+    a_traj = extract_trajectory(root(tree), 12)
     println(a_traj)
     a = first(a_traj)
 

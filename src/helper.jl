@@ -70,8 +70,10 @@ function extract_trajectory(node::BasicPOMCP.POMCPObsNode, depth)
         try
             oind = oinds[findmax(t.total_n[oinds])[2]] # get observation with highest visit count
         catch e
-            inchrome(D3Tree(t))
-            error("no null observation")
+            @warn "no null observation"
+            return a_traj[1:i]
+            #inchrome(D3Tree(t))
+            #error("no null observation")
         end
 
         #oinds = [t.o_lookup[(ainds[i], [0,0,0,0,0])] for i in eachindex(ainds)]
