@@ -71,14 +71,7 @@ function simulateHIPPO(sim::HIPPOSimulator)
         sleep_until(tm += sim.dt)
         iter += 1
         #println(iter,"- | s: ", s, " | sp:", sp, " | r:", r, " | o: ", o)
-        println(iter,"- | battery: ", s.battery, " | dist_to_home: ", dist(s.robot, msim.robot_init))
-        if iter > 1000
-            roi_states = [[1,9],[1,10],[1,8]]
-            probs = [0.8,0.8,0.8]
-            roi_points = Dict(roi_states .=> probs)
-            sim.msim.rois = roi_points
-            sim.planner = solve(sim.planner, sim.msim)
-        end
+        println(iter,"- | battery: ", sp.battery, " | dist_to_home: ", dist(sp.robot, msim.robot_init), " | s: ", sp.robot)
         push!(sim.rewardframes, rewardframe)
         push!(sim.belframes, belframe)
         push!(history, (s=s, a=a, sp=sp, o=o, r=r, bp=b, info=info))

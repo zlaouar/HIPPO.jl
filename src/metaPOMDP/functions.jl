@@ -72,7 +72,7 @@ function POMDPs.reward(m::FullPOMDP, s::FullState, a::Symbol, sp::FullState)
 
     if isequal(sp.robot, sp.target)# if target is found
         reward_running = 0.0
-        reward_target = 100.0 
+        reward_target = 1000.0 
         return reward_running + reward_target
     end
     if isterminal(m, sp) # IS THIS NECCESSARY?
@@ -266,7 +266,7 @@ end
 
 function POMDPs.isterminal(m::FullPOMDP, s::FullState)
     required_batt = dist(s.robot, m.robot_init)
-    return required_batt == s.battery || s.robot == SA[-1,-1] 
+    return s.battery - required_batt <= 1 || s.robot == SA[-1,-1] 
 end
 
 POMDPs.isterminal(m::RewardPOMDP, s::TSState) = s.robot == SA[-1,-1]
