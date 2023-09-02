@@ -10,7 +10,7 @@ using WebSockets: readguarded, open
 using JSON
 
 
-#= function generate_path(data, ws_client)
+function generate_predicted_path(data, ws_client)
     rewarddist = hcat(data["gridRewards"]...)
     rewarddist = rewarddist .+ abs(minimum(rewarddist)) .+ 0.01
 
@@ -42,8 +42,8 @@ using JSON
     println("Sending path: ", response)
     write(ws_client, JSON.json(Dict("action" => "ReturnPath", "args" => Dict("flightPath" => response))))
 end
- =#
-function generate_path(data, ws_client)
+
+function generate_sim_path(data, ws_client)
     rewarddist = hcat(data["gridRewards"]...)
     rewarddist = rewarddist .+ abs(minimum(rewarddist)) .+ 0.01
 
@@ -116,7 +116,7 @@ function main()
                 println("Executing Action: ", action)
 
                 if action == "CalculatePath"
-                    generate_path(arguments, ws_client)
+                    generate_sim_path(arguments, ws_client)
                 end
             end
         end
