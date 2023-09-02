@@ -260,6 +260,51 @@ function POMDPTools.ModelTools.render(m::TargetSearchPOMDP, step, plt_reward::Bo
     return compose(context((w-sz)/2, (h-sz)/2, sz, sz), robot, target, grid, outline)
 end
 
+function POMDPTools.ModelTools.render(m::TargetSearchPOMDP, step, points::Vector{Vector{Int}})
+    nx, ny = m.size
+    cells = []
+    rois = collect(keys(m.rois))
+    iter = 1
+    for x in 1:nx, y in 1:ny
+        cell = cell_ctx((x,y), m.size)
+        if iszero(m.reward[rewardinds(m, SA[x,y])...])
+            target = compose(context(), rectangle(), fill("white"), stroke("gray"))
+        else
+            target = compose(context(), rectangle(), fillopacity(normie(m.reward[rewardinds(m,SA[x,y])...],m.reward)), fill("green"), stroke("gray"))
+        end
+        if [x,y] ∈ points
+            roi = compose(context(), rectangle(), fill("green2"), stroke("gray"), linewidth(0.5mm))
+            compose!(cell, roi)
+        else
+            compose!(cell, target)
+        end
+
+        if [x,y] in rois
+            roi = compose(context(), rectangle(), fill("transparent"), stroke("white"), linewidth(1.2mm))
+            compose!(cell, target, roi)
+        else
+            compose!(cell, target)
+        end
+
+        push!(cells, cell)
+        iter += 1
+    end
+    grid = compose(context(), linewidth(0.3mm), cells...)
+    outline = compose(context(), linewidth(1mm), rectangle(), fill("white"), stroke("gray"))
+
+    if haskey(step, :sp)
+        robot_ctx = cell_ctx(step[:sp].robot, m.size)
+        robot = compose(robot_ctx, circle(0.5, 0.5, 0.5), fill("blue"))
+        target_ctx = cell_ctx(step[:sp].target, m.size)
+        target = compose(target_ctx, star(0.5,0.5,0.5,5,0.5), fill("orange"))
+    else
+        robot = nothing
+        target = nothing
+    end
+    sz = min(w,h)
+    return compose(context((w-sz)/2, (h-sz)/2, sz, sz), robot, target, grid, outline)
+end
+
 function dist(curr, start)
     sum(abs.(curr-start))
 end
@@ -270,3 +315,5 @@ function POMDPs.isterminal(m::FullPOMDP, s::FullState)
 end
 
 POMDPs.isterminal(m::RewardPOMDP, s::TSState) = s.robot == SA[-1,-1]
+
+POMDPs.isterminal(m::FullPOMDP, s::TSState, target) = s.robot == target

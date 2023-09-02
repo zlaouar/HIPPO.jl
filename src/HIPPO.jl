@@ -18,6 +18,8 @@ using AbstractTrees
 using D3Trees
 using ParticleFilters
 using ColorSchemes
+using StatsBase: sample, Weights
+
 
 
 include("common.jl")
@@ -53,6 +55,13 @@ export simulateHIPPO,
        HIPPOSimulator, 
        PachSimulator
 
+include(joinpath(@__DIR__,"baseline","simulate.jl"))
+include(joinpath(@__DIR__,"baseline","action.jl"))
+include(joinpath(@__DIR__,"baseline","data.jl"))
+include(joinpath(@__DIR__,"baseline","truth.jl"))
+
+export simulateBaseline,
+       BaselineSimulator
 #include(joinpath(@__DIR__,"basicPOMDP","core_vanilla.jl"))
 #export TSPOMDPBasic, TSStateBasic
 include(joinpath(@__DIR__,"basicPOMDP","functions_vanilla.jl"))
