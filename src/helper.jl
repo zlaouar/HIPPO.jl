@@ -16,7 +16,7 @@ end
 
 function POMDPs.action(p::TargetSearchMDPPolicy, s)
     newS = BasicState(s.robot, s.target)
-    return action(p.vi_policy, newS)
+    return DiscreteValueIteration.action(p.vi_policy, newS)
 end
 
 function AbstractTrees.children(t::BasicPOMCP.POMCPObsNode)

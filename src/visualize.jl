@@ -32,7 +32,7 @@ function renderMDP(env::GridWorldEnv; color::Function=s->get(env.rewards, s, -0.
         clr = get(ColorSchemes.redgreensplit, (r+10.0)/20.0)
         cell = context((s[1]-1)/nx, (ny-s[2])/ny, 1/nx, 1/ny)
         if policy !== nothing
-            a = policy(TSStateBasic(s, env.targetInit))
+            a = policy(BasicState(s, env.targetInit))
             txt = compose(context(), Compose.text(0.5, 0.5, aarrow[a], hcenter, vcenter), stroke("black"))
             compose!(cell, txt)
         end
@@ -63,9 +63,9 @@ end
 const aarrow = Dict(:up=>'↑', :left=>'←', :down=>'↓', :right=>'→', :stay=>'⊙')
 
 
-function renderVIPolicy(policy, mdp, s)
-    gw = GridWorldEnv(mdp, rewarddist, s.target, size=mapsize, robotInit=s.robot)
-    vi_policy = s -> action(policy, s)
+function renderVIPolicy(policy, mdp, s, rewarddist)
+    gw = GridWorldEnv(mdp, rewarddist, s.target, size=mdp.size, robotInit=s.robot)
+    vi_policy = s -> DiscreteValueIteration.action(policy, s)
     display(HIPPO.renderMDP(gw, policy = vi_policy))
 end
 

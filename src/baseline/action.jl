@@ -1,4 +1,4 @@
-function action(curr_pos, next_pos)
+function action(curr_pos, next_pos::Vector{Int})
     if curr_pos[1] > next_pos[1]
         return :left
     elseif curr_pos[1] < next_pos[1]

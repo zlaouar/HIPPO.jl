@@ -173,7 +173,7 @@ function POMDPTools.ModelTools.render(m::FullPOMDP, step)
             opval = clamp(t_op*2,0.05,1.0)
         end
 
-        target = compose(context(), rectangle(), fillopacity(opval), fill("orange"), stroke("gray"))
+        target = compose(context(), rectangle(), fillopacity(opval), fill("black"), stroke("gray"))
         if [x,y] in rois
             roi = compose(context(), rectangle(), fill("transparent"), stroke("white"), linewidth(1.2mm))
             compose!(cell, target, roi)
@@ -190,7 +190,7 @@ function POMDPTools.ModelTools.render(m::FullPOMDP, step)
         robot_ctx = cell_ctx(step[:sp].robot, m.size)
         robot = compose(robot_ctx, circle(0.5, 0.5, 0.5), fill("green"))
         target_ctx = cell_ctx(step[:sp].target, m.size)
-        target = compose(target_ctx, circle(0.5, 0.5, 0.5), fill("orange"))
+        target = compose(target_ctx, star(0.5,0.5,0.5,5,0.5), fill("orange"))
     else
         robot = nothing
         target = nothing
@@ -213,15 +213,11 @@ function rewardinds(m, pos::SVector{2, Int64})
     correct_ind = reverse(pos)
     xind = m.size[2]+1 - correct_ind[1]
     inds = [xind, correct_ind[2]]
-    #= try 
-        m.reward[inds...]
-    catch
-        @error("inds: $inds, | robot: $pos")
-    end =#
+
     return inds
 end
 
-set_default_graphic_size(18cm,14cm)
+#set_default_graphic_size(18cm,14cm)
 
 function POMDPTools.ModelTools.render(m::TargetSearchPOMDP, step, plt_reward::Bool)
     nx, ny = m.size
@@ -268,7 +264,7 @@ function POMDPTools.ModelTools.render(m::TargetSearchPOMDP, step, points::Vector
     for x in 1:nx, y in 1:ny
         cell = cell_ctx((x,y), m.size)
         if iszero(m.reward[rewardinds(m, SA[x,y])...])
-            target = compose(context(), rectangle(), fill("white"), stroke("gray"))
+            target = compose(context(), rectangle(), fill("black"), stroke("gray"))
         else
             target = compose(context(), rectangle(), fillopacity(normie(m.reward[rewardinds(m,SA[x,y])...],m.reward)), fill("green"), stroke("gray"))
         end

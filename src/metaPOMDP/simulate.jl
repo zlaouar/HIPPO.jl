@@ -1,13 +1,15 @@
-Base.@kwdef struct HIPPOSimulator 
+Base.@kwdef mutable struct HIPPOSimulator 
     msim::TargetSearchPOMDP
     planner::POMCPPlanner
     up::BasicParticleFilter
     b::ParticleCollection
     sinit::TSState
-    rewardframes::Frames
-    belframes::Frames
-    dt::Float64
-    max_iter::Int
+    rewardframes::Frames   = Frames(MIME("image/png"))
+    belframes::Frames      = Frames(MIME("image/png"))
+    dt::Float64            = 1/10
+    max_iter::Int          = 500
+    display::Bool          = false
+    verbose::Bool          = true
 end
 
 mutable struct PachSimulator 
@@ -18,10 +20,10 @@ mutable struct PachSimulator
     sinit::RewardState
 end
 
-function HIPPOSimulator(msim::TargetSearchPOMDP, planner::POMCPPlanner, up::BasicParticleFilter, b::ParticleCollection, sinit::TSState; 
-                max_fps=10, gif_fps=10, max_iter=500) 
-    return HIPPOSimulator(msim, planner, up, b, sinit, Frames(MIME("image/png"), fps=gif_fps), Frames(MIME("image/png"), fps=gif_fps), 1/max_fps, max_iter)
-end
+#function HIPPOSimulator(msim::TargetSearchPOMDP, planner::POMCPPlanner, up::BasicParticleFilter, b::ParticleCollection, sinit::TSState; 
+#                max_fps=10, gif_fps=10, max_iter=500) 
+#    return HIPPOSimulator(msim, planner, up, b, sinit, Frames(MIME("image/png"), fps=gif_fps), Frames(MIME("image/png"), fps=gif_fps), 1/max_fps, max_iter)
+#end
 
 function remove_rewards(pomdp, s)
     pomdp.reward[rewardinds(pomdp,s)...] = 0.0
@@ -60,6 +62,8 @@ function simulateHIPPO(sim::HIPPOSimulator)
     iter = 0
     d = 1.0
     b = sim.b
+    a = nothing 
+    info = nothing
     history = NamedTuple[]
     while !isterminal(msim, s) && iter < max_iter
         tm = time()
@@ -67,7 +71,6 @@ function simulateHIPPO(sim::HIPPOSimulator)
         #tree = info[:tree] # maybe set POMCP option tree_in_info = true
         #a_traj = extract_trajectory(root(tree), 5)
         #a = first(a_traj)
-
         a, info = action_info(sim.planner, b, tree_in_info = true)
         remove_rewards(msim, s.robot) # remove reward at current state
         #display(msim.reward)
@@ -77,8 +80,9 @@ function simulateHIPPO(sim::HIPPOSimulator)
         b = update(sim.up, b, a, o)
         #belframe = render(msim, (sp=sp, bp=b))
 
-        #rewardframe = render(msim, (sp=sp, bp=b), true)
-        #display(rewardframe)
+        rewardframe = render(msim, (sp=sp, bp=b), true)
+        #display(belframe)
+        sim.display && display(rewardframe)
         sleep_until(tm += sim.dt)
         iter += 1
         #println(iter,"- | s: ", s, " | sp:", sp, " | r:", r, " | o: ", o)
@@ -88,7 +92,7 @@ function simulateHIPPO(sim::HIPPOSimulator)
         push!(history, (s=s, a=a, sp=sp, o=o, r=r, bp=b, info=info))
         s = sp
     end
-    return r_total, history
+    return history, r_total
 end
 
 function predicted_path(sim::PachSimulator)

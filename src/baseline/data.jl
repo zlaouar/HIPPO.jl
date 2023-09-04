@@ -19,13 +19,12 @@ function gendists(pospoints, robotinit)
     return finalpoints
 end
 
-function getdata(inputs, db)
+function getdata(inputs, db, mapsize)
     pospoints = [db.ID2grid[inputs.user_points_p[i]] for i in 1:length(inputs.user_points_p)]
-    polys = [sketch.centroid for sketch in inputs.sketch_set]
-    polys = collect.([Int.(round.(pol)) for pol in polys])
-    pospoints = [pospoints; polys]
-
-    return pospoints
+    #polys = [sketch.centroid for sketch in inputs.sketch_set]
+    #polys = collect.([Int.(round.(pol)) for pol in polys])
+    #pospoints = [pospoints; polys]
+    return [ind2pos(mapsize, ind) for ind ∈ pospoints]
 end
 
 function polypoints(inputs, db, mapsize)
@@ -55,5 +54,5 @@ function gridpoints(mapsize)
         end
         
     end
-    return points
+    return points[1:2]
 end

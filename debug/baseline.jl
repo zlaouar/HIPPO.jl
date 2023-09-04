@@ -22,9 +22,8 @@ robotinit = northstart
 maxbatt = 1000
 
 opdata = inputs1
-pospoints = HIPPO.getdata(opdata, db)
-pospoints = [HIPPO.ind2pos(mapsize, ind) for ind ∈ pospoints]
-polypoints = HIPPO.polypoints(opdata, db, mapsize)
+pospoints = HIPPO.getdata(opdata, db, mapsize)[end-10:end]
+polypoints = HIPPO.polypoints(opdata, db, mapsize)[1:2]
 sortedpoints = HIPPO.gendists(pospoints, robotinit)
 
 sinit = FullState(robotinit, HIPPO.ind2pos(mapsize, db.ID2grid[HIPPO.chooseTrueCell()]), vec(trues(mapsize)), maxbatt) #rand(initialstate(msim))
@@ -35,7 +34,7 @@ pomdp = FullPOMDP(sinit,
                   rewarddist=rewarddist,
                   maxbatt=maxbatt)
 
-bsim = BaselineSimulator(msim=pomdp, sinit=sinit, dt=1, max_iter=maxbatt, display=false)
+bsim = BaselineSimulator(msim=pomdp, sinit=sinit, dt=1/4, max_iter=maxbatt, display=true)
 histvec = []
 rvec = []
 targetfound = Bool[]
@@ -43,6 +42,11 @@ newtarget = HIPPO.newtarget(mapsize, db)
 for i in 1:2
     hist, rtot = simulateBaseline(bsim, sortedpoints, polypoints)
     newtarget = HIPPO.ind2pos(mapsize, db.ID2grid[HIPPO.chooseTrueCell()])
+    pomdp = FullPOMDP(sinit,
+                  size=mapsize,
+                  rewarddist=rewarddist,
+                  maxbatt=maxbatt)
+    bsim.msim = pomdp
     bsim.sinit = FullState(sinit.robot, newtarget, sinit.visited, sinit.battery)
     push!(targetfound, last(hist).s.robot == newtarget)
     push!(histvec, hist)

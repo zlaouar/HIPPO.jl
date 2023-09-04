@@ -21,13 +21,13 @@ function POMDPs.observation(m::TargetSearchPOMDP, a::Symbol, sp::TSState)
         targetloc = targetdir(sp)
 
         if targetloc == :left
-            probs = [0.0, 0.0, 0.50, 0.0, 0.25, 0.25]
+            probs = [0.0, 0.0, 0.80, 0.0, 0.10, 0.10]
         elseif targetloc == :right
-            probs = [0.0, 0.0, 0.0, 0.50, 0.25, 0.25]
+            probs = [0.0, 0.0, 0.0, 0.80, 0.10, 0.10]
         elseif targetloc == :up
-            probs = [0.0, 0.0, 0.25, 0.25, 0.0, 0.50]
+            probs = [0.0, 0.0, 0.10, 0.10, 0.0, 0.80]
         elseif targetloc == :down
-            probs = [0.0, 0.0, 0.25, 0.25, 0.50, 0.0]
+            probs = [0.0, 0.0, 0.10, 0.10, 0.80, 0.0]
         end
 
         return SparseCat(OBSERVATIONS, probs)
