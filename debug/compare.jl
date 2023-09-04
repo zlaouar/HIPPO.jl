@@ -29,7 +29,7 @@ pospoints = HIPPO.getdata(opdata, db, mapsize)#[end-10:end]
 polypoints = HIPPO.polypoints(opdata, db, mapsize)#[1:2]
 sortedpoints = HIPPO.gendists(pospoints, robotinit)
 
-target = HIPPO.ind2pos(mapsize, db.ID2grid[HIPPO.chooseTrueCell()])
+target = HIPPO.newtarget(mapsize, db)
 #target = [25,30]
 sinit = FullState(robotinit, target, vec(trues(mapsize)), maxbatt) #rand(initialstate(msim))
 sinitBasic = BasicState(sinit.robot,sinit.target)
@@ -58,7 +58,7 @@ N = 10000
 particle_up = BootstrapFilter(pomdp, N)
 particle_b = initialize_belief(particle_up, b0)
 
-hipposim = HIPPOSimulator(msim=pomdp, planner=planner, up=particle_up, b=particle_b, sinit=sinit, dt=1/10, max_iter=maxbatt, display=false)
+hipposim = HIPPOSimulator(msim=pomdp, planner=planner, up=particle_up, b=particle_b, sinit=sinit, dt=1/10, max_iter=maxbatt, display=true)
 bsim = BaselineSimulator(msim=pomdp, sinit=sinit, dt=1/4, max_iter=maxbatt, display=false, verbose=false)
 
 hippo_hist_vec = []
@@ -67,7 +67,8 @@ hippo_targetfound_vec = Bool[]
 baseline_hist_vec = []
 baseline_reward_vec = []
 baseline_targetfound_vec = Bool[]
-newtarget = HIPPO.newtarget(mapsize, db)
+#newtarget = HIPPO.newtarget(mapsize, db)
+newtarget = sinit.target
 num_sims = 10
 for i in 1:num_sims
     println("HIPPO sim: ", i, " of ", num_sims)
@@ -85,6 +86,7 @@ for i in 1:num_sims
     baseline_hist, baseline_rtot = simulateBaseline(bsim, sortedpoints, polypoints)
     
     push!(hippo_targetfound_vec, last(hippo_hist).s.robot == newtarget)
+    println("HIPPO target and last state: ", newtarget, " ", last(hippo_hist).s.robot)
     push!(baseline_targetfound_vec, last(baseline_hist).s.robot == newtarget)
 
     push!(hippo_hist_vec, hippo_hist)
@@ -93,21 +95,21 @@ for i in 1:num_sims
     push!(baseline_hist_vec, baseline_hist)
     push!(baseline_reward_vec, baseline_rtot)
 
-    pomdp = FullPOMDP(sinit,
+    newtarget = HIPPO.ind2pos(mapsize, db.ID2grid[HIPPO.chooseTrueCell()])
+    newstate = FullState(sinit.robot, newtarget, sinit.visited, sinit.battery)
+    pomdp = FullPOMDP(newstate,
                 size=mapsize,
                 rewarddist=rewarddist,
                 maxbatt=maxbatt)
     hipposim.msim = pomdp
     bsim.msim = pomdp
 
-    newstate = FullState(sinit.robot, newtarget, sinit.visited, sinit.battery)
     hipposim.sinit = newstate
     bsim.sinit = newstate
 
 
 
-    newtarget = HIPPO.ind2pos(mapsize, db.ID2grid[HIPPO.chooseTrueCell()])
-
+    
 end
 
 
