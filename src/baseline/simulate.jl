@@ -64,19 +64,19 @@ function simulateBaseline(sim::BaselineSimulator, pospoints, polypoints)
             posind += 1
         end
         if posind == numpoints && polyflag # lawnmower over polygons
-            println("polygon search...")
+            #println("polygon search...")
             pospoints = polypoints
             posind = 1
-            numpoints = length(polypoints)
+            numpoints = length(pospoints)
             polyflag = false
             fullflag = true
 
         end
         if posind == numpoints && fullflag # exhaustive search
-            println("exhaustive search...")
+            #println("exhaustive search...")
             pospoints = gridpoints(msim.size)
             posind = 1
-            numpoints = length(polypoints)
+            numpoints = length(pospoints)
             fullflag = false
         end
     end

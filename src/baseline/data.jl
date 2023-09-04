@@ -54,5 +54,5 @@ function gridpoints(mapsize)
         end
         
     end
-    return points[1:2]
+    return points
 end
