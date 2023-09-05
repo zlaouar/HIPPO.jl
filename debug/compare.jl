@@ -6,6 +6,16 @@ using DiscreteValueIteration
 using ParticleFilters
 using JLD2
 
+function results(file)
+    data = load(file)
+    find_ratio_hippo = sum(data["hippo_targetfound_vec"]) ./ length(data["hippo_targetfound_vec"])
+    find_ratio_baseline = sum(data["baseline_targetfound_vec"]) ./ length(data["baseline_targetfound_vec"])
+    reward_time_hippo = mean(data["hippo_reward_vec"] ./ data["hippo_time"])
+    reward_time_baseline = mean(data["baseline_reward_vec"] ./ data["baseline_time"])
+    println("hippo -- rtf: ", reward_time_hippo, " |  find ratio: ", find_ratio_hippo)
+    println("baseline -- rtf: ", reward_time_baseline, " |  find ratio: ", find_ratio_baseline)
+end
+
 db = load(joinpath(@__DIR__, "../data/db.jld2"), "db")
 inputs1 = load(joinpath(@__DIR__, "../data/opdata1.jld2"), "inputs")
 #inputs2 = load(joinpath(@__DIR__, "../data/opdata2.jld2"), "inputs")
@@ -58,7 +68,7 @@ N = 10000
 particle_up = BootstrapFilter(pomdp, N)
 particle_b = initialize_belief(particle_up, b0)
 
-hipposim = HIPPOSimulator(msim=pomdp, planner=planner, up=particle_up, b=particle_b, sinit=sinit, dt=1/10, max_iter=maxbatt, display=true)
+hipposim = HIPPOSimulator(msim=pomdp, planner=planner, up=particle_up, b=particle_b, sinit=sinit, dt=1/10, max_iter=maxbatt, display=false)
 bsim = BaselineSimulator(msim=pomdp, sinit=sinit, dt=1/4, max_iter=maxbatt, display=false, verbose=false)
 
 hippo_hist_vec = []
@@ -114,10 +124,20 @@ end
 
 
 
-jldsave(joinpath(@__DIR__, "../results/results.jld2"), 
+#= jldsave(joinpath(@__DIR__, "../results/results.jld2"), 
             hippo_hist_vec=hippo_hist_vec,
             hippo_reward_vec=hippo_reward_vec,
             hippo_targetfound_vec=hippo_targetfound_vec,
             baseline_hist_vec=baseline_hist_vec,
             baseline_reward_vec=baseline_reward_vec,
             baseline_targetfound_vec=baseline_targetfound_vec)
+ =#
+
+jldsave(joinpath(@__DIR__, "../results/results_nohist.jld2"), 
+            hippo_reward_vec=hippo_reward_vec,
+            hippo_targetfound_vec=hippo_targetfound_vec,
+            baseline_reward_vec=baseline_reward_vec,
+            baseline_targetfound_vec=baseline_targetfound_vec,
+            hippo_time=length.(hippo_hist_vec),
+            baseline_time=length.(baseline_hist_vec))
+
