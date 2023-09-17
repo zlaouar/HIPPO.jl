@@ -10,6 +10,7 @@ Base.@kwdef mutable struct HIPPOSimulator
     max_iter::Int          = 500
     display::Bool          = false
     verbose::Bool          = true
+    logging::Bool          = true
 end
 
 mutable struct PachSimulator 
@@ -58,11 +59,15 @@ function simulateHIPPO(sim::HIPPOSimulator)
     (;msim,max_iter) = sim 
     r_total = 0.0
     s = sim.sinit
-    o = Nothing
+    sp = nothing 
+    finalstate = nothing
+    o = nothing
+    r = 0.0
     iter = 0
     d = 1.0
-    b = sim.b
-    a = nothing 
+    b = sim.b 
+    bp = sim.b
+    a = :nothing 
     info = nothing
     history = NamedTuple[]
     while !isterminal(msim, s) && iter < max_iter
@@ -74,7 +79,10 @@ function simulateHIPPO(sim::HIPPOSimulator)
         try 
             a, info = action_info(sim.planner, b, tree_in_info = true)
         catch
-            return history, r_total
+            #a = :stay
+            @warn "POMCP failed to find an action"
+            push!(history, (s=finalstate, a=a, sp=sp, o=o, r=r, bp=b, info=info))
+            return history, r_total, iter
         end
         remove_rewards(msim, s.robot) # remove reward at current state
         #display(msim.reward)
@@ -93,10 +101,13 @@ function simulateHIPPO(sim::HIPPOSimulator)
         #println(iter,"- | battery: ", sp.battery, " | dist_to_home: ", dist(sp.robot, msim.robot_init), " | s: ", sp.robot)
         #push!(sim.rewardframes, rewardframe)
         #push!(sim.belframes, belframe)
-        push!(history, (s=s, a=a, sp=sp, o=o, r=r, bp=b, info=info))
+        #sim.logging && push!(history, (s=s, a=a, sp=sp, o=o, r=r, bp=b, info=info))
+        sim.logging && push!(history, (s=s))
+        finalstate = s
         s = sp
     end
-    return history, r_total
+    !sim.logging && push!(history, (s=finalstate, a=a, sp=sp, o=o, r=r, bp=b, info=info))
+    return history, r_total, iter
 end
 
 function predicted_path(sim::PachSimulator)

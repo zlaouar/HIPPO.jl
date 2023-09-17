@@ -16,8 +16,25 @@ function results(file)
     println("baseline -- rtf: ", reward_time_baseline, " |  find ratio: ", find_ratio_baseline)
 end
 
-db = load(joinpath(@__DIR__, "../data/db.jld2"), "db")
-inputs1 = load(joinpath(@__DIR__, "../data/opdata1.jld2"), "inputs")
+println("ARGS: ", ARGS)
+
+mapid = parse(Int, ARGS[1]) 
+startid = parse(Int,ARGS[2])
+
+filevec = ["../data/opdata1.jld2", 
+           "../data/opdata2.jld2",
+           "../data/opdata3.jld2",
+           "../data/opdata4.jld2",
+           "../data/opdata5.jld2"]
+
+file = filevec[mapid]
+
+inputs = load(joinpath(@__DIR__, file), "inputs")
+db = load(joinpath(@__DIR__, file), "db")
+
+
+#db = load(joinpath(@__DIR__, "../data/db.jld2"), "db")
+#inputs1 = load(joinpath(@__DIR__, "../data/opdata1.jld2"), "inputs")
 #inputs2 = load(joinpath(@__DIR__, "../data/opdata2.jld2"), "inputs")
 #inputs3 = load(joinpath(@__DIR__, "../data/opdata3.jld2"), "inputs")
 #inputs4 = load(joinpath(@__DIR__, "../data/opdata4.jld2"), "inputs")
@@ -31,10 +48,12 @@ southstart = HIPPO.ind2pos(mapsize, db.ID2grid[19064])
 weststart = HIPPO.ind2pos(mapsize, db.ID2grid[28390])
 northeaststart = HIPPO.ind2pos(mapsize, db.ID2grid[45650])
 
-robotinit = northstart
+startvec = [northstart, southstart, weststart, northeaststart]
+
+robotinit = startvec[startid]
 maxbatt = 1000
 
-opdata = inputs1
+opdata = inputs
 pospoints = HIPPO.getdata(opdata, db, mapsize)#[end-10:end]
 polypoints = HIPPO.polypoints(opdata, db, mapsize)#[1:2]
 sortedpoints = HIPPO.gendists(pospoints, robotinit)

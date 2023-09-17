@@ -6,6 +6,7 @@ Base.@kwdef mutable struct BaselineSimulator
     max_iter::Int           = 500
     display::Bool           = false
     verbose::Bool           = true
+    logging::Bool           = true
 end
 
 function remove_rewards(pomdp, s)
@@ -35,6 +36,7 @@ function simulateBaseline(sim::BaselineSimulator, pospoints, polypoints)
     r_total = 0.0
     d = 1.0
     s = sim.sinit
+    a = :nothing
     iter = 0
     history = NamedTuple[]
     posind = 1
@@ -59,7 +61,7 @@ function simulateBaseline(sim::BaselineSimulator, pospoints, polypoints)
         sim.display && sleep_until(tm += sim.dt)
         iter += 1
         #push!(sim.rewardframes, rewardframe)
-        push!(history, (s=s, a=a))
+        sim.logging && push!(history, (s=s, a=a))
         if newrobot == pospoints[posind]
             posind += 1
         end
@@ -80,6 +82,6 @@ function simulateBaseline(sim::BaselineSimulator, pospoints, polypoints)
             fullflag = false
         end
     end
-
-    return history, r_total
+    !sim.logging && push!(history, (s=s, a=a))
+    return history, r_total, iter
 end

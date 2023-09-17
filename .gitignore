@@ -27,3 +27,11 @@ docs/site/
 
 # GIFs
 *.gif
+
+# datafiles
+*.csv
+*.jld2
+
+# plots
+*.png
+*.svg

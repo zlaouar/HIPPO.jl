@@ -85,3 +85,79 @@ function rendhist(hist, m, rewarddist; delay=0.1)
         sleep(delay)
     end
 end 
+
+function POMDPTools.ModelTools.render(m::TargetSearchPOMDP, goal, 
+                                            hippo::Vector{StaticArraysCore.SVector{2, Int64}}, 
+                                            baseline::Vector{StaticArraysCore.SVector{2, Int64}})
+    nx, ny = m.size
+    cells = []
+    iter = 1
+    hippoiter = 1
+    baseiter = 1
+    lenhippo = length(hippo)
+    lenbase = length(baseline)
+    minr = minimum(m.reward)-1
+    maxr = maximum(m.reward)
+    opvechippo = collect(1:length(hippo))./length(hippo)
+    opvecbase = collect(1:length(baseline))./length(baseline)
+    ophippo = Dict(hippo.=>opvechippo)
+    opbase = Dict(baseline.=>opvecbase)
+    for x in 1:nx, y in 1:ny
+        cell = cell_ctx((x,y), m.size)
+        r = m.reward[rewardinds(m, SA[x,y])...]
+        if iszero(r)
+            target = compose(context(), rectangle(), fill("black"), stroke("gray"))
+        else
+            frac = (r-minr)/(maxr-minr)
+            clr = get(ColorSchemes.turbo, frac)
+            target = compose(context(), rectangle(), fill(clr), stroke("gray"), fillopacity(0.3))
+            #target = compose(context(), rectangle(), fillopacity(normie(m.reward[rewardinds(m,SA[x,y])...],m.reward)), fill("green"), stroke("gray"))
+        end
+        if [x,y] ∈ hippo || [x,y] ∈ baseline
+            # if [x,y] ∈ hippo
+            #     hippoclr = get(ColorSchemes.linear_kbc_5_95_c73_n256, ophippo[[x,y]])
+            #     #hippocell = compose(context(), circle(), fillopacity(clamp(ophippo[[x,y]], 0.3, 1.0)), fill("red"), stroke("black"), linewidth(0.5mm))
+            #     hippocell = compose(context(), circle(), fill(hippoclr), stroke("black"), linewidth(0.5mm))
+            #     compose!(cell, hippocell)
+            #     hippoiter += 1
+            # end
+            if [x,y] ∈ baseline
+                baseclr = get(ColorSchemes.linear_kbc_5_95_c73_n256, opbase[[x,y]])
+                basecell = compose(context(), circle(), fill(baseclr), stroke("black"), linewidth(0.5mm))            
+                #basecell = compose(context(), circle(), fillopacity(clamp(opbase[[x,y]], 0.3, 1.0)), fill("black"), stroke("black"), linewidth(0.5mm))
+                compose!(cell, basecell)
+                baseiter += 1
+            end
+        else
+            compose!(cell, target)
+        end
+        compose!(cell, target)
+
+        
+
+        push!(cells, cell)
+        iter += 1
+    end
+    # hippoline = compose(context(), line(Tuple.(hippo)), linewidth(1mm), stroke("red"))
+    grid = compose(context(), linewidth(0.00000001mm), cells...)
+    outline = compose(context(), linewidth(0.01mm), rectangle(), fill("white"), stroke("black"))
+
+
+    robot_ctx = cell_ctx(hippo[end], m.size)
+    robot = compose(robot_ctx, circle(0.5, 0.5, 0.5), fill("black"))
+    target_ctx = cell_ctx(goal, m.size)
+    target = compose(target_ctx, star(0.5,0.5,1.8,5,0.5), fill("orange"), stroke("black"))
+
+    #mapcells_hippo = [coord(cell, m.size) for cell ∈ hippo]
+    #mapcells_base = [coord(cell, m.size) for cell ∈ baseline]
+    #hippotrajec = compose(context(), line(mapcells_hippo), strokeopacity(0.6), linewidth(1mm), stroke("black"))
+    #basetrajec = compose(context(), line(mapcells_base), strokeopacity(0.6), linewidth(1mm), stroke("red"))
+
+    
+    legend = compose(rect_ctx([m.size[1]-10, 5], m.size, 10, 5), rectangle(), fill("white"), stroke("black"))
+
+
+    sz = min(w,h)
+    return compose(context((w-sz)/2, (h-sz)/2, sz, (44/59)*sz), robot, target, grid, outline)
+    #return compose(context((w-sz)/2, (h-sz)/2, sz, (44/59)*sz), legend, hippotrajec, basetrajec, robot, target, grid, outline)
+end

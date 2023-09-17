@@ -31,7 +31,20 @@ end
 function cell_ctx(xy, size)
     nx, ny = size
     x, y = xy
-    return context((x-1)/nx, (ny-y)/ny, 1/nx, 1/ny)
+    return context((x-1)/nx, (ny-y)/ny, 1/max(nx,ny), 1/max(nx,ny))
+    #return context((x-1)/nx, (ny-y)/ny, 1/nx, 1/ny)
+end
+function rect_ctx(xy, size, width, height)
+    nx, ny = size
+    x, y = xy
+    return context((x-1)/nx, (ny-y)/ny, width/max(nx,ny), height/max(nx,ny))
+    #return context((x-1)/nx, (ny-y)/ny, 1/nx, 1/ny)
+end
+
+function coord(xy, size)
+    nx, ny = size
+    x, y = xy
+    return ((x-1)/nx, (ny-y)/ny)
 end
 
 sleep_until(t) = sleep(max(t-time(), 0.0))
