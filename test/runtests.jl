@@ -7,11 +7,11 @@ rewarddist = [3.0 3.0;
 running_cost = -1.0
 ns = length(rewarddist)
 mapsize = (2,2)
-sinit = TSState([1,1],[3,3],trues(prod(mapsize)))
+sinit = RewardState([1,1],[3,3],trues(prod(mapsize)))
 
-m = TargetSearchPOMDP(sinit, size=mapsize, rewarddist=rewarddist)
+m = RewardPOMDP(sinit, size=mapsize, rewarddist=rewarddist)
 s = sinit
-sp = TSState([2,1],[3,3],trues(prod(mapsize)))
+sp = RewardState([2,1],[3,3],trues(prod(mapsize)))
 a = :right
 function getind(pos)
     correct_ind = reverse(pos)
@@ -25,18 +25,20 @@ end
     @test reward(m, s, a, sp) == running_cost + rewarddist[getind(sp.robot)...]
 end
 
-sts = unique(getfield.(states(m), :robot))[1:end-1]
-acs = (:right, :up, :left, :down)
+#sts = unique(getfield.(states(m), :robot))[1:end-1]
+acs = (:right, :up, :left, :down, :right)
+acs_len = length(acs)
 rtotal = 0.0
-
+r = 0.0
 @testset "rtotal" begin
     function rtotaltest(rtotal,s,acs)
-        for i ∈ 1:ns
+        for i ∈ 1:acs_len
             a = acs[i]
             sp = rand(transition(m, s, a))
-            rtotal += reward(m, s, a, sp)
+            r = reward(m, s, a, sp)
+            rtotal += r
             #println(reward(m, s, a, sp), ", a:", a)
-            println("s: ", s.visited, " | sp: ", sp.visited)
+            println("s: ", s.robot, " -- ", s.visited, " | sp: ", sp.robot, " -- ", sp.visited, " | a: ", a, " | r: ", r)
             s = sp
         end
         return rtotal
