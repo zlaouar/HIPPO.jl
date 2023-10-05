@@ -90,8 +90,7 @@ function simulateHIPPO(sim::HIPPOSimulator)
         r_total += d*r
         d *= discount(msim)
         b = update(sim.up, b, a, o)
-        #belframe = render(msim, (sp=sp, bp=b))
-
+        belframe = render(msim, (sp=sp, bp=b))
         rewardframe = render(msim, (sp=sp, bp=b), true)
         #display(belframe)
         sim.display && display(rewardframe)
@@ -99,15 +98,15 @@ function simulateHIPPO(sim::HIPPOSimulator)
         iter += 1
         #println(iter,"- | s: ", s, " | sp:", sp, " | r:", r, " | o: ", o)
         #println(iter,"- | battery: ", sp.battery, " | dist_to_home: ", dist(sp.robot, msim.robot_init), " | s: ", sp.robot)
-        #push!(sim.rewardframes, rewardframe)
-        #push!(sim.belframes, belframe)
+        push!(sim.rewardframes, rewardframe)
+        push!(sim.belframes, belframe)
         #sim.logging && push!(history, (s=s, a=a, sp=sp, o=o, r=r, bp=b, info=info))
-        sim.logging && push!(history, (s=s))
+        sim.logging && push!(history, (s=s,))
         finalstate = s
         s = sp
     end
     !sim.logging && push!(history, (s=finalstate, a=a, sp=sp, o=o, r=r, bp=b, info=info))
-    return history, r_total, iter
+    return history, r_total, iter, sim.rewardframes, sim.belframes
 end
 
 function predicted_path(sim::PachSimulator)

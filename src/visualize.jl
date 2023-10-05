@@ -92,15 +92,10 @@ function POMDPTools.ModelTools.render(m::TargetSearchPOMDP, goal,
     nx, ny = m.size
     cells = []
     iter = 1
-    hippoiter = 1
     baseiter = 1
-    lenhippo = length(hippo)
-    lenbase = length(baseline)
     minr = minimum(m.reward)-1
     maxr = maximum(m.reward)
-    opvechippo = collect(1:length(hippo))./length(hippo)
     opvecbase = collect(1:length(baseline))./length(baseline)
-    ophippo = Dict(hippo.=>opvechippo)
     opbase = Dict(baseline.=>opvecbase)
     for x in 1:nx, y in 1:ny
         cell = cell_ctx((x,y), m.size)

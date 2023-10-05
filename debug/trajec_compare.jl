@@ -5,14 +5,12 @@ using BasicPOMCP
 using DiscreteValueIteration
 using ParticleFilters
 using JLD2
+using Reel
 
 function rendertrajec(m, hippo_hist, baseline_hist)
-    rewarddist = m.reward
     hippovec = [state.s.robot for state ∈ hippo_hist]
     baselinevec = [state.s.robot for state ∈ baseline_hist]
     display(render(m, hippo_hist[end].s.target, hippovec, baselinevec))
-    #rendhist(hippo_hist, m, rewarddist)
-    #rendhist(baseline_hist, m, rewarddist)
 end
 
 # mapid = parse(Int, ARGS[1])
@@ -52,6 +50,7 @@ sortedpoints = HIPPO.gendists(pospoints, robotinit)
 
 target = HIPPO.newtarget(mapsize, db)
 target = [49,28]
+#arget = [25,30]
 sinit = FullState(robotinit, target, vec(trues(mapsize)), maxbatt) #rand(initialstate(msim))
 sinitBasic = BasicState(sinit.robot,sinit.target)
 
@@ -75,14 +74,16 @@ solver = POMCPSolver(tree_queries=10_000, max_time=0.2, c=5) # random
 planner = solve(solver, pomdp)
 
 b0 = initialstate(pomdp)
-N = 10000
+N = 25000
 particle_up = BootstrapFilter(pomdp, N)
 particle_b = initialize_belief(particle_up, b0)
 
 hipposim = HIPPOSimulator(msim=pomdp, planner=planner, up=particle_up, b=particle_b, 
-                sinit=sinit, dt=1/10, max_iter=maxbatt, display=false, logging=true)
+                sinit=sinit, dt=1/10, max_iter=maxbatt, display=false, logging=false,
+                rewardframes=Frames(MIME("image/png"), fps=15), belframes=Frames(MIME("image/png"), fps=15))
 bsim = BaselineSimulator(msim=pomdp, sinit=sinit, dt=1/4, max_iter=maxbatt, 
-                display=false, verbose=false, logging=true)
+                display=false, verbose=false, logging=false,
+                rewardframes=Frames(MIME("image/png"), fps=15))
 #newtarget = HIPPO.newtarget(mapsize, db)
 newtarget = sinit.target
 #num_sims = 10
@@ -90,20 +91,23 @@ newtarget = sinit.target
 
 
 
-hippo_hist, hippo_rtot, hippo_time = simulateHIPPO(hipposim)
+hippo_hist, hippo_rtot, hippo_time, hippoframes, belframes = simulateHIPPO(hipposim)
 println("HIPPO target and last state: ", newtarget, " ", last(hippo_hist).s.robot, " | iterations: ", hippo_time)
 
-pomdp = FullPOMDP(sinit,
-    size=mapsize,
-    rewarddist=rewarddist,
-    maxbatt=maxbatt)
-hipposim.msim = pomdp
-bsim.msim = pomdp
+begin
+    pomdp = FullPOMDP(sinit,
+        size=mapsize,
+        rewarddist=rewarddist,
+        maxbatt=maxbatt)
+    hipposim.msim = pomdp
+    bsim.msim = pomdp
 
-baseline_hist, baseline_rtot, baseline_time = simulateBaseline(bsim, sortedpoints, polypoints)
-println("Baseline target and last state: ", newtarget, " ", last(baseline_hist).s.robot, " | iterations: ", baseline_time)
-
-
+    baseline_hist, baseline_rtot, baseline_time, baseframes = simulateBaseline(bsim, sortedpoints, polypoints)
+    println("Baseline target and last state: ", newtarget, " ", last(baseline_hist).s.robot, " | iterations: ", baseline_time)
+end
+# write("hippo.gif", hippoframes)
+# write("baseline.gif", baseframes)
+# write("hippobelief.gif", belframes)
 
 
 

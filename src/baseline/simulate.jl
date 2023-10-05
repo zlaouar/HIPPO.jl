@@ -60,7 +60,7 @@ function simulateBaseline(sim::BaselineSimulator, pospoints, polypoints)
         sim.display && display(rewardframe) 
         sim.display && sleep_until(tm += sim.dt)
         iter += 1
-        #push!(sim.rewardframes, rewardframe)
+        push!(sim.rewardframes, rewardframe)
         sim.logging && push!(history, (s=s, a=a))
         if newrobot == pospoints[posind]
             posind += 1
@@ -83,5 +83,5 @@ function simulateBaseline(sim::BaselineSimulator, pospoints, polypoints)
         end
     end
     !sim.logging && push!(history, (s=s, a=a))
-    return history, r_total, iter
+    return history, r_total, iter, sim.rewardframes
 end
