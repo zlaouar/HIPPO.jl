@@ -61,17 +61,11 @@ function generate_sim_path(data, ws_client)
 
     planner = solve(solver, msolve)
 
-    pachSim = PachSimulator(msolve, planner, particle_up, particle_b, sinit)
-
-
     location_dict = data["locationDict"]
 
-    HIPPOSimulator(msim=pomdp, planner=planner, up=particle_up, b=particle_b, 
-                sinit=sinit, dt=1/10, max_iter=maxbatt, display=false, logging=false,
-                rewardframes=Frames(MIME("image/png"), fps=15), belframes=Frames(MIME("image/png"), fps=15))
-
     hipposim = HIPPOSimulator(msim=msolve, planner=planner, up=particle_up, b=particle_b, 
-                            sinit=sinit)
+                            sinit=sinit, max_iter=15)
+    @info "Running simulation"
     hist, _, _, _, _ = simulateHIPPO(hipposim)
     a_traj = getfield.(hist, :a)
     locvec = HIPPO.loctostr(HIPPO.generatelocation(msolve, a_traj, sinit.robot))
@@ -121,7 +115,7 @@ function main()
                 println("Executing Action: ", action)
 
                 if action == "CalculatePath"
-                    generate_predicted_path(arguments, ws_client)
+                    generate_sim_path(arguments, ws_client)
                 end
             end
         end

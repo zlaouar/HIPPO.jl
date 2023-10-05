@@ -11,6 +11,7 @@ Base.@kwdef mutable struct HIPPOSimulator
     display::Bool          = false
     verbose::Bool          = true
     logging::Bool          = true
+    anim::Bool             = false
 end
 
 mutable struct PachSimulator 
@@ -90,22 +91,23 @@ function simulateHIPPO(sim::HIPPOSimulator)
         r_total += d*r
         d *= discount(msim)
         b = update(sim.up, b, a, o)
-        belframe = render(msim, (sp=sp, bp=b))
-        rewardframe = render(msim, (sp=sp, bp=b), true)
+        sim.anim && (belframe = render(msim, (sp=sp, bp=b)))
+        sim.anim && (rewardframe = render(msim, (sp=sp, bp=b), true))
         #display(belframe)
         sim.display && display(rewardframe)
         sleep_until(tm += sim.dt)
         iter += 1
         #println(iter,"- | s: ", s, " | sp:", sp, " | r:", r, " | o: ", o)
         #println(iter,"- | battery: ", sp.battery, " | dist_to_home: ", dist(sp.robot, msim.robot_init), " | s: ", sp.robot)
-        push!(sim.rewardframes, rewardframe)
-        push!(sim.belframes, belframe)
+        sim.anim && push!(sim.rewardframes, rewardframe)
+        sim.anim && push!(sim.belframes, belframe)
         #sim.logging && push!(history, (s=s, a=a, sp=sp, o=o, r=r, bp=b, info=info))
-        sim.logging && push!(history, (s=s,))
+        sim.logging && push!(history, (s=s,a=a))
         finalstate = s
         s = sp
     end
     !sim.logging && push!(history, (s=finalstate, a=a, sp=sp, o=o, r=r, bp=b, info=info))
+    #!sim.logging && push!(history, (a=a,))
     return history, r_total, iter, sim.rewardframes, sim.belframes
 end
 
