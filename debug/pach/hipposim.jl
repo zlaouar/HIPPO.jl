@@ -10,13 +10,15 @@ using WebSockets: readguarded, open
 using JSON
 
 
-function generate_path(data, ws_client)
+function generate_predicted_path(data, ws_client)
     rewarddist = hcat(data["gridRewards"]...)
     rewarddist = rewarddist .+ abs(minimum(rewarddist)) .+ 0.01
 
+    display(rewarddist)
+
     mapsize = reverse(size(rewarddist)) # (x,y)
-    sinit = TSState([1, 1], mapsize, vec(trues(mapsize)))#rand(initialstate(msim))
-    msolve = TargetSearchPOMDP(sinit, size=mapsize, rewarddist=rewarddist)
+    sinit = RewardState([1, 1], mapsize, vec(trues(mapsize)))#rand(initialstate(msim))
+    msolve = RewardPOMDP(sinit, size=mapsize, rewarddist=rewarddist)
     solver = POMCPSolver(tree_queries=1000, max_time=0.2, c=80)
     b0 = initialstate(msolve)
     N = 1000
@@ -32,6 +34,7 @@ function generate_path(data, ws_client)
     location_dict = data["locationDict"]
 
     locvec, b, sinit = predicted_path(pachSim)
+    @info locvec
     pachSim.sinit = sinit
     pachSim.b = b
 
@@ -40,10 +43,48 @@ function generate_path(data, ws_client)
     write(ws_client, JSON.json(Dict("action" => "ReturnPath", "args" => Dict("flightPath" => response))))
 end
 
+function generate_sim_path(data, ws_client)
+    rewarddist = hcat(data["gridRewards"]...)
+    rewarddist = rewarddist .+ abs(minimum(rewarddist)) .+ 0.01
+
+    display(rewarddist)
+
+    mapsize = reverse(size(rewarddist)) # (x,y)
+    sinit = RewardState([1, 1], mapsize, vec(trues(mapsize)))#rand(initialstate(msim))
+    msolve = RewardPOMDP(sinit, size=mapsize, rewarddist=rewarddist)
+    solver = POMCPSolver(tree_queries=1000, max_time=0.2, c=80)
+    b0 = initialstate(msolve)
+    N = 1000
+    particle_up = BootstrapFilter(msolve, N)
+    particle_b = initialize_belief(particle_up, b0)
+
+
+    planner = solve(solver, msolve)
+
+    location_dict = data["locationDict"]
+
+    hipposim = HIPPOSimulator(msim=msolve, planner=planner, up=particle_up, b=particle_b, 
+                            sinit=sinit, max_iter=15)
+    @info "Running simulation"
+    hist, _, _, _, _ = simulateHIPPO(hipposim)
+    a_traj = getfield.(hist, :a)
+    locvec = HIPPO.loctostr(HIPPO.generatelocation(msolve, a_traj, sinit.robot))
+
+    #locvec, b, sinit = predicted_path(pachSim)
+    @info locvec
+    #pachSim.sinit = sinit
+    #pachSim.b = b
+
+    response = [location_dict[locvec[i]] for i in eachindex(locvec)]
+    println("Sending path: ", response)
+    write(ws_client, JSON.json(Dict("action" => "ReturnPath", "args" => Dict("flightPath" => response))))
+end
+
+
 function initialize()
     mapsize = reverse(size(rewarddist)) # (x,y)
-    sinit = TSState([1, 1], mapsize, vec(trues(mapsize)))#rand(initialstate(msim))
-    msolve = TargetSearchPOMDP(sinit, size=mapsize, rewarddist=rewarddist)
+    sinit = RewardState([1, 1], mapsize, vec(trues(mapsize)))#rand(initialstate(msim))
+    msolve = RewardPOMDP(sinit, size=mapsize, rewarddist=rewarddist)
     solver = POMCPSolver(tree_queries=1000, max_time=0.2, c=80)
     b0 = initialstate(msolve)
     N = 1000
@@ -74,12 +115,12 @@ function main()
                 println("Executing Action: ", action)
 
                 if action == "CalculatePath"
-                    generate_path(arguments, ws_client)
+                    generate_sim_path(arguments, ws_client)
                 end
             end
         end
+        break
     end
-
 end
 
 main()

@@ -25,12 +25,12 @@ end
 """
     actions
 """
-POMDPs.actions(m::TargetSearchPOMDP) = (:left, :right, :up, :down, :stay)
+POMDPs.actions(m::TargetSearchPOMDP) = (:left, :right, :up, :down, :stay, :nw, :ne, :sw, :se)
 
 POMDPs.actionindex(m::TargetSearchPOMDP, a) = actionind[a]
 
 function bounce(m::TargetSearchPOMDP, pos, offset)
-    new = clamp.(pos + offset, SVector(1,1), m.size)
+    clamp.(pos + offset, SVector(1,1), m.size)
 end
 
 POMDPs.discount(m::TargetSearchPOMDP) = 0.95
@@ -250,13 +250,14 @@ function POMDPTools.ModelTools.render(m::TargetSearchPOMDP, step, plt_reward::Bo
         robot_ctx = cell_ctx(step[:sp].robot, m.size)
         robot = compose(robot_ctx, circle(0.5, 0.5, 0.5), fill("blue"))
         target_ctx = cell_ctx(step[:sp].target, m.size)
-        target = compose(target_ctx, star(0.5,0.5,1.8,5,0.5), fill("orange"), stroke("black"))
+        target = compose(target_ctx, star(0.5,0.5,1.0,5,0.5), fill("orange"), stroke("black"))
     else
         robot = nothing
         target = nothing
     end
     sz = min(w,h)
-    return compose(context((w-sz)/2, (h-sz)/2, sz, (ny/nx)*sz), robot, target, grid, outline)
+    #return compose(context((w-sz)/2, (h-sz)/2, sz, (ny/nx)*sz), robot, target, grid, outline)
+    return compose(context((w-sz)/2, (h-sz)/2, sz, sz), robot, target, grid, outline)
 end
 
 function POMDPTools.ModelTools.render(m::TargetSearchPOMDP, step, points::Vector{Vector{Int}})
