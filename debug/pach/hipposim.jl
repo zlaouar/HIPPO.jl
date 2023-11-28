@@ -100,11 +100,11 @@ function initialize()
 end
 
 function main()
-    println("Opening port")
+    println("HIPPO: Opening port\n")
     #pachSim = initialize()
     while true
         open("ws://127.0.0.1:8082") do ws_client
-            print("awaiting data...")
+            print("HIPPO: awaiting data...\n")
             data, success = readguarded(ws_client)
             if success
                 # Parse data as JSON {serviceName, args}
@@ -119,7 +119,6 @@ function main()
                 end
             end
         end
-        break
     end
 end
 
