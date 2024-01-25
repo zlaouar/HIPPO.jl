@@ -15,11 +15,12 @@ Base.@kwdef mutable struct HIPPOSimulator
 end
 
 mutable struct PachSimulator 
-    msim::RewardPOMDP
+    msim::PachPOMDP
     planner::POMCPPlanner
     up::BasicParticleFilter
     b::ParticleCollection
-    sinit::RewardState
+    sinit::FullState
+    location_dict::Dict{String, Vector{Float64}}
 end
 
 #function HIPPOSimulator(msim::TargetSearchPOMDP, planner::POMCPPlanner, up::BasicParticleFilter, b::ParticleCollection, sinit::TSState; 

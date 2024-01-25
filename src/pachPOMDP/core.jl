@@ -24,9 +24,11 @@ struct FullState <: TSState
     battery::Int
 end
 
-abstract type TargetSearchPOMDP <: POMDP{TSState, Symbol, BitArray{1}} end
+abstract type PachTemplatePOMDP end
+abstract type TargetSearchPOMDP{S,A,O}  <: POMDP{S,A,O} end
 
-mutable struct BasicPOMDP <: TargetSearchPOMDP
+
+mutable struct BasicPOMDP <: TargetSearchPOMDP{TSState, Symbol, BitArray{1}}
     size::SVector{2, Int}
     obstacles::Set{SVector{}}
     robot_init::SVector{2, Int}
@@ -35,7 +37,7 @@ mutable struct BasicPOMDP <: TargetSearchPOMDP
     rois::Dict{Vector{Int64}, Float64}
 end
 
-mutable struct RewardPOMDP <: TargetSearchPOMDP
+mutable struct RewardPOMDP <: TargetSearchPOMDP{TSState, Symbol, BitArray{1}}
     size::SVector{2, Int}
     obstacles::Set{SVector{}}
     robot_init::SVector{2, Int}
@@ -45,7 +47,7 @@ mutable struct RewardPOMDP <: TargetSearchPOMDP
     reward::Matrix{Float64}
 end
 
-mutable struct BatteryPOMDP <:TargetSearchPOMDP
+mutable struct BatteryPOMDP <:TargetSearchPOMDP{TSState, Symbol, BitArray{1}}
     size::SVector{2, Int}
     obstacles::Set{SVector{}}
     robot_init::SVector{2, Int}
@@ -55,7 +57,7 @@ mutable struct BatteryPOMDP <:TargetSearchPOMDP
     maxbatt::Int
 end
 
-mutable struct FullPOMDP <: TargetSearchPOMDP
+mutable struct FullPOMDP <: TargetSearchPOMDP{TSState, Symbol, BitArray{1}}
     size::SVector{2, Int}
     obstacles::Set{SVector{}}
     robot_init::SVector{2, Int}
@@ -66,6 +68,40 @@ mutable struct FullPOMDP <: TargetSearchPOMDP
     maxbatt::Int
 end
 
+mutable struct PachPOMDP{S,A,O} <: TargetSearchPOMDP{S, A, O}
+    size::SVector{2, Int}
+    obstacles::Set{SVector{}}
+    robot_init::SVector{2, Int}
+    tprob::Float64
+    targetloc::SVector{2, Int}
+    rois::Dict{Vector{Int64}, Float64}
+    reward::Matrix{Float64}
+    maxbatt::Int
+end
+
+function obs_type(options)
+    if options[:observation_model] == :falco
+        return Symbol
+    else
+        return BitArray{1}
+    end
+end
+
+function create_target_search_pomdp(sinit::FullState; 
+                                    roi_points=Dict(), 
+                                    size=(10,10), 
+                                    rewarddist=Array{Float64}(undef, 0, 0),
+                                    maxbatt=100, 
+                                    options)
+
+    obstacles = Set{SVector{2, Int}}()
+    robot_init = sinit.robot
+    tprob = 0.7
+    targetloc = sinit.target
+    rois = roi_points
+
+    PachPOMDP{TSState, Symbol, obs_type(options)}(size, obstacles, robot_init, tprob, targetloc, rois, copy(rewarddist), maxbatt)
+end
 
 function BasicPOMDP(sinit::BasicState; 
                     roi_points=Dict(), 
@@ -123,4 +159,19 @@ function FullPOMDP(sinit::FullState;
     rois = roi_points
 
     FullPOMDP(size, obstacles, robot_init, tprob, targetloc, rois, copy(rewarddist), maxbatt)
+end
+
+function PachPOMDP(sinit::FullState; 
+                    roi_points=Dict(), 
+                    size=(10,10), 
+                    rewarddist=Array{Float64}(undef, 0, 0),
+                    maxbatt=100)
+
+    obstacles = Set{SVector{2, Int}}()
+    robot_init = sinit.robot
+    tprob = 0.7
+    targetloc = sinit.target
+    rois = roi_points
+
+    PachPOMDP(size, obstacles, robot_init, tprob, targetloc, rois, copy(rewarddist), maxbatt)
 end

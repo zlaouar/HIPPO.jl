@@ -54,7 +54,7 @@ function extract_trajectory(node::BasicPOMCP.POMCPObsNode, depth)
     oind = 1
     d = t.o_lookup
     for i in 1:depth
-        # get all action indices that have a null observation child
+        # get all action indices from current observation node
         ainds = children[oind] .- lenb
         an = t.n[ainds]
         avals = t.v[ainds]
@@ -68,9 +68,9 @@ function extract_trajectory(node::BasicPOMCP.POMCPObsNode, depth)
         inds = findall(x-> x==aind, getindex.(keys(d), 1))
         oinds = collect(values(d))[inds]
         try
-            oind = oinds[findmax(t.total_n[oinds])[2]] # get observation with highest visit count
+            oind = oinds[findmax(t.total_n[oinds])[2]] # get observation node with highest visit count
         catch e
-            @warn "no null observation"
+            @warn "error in extract_trajectory"
             return a_traj[1:i]
             #inchrome(D3Tree(t))
             #error("no null observation")
@@ -99,4 +99,69 @@ function extract_trajectory(node::BasicPOMCP.POMCPObsNode, depth)
         
     end
     return a_traj
+end
+
+function next_action(children, aind, o)
+    # get index of observed node from current action node
+    inds = findall(x-> x==aind, getindex.(keys(t.o_lookup), 1))
+    oinds = collect(values(d))[inds]
+
+    recieved_observation_ind = oinds[findfirst(obs -> obs == o, t.o_labels[oinds])]
+
+    # find best action to take from observation node
+    ainds = children[oind] .- lenb
+    avals = t.v[ainds]
+    _, aind = findmax(avals) # find action with highest value
+    aind = ainds[aind]
+    
+    return t.a_labels[aind]
+end
+
+function π_conditional(node::BasicPOMCP.POMCPObsNode)
+    t = node.tree
+    lenb = length(t.total_n)
+    lenba = length(t.n)
+    len = lenb + lenba
+    children = Vector{Vector{Int}}(undef, len)
+    ba_children = [Set{Int}() for i in 1:lenba]
+    for (ha_o, c) in t.o_lookup
+        ha, o = ha_o
+        push!(ba_children[ha], c)
+    end
+
+    for b in 1:lenb
+        children[b] = t.children[b] .+ lenb
+    end
+
+    for ba in 1:lenba
+        children[ba+lenb] = collect(ba_children[ba])
+    end
+    
+    return children
+end
+
+function next_action(hnode::BasicPOMCP.POMCPObsNode, aprev)
+    t = hnode.tree
+    h = hnode.node
+
+    # Descend tree according to action taken at previous wp and observation received at next wp
+    
+    # what is the action node index that the agent took at the previous wp
+    ha = findfirst(a -> a == aprev, t.a_labels[t.children[h]])
+
+    # descend down tree from "waypoint reached" observation node
+    hao = get(t.o_lookup, (ha, :waypoint_reached), 0)
+
+    if hao == 0
+        @warn "wp reached observation not in tree"
+        return :stay
+    end
+
+    # find best child action to take from wp reached observation 
+    ainds = t.children[hao]
+    avals = t.v[ainds]
+    _, ind = findmax(avals) # find action with highest value
+    haoa = ainds[ind]
+    
+    return t.a_labels[haoa]
 end

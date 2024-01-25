@@ -134,6 +134,15 @@ function predicted_path(sim::PachSimulator)
     return loctostr(generatelocation(msim, a_traj, sinit.robot)), b, s
 end
 
+function conditional_plan(sim::PachSimulator, o)
+    (;planner,b) = sim
+
+    _, info = action_info(planner, b, tree_in_info = true)
+    tree = info[:tree]
+    
+    return tree
+end
+
 function customsim(msolve::TargetSearchPOMDP, msim::TargetSearchPOMDP, planner, up, b, sinit)
     r_total = 0.0
     s = sinit

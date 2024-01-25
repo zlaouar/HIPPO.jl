@@ -53,10 +53,15 @@ sinit = FullState([3,1], [10,11], vec(trues(mapsize)), maxbatt)#rand(initialstat
 sinitBasic = BasicState(sinit.robot,sinit.target)
 
 
-pomdp = FullPOMDP(sinit, 
+#= pomdp = FullPOMDP(sinit, 
                     size=mapsize, 
                     rewarddist=rewarddist, 
                     maxbatt=maxbatt)
+ =#
+pomdp = create_target_search_pomdp(sinit, 
+                                    size=mapsize, 
+                                    rewarddist=rewarddist, 
+                                    maxbatt=maxbatt, options=Dict(:observation_model=>:falco))
 
 basic_pomdp = BasicPOMDP(sinitBasic, size=mapsize)
 mdp_solver = ValueIterationSolver() # creates the solver
@@ -80,7 +85,7 @@ particle_up = BootstrapFilter(pomdp, N)
 particle_b = initialize_belief(particle_up, b0)
 
 
-#a, info = action_info(planner, Deterministic(TSState([13,4],mapsize,vec(trues(mapsize)))), tree_in_info=true)
+#a, info = action_info(planner, Deterministic(FullState([13,4],mapsize,vec(trues(mapsize)), maxbatt)), tree_in_info=true)
 #inchrome(D3Tree(info[:tree], init_expand=3))
 
 hipposim = HIPPOSimulator(msim=pomdp, planner=planner, up=particle_up, b=particle_b, sinit=sinit, dt=1/10, max_iter=maxbatt, display=true)

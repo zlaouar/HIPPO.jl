@@ -1,7 +1,7 @@
 """
     states (some of these functions are not used since the state space is too large)
 """
-function POMDPs.stateindex(m::FullPOMDP, s)
+function POMDPs.stateindex(m::TargetSearchPOMDP{S,A,O}, s) where {S,A,O}
     if s.robot == SA[-1,-1]
         return m.size[1]^2 * m.size[2]^2 + 1
     else 
@@ -9,12 +9,12 @@ function POMDPs.stateindex(m::FullPOMDP, s)
     end
 end
 
-function POMDPs.states(m::FullPOMDP) 
+function POMDPs.states(m::TargetSearchPOMDP{S,A,O}) where {S,A,O}
     nonterm = vec(collect(FullState(SVector(c[1],c[2]), SVector(c[3],c[4]), BitVector(d)) for c in Iterators.product(1:m.size[1], 1:m.size[2], 1:m.size[1], 1:m.size[2]) for d in Iterators.product(ntuple(s->[0,1],prod(m.size))...)))
     return push!(nonterm, FullState([-1,-1],[-1,-1],trues(prod(m.size))))
 end
 
-function POMDPs.initialstate(m::FullPOMDP)
+function POMDPs.initialstate(m::TargetSearchPOMDP{S,A,O}) where {S,A,O}
     return POMDPTools.Uniform(FullState(m.robot_init, SVector(x, y), trues(prod(m.size)), z) for x in 1:m.size[1], y in 1:m.size[2], z in 1:m.maxbatt)
 end
 
@@ -25,18 +25,18 @@ end
 """
     actions
 """
-POMDPs.actions(m::TargetSearchPOMDP) = (:left, :right, :up, :down, :stay, :nw, :ne, :sw, :se)
+POMDPs.actions(m::TargetSearchPOMDP{S,A,O}) where {S,A,O} = (:left, :right, :up, :down, :stay, :nw, :ne, :sw, :se)
 
 POMDPs.actionindex(m::TargetSearchPOMDP, a) = actionind[a]
 
-function bounce(m::TargetSearchPOMDP, pos, offset)
+function bounce(m::TargetSearchPOMDP{S,A,O}, pos, offset) where {S,A,O}
     clamp.(pos + offset, SVector(1,1), m.size)
 end
 
-POMDPs.discount(m::TargetSearchPOMDP) = 0.95
+POMDPs.discount(m::TargetSearchPOMDP{S,A,O}) where {S,A,O} = 0.95 
 
 
-function POMDPs.transition(m::FullPOMDP, s, a)
+function POMDPs.transition(m::TargetSearchPOMDP{S,A,O}, s, a) where {S,A,O}
     states = FullState[]
     probs = Float64[]
     remaining_prob = 1.0
@@ -65,7 +65,7 @@ function POMDPs.transition(m::FullPOMDP, s, a)
 
 end
 
-function POMDPs.reward(m::FullPOMDP, s::FullState, a::Symbol, sp::FullState)
+function POMDPs.reward(m::TargetSearchPOMDP{S,A,O}, s::FullState, a::Symbol, sp::FullState) where {S,A,O}
     reward_running = -1.0
     reward_target = 0.0
     #reward_roi = 0.0
@@ -142,7 +142,7 @@ end
 
 set_default_graphic_size(18cm,14cm)
 
-function POMDPTools.ModelTools.render(m::FullPOMDP, step)
+function POMDPTools.ModelTools.render(m::TargetSearchPOMDP{S,A,O}, step) where {S,A,O}
     #set_default_graphic_size(14cm,14cm)
     nx, ny = m.size
     cells = []
@@ -223,7 +223,7 @@ function rewardinds(m, pos::SVector{2, Int64})
 end
 
 
-function POMDPTools.ModelTools.render(m::TargetSearchPOMDP, step, plt_reward::Bool)
+function POMDPTools.ModelTools.render(m::TargetSearchPOMDP{S,A,O}, step, plt_reward::Bool) where {S,A,O}
     nx, ny = m.size
     cells = []
     
@@ -260,7 +260,7 @@ function POMDPTools.ModelTools.render(m::TargetSearchPOMDP, step, plt_reward::Bo
     return compose(context((w-sz)/2, (h-sz)/2, sz, sz), robot, target, grid, outline)
 end
 
-function POMDPTools.ModelTools.render(m::TargetSearchPOMDP, step, points::Vector{Vector{Int}})
+function POMDPTools.ModelTools.render(m::TargetSearchPOMDP{S,A,O}, step, points::Vector{Vector{Int}}) where {S,A,O}
     nx, ny = m.size
     cells = []
     minr = minimum(m.reward)-1
@@ -308,11 +308,11 @@ function dist(curr, start)
     sum(abs.(curr-start))
 end
 
-function POMDPs.isterminal(m::FullPOMDP, s::FullState)
+function POMDPs.isterminal(m::TargetSearchPOMDP{S,A,O}, s::FullState) where {S,A,O}
     required_batt = dist(s.robot, m.robot_init)
     return s.battery - required_batt <= 1 || s.robot == SA[-1,-1] 
 end
 
 POMDPs.isterminal(m::RewardPOMDP, s::TSState) = s.robot == SA[-1,-1]
 
-POMDPs.isterminal(m::FullPOMDP, s::TSState, target) = s.robot == target
+POMDPs.isterminal(m::TargetSearchPOMDP{S,A,O}, s::TSState, target) where {S,A,O} = s.robot == target
