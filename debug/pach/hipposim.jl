@@ -85,7 +85,7 @@ function update_reward(data, ws_client, pachSim, initialized)
 
         println("Sending first action: ", response)
 
-        write(ws_client, JSON.json(Dict("action" => "nextWaypoint", "args" => Dict("latitude" => response[1],
+        write(ws_client, JSON.json(Dict("action" => "NextFlightWaypoint", "args" => Dict("latitude" => response[1],
                                                                                     "longitude" => response[2],
                                                                                     "altitude" => response[3],
                                                                                     "speed" => 2))))
@@ -113,7 +113,7 @@ function generate_next_action(data, a_previous, ws_client, pachSim, location_dic
     response = location_dict[loc]
 
     println("Sending path: ", response)
-    write(ws_client, JSON.json(Dict("action" => "nextWaypoint", "args" => Dict("latitude" => response[1],
+    write(ws_client, JSON.json(Dict("action" => "NextFlightWaypoint", "args" => Dict("latitude" => response[1],
                                                                                     "longitude" => response[2],
                                                                                     "altitude" => response[3],
                                                                                     "speed" => 2))))
@@ -176,6 +176,7 @@ function main()
                 println("Executing Action: ", action)
 
                 if action == "CalculatePath"
+                    println("initialized: ", initialized)
                     pachSim = update_reward(arguments, ws_client, pachSim, initialized)
                     initialized = true
                     #println("reward updated")
