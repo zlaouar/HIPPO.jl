@@ -21,6 +21,7 @@ mutable struct PachSimulator
     b::ParticleCollection
     sinit::FullState
     location_dict::Dict{String, Vector{Float64}}
+    desired_agl_alt::Float64
 end
 
 #function HIPPOSimulator(msim::TargetSearchPOMDP, planner::POMCPPlanner, up::BasicParticleFilter, b::ParticleCollection, sinit::TSState; 
