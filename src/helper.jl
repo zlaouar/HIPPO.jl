@@ -150,10 +150,11 @@ function next_action(hnode::BasicPOMCP.POMCPObsNode, aprev)
     ha = findfirst(a -> a == aprev, t.a_labels[t.children[h]])
 
     # descend down tree from "waypoint reached" observation node
-    hao = get(t.o_lookup, (ha, :waypoint_reached), 0)
+    hao = get(t.o_lookup, (ha, :next_waypoint), 0)
 
     if hao == 0
         @warn "wp reached observation not in tree"
+        inchrome(D3Tree(t))
         return :stay
     end
 

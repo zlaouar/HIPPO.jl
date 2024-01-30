@@ -76,7 +76,7 @@ include(joinpath(@__DIR__,"basicPOMDP","functions_vanilla.jl"))
 
 
 include(joinpath(@__DIR__,"helper.jl"))
-export FixedPolicy, TargetSearchMDPPolicy
+export FixedPolicy, TargetSearchMDPPolicy, next_action
 
 include("visualize.jl")
 export rendhist

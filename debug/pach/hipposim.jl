@@ -98,7 +98,7 @@ function initialize(rewarddist, location_dict, desired_agl_alt)
     particle_b = initialize_belief(particle_up, b0)
 
     planner = solve(solver, msolve)
-    pachSim = PachSimulator(msolve, planner, particle_up, particle_b, sinit, location_dict, desired_agl_alt)
+    pachSim = PachSimulator(msolve, planner, particle_up, particle_b, sinit, location_dict, desired_agl_alt, :nothing)
 
     return pachSim
 end
@@ -116,8 +116,6 @@ function update_reward(data, ws_client, pachSim, desired_agl_alt, initialized)
         pachSim = initialize(rewarddist, location_dict, desired_agl_alt)
         a, _ = BasicPOMCP.action_info(pachSim.planner, pachSim.b)
         loc = HIPPO.loctostr(HIPPO.generatelocation(pachSim.msim, [a], pachSim.sinit.robot))
-
-        println("location dict: ", location_dict)
         response = location_dict[loc[1]]
         commanded_alt = response[3] + pachSim.desired_agl_alt
 
@@ -130,6 +128,7 @@ function update_reward(data, ws_client, pachSim, desired_agl_alt, initialized)
         println("pachSim initialized")    
     end
 
+    pachSim.previous_action = a
     return pachSim
 end
 
@@ -138,37 +137,60 @@ function update_params(data, pachSim)
     return pachSim
 end
 
-function generate_next_action(data, a_previous, ws_client, pachSim, location_dict)
-    (up, b, sinit) = (pachSim.up, pachSim.b, pachSim.sinit)
-    status = data["FlighStatusArgs"]
-    o = status == "WaypointReachedPayload" ? :waypoint_reached : 
-        status == "GatherInfoPayload" ? :gather_info : :nothing
+# 1) Update belief
+# 2) Plan for reaching next waypoint
+# 3) Send next waypoint
 
-    b = update(up, b, a_previous, o)
+
+function generate_next_action(data, ws_client, pachSim)
+    (msim, up, b, sinit, previous_action) = (pachSim.msim, pachSim.up, pachSim.b, 
+                                             pachSim.sinit, pachSim.previous_action)
+    println("data: ", data)
+    status = data["event"]
+
+    if status == "waypoint-reached"
+        o = :next_waypoint
+    elseif status == "gather-info"
+        o = :gather_action 
+    else 
+        o = :nothing
+    end
+
+    #o = status == "waypoint-reached" ? :waypoint_reached : 
+    #    status == "gather-info" ? :gather_info : :nothing
+
+    println("status: ", status)
+    println("o: ", o)
+    b = update(up, b, previous_action, o)
     pachSim.b = b
 
-    tree, b = conditional_path(pachSim)
+    #tree, b = conditional_path(pachSim)
 
+    tree = pachSim.planner._tree
     hnode = BasicPOMCP.POMCPObsNode(tree, 1)
-    a = next_action(hnode, a_previous)
-    loc = HIPPO.loctostr(HIPPO.generatelocation(msolve, a, sinit.robot))
+    a = next_action(hnode, previous_action)
+    loc = HIPPO.loctostr(HIPPO.generatelocation(msim, [a], sinit.robot))
 
-    response = location_dict[loc]
+    response = pachSim.location_dict[loc[1]]
 
-    println("Sending path: ", response)
+    println("Sending waypoint: ", response)
     write(ws_client, JSON.json(Dict("action" => "NextFlightWaypoint", "args" => Dict("latitude" => response[1],
                                                                                     "longitude" => response[2],
                                                                                     "altitude" => response[3],
                                                                                     "speed" => 2))))
 
-    return a
+    #Plan for reaching next waypoint
+    _, info = BasicPOMCP.action_info(pachSim.planner, pachSim.b, tree_in_info = true)
+    pachSim.planner._tree = info[:tree]
+
+    pachSim.previous_action = a
+    return pachSim
 end
 
 function main()
     println("HIPPO: Opening port\n")
     pachSim = nothing
     initialized = false
-    next_a = :nothing
     desired_agl_alt = 0.0
     while true
         open("ws://127.0.0.1:8082") do ws_client
@@ -188,7 +210,7 @@ function main()
                     initialized = true
                     #println("reward updated")
                 elseif action == "FlightStatus"
-                    next_a = generate_next_action(arguments, next_a, ws_client, pachSim, location_dict)
+                    pachSim = generate_next_action(arguments, ws_client, pachSim)
 
                 elseif action == "FlightParams"
                     desired_agl_alt = arguments["altitudeCeiling"]

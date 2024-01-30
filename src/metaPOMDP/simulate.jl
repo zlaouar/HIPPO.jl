@@ -22,6 +22,7 @@ mutable struct PachSimulator
     sinit::FullState
     location_dict::Dict{String, Vector{Float64}}
     desired_agl_alt::Float64
+    previous_action::Symbol
 end
 
 #function HIPPOSimulator(msim::TargetSearchPOMDP, planner::POMCPPlanner, up::BasicParticleFilter, b::ParticleCollection, sinit::TSState; 
