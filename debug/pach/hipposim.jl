@@ -98,7 +98,8 @@ function initialize(rewarddist, location_dict, desired_agl_alt)
     particle_b = initialize_belief(particle_up, b0)
 
     planner = solve(solver, msolve)
-    pachSim = PachSimulator(msolve, planner, particle_up, particle_b, sinit, location_dict, desired_agl_alt, :nothing)
+    pachSim = PachSimulator(msolve, planner, particle_up, particle_b, sinit, 
+                            location_dict, desired_agl_alt, :nothing)
 
     return pachSim
 end
@@ -115,7 +116,12 @@ function update_reward(data, ws_client, pachSim, desired_agl_alt, initialized)
     else
         pachSim = initialize(rewarddist, location_dict, desired_agl_alt)
         a, _ = BasicPOMCP.action_info(pachSim.planner, pachSim.b)
+        pachSim.previous_action = a
+        sp, _, _ = @gen(:sp,:o,:r)(pachSim.msim, pachSim.sinit, a)
         loc = HIPPO.loctostr(HIPPO.generatelocation(pachSim.msim, [a], pachSim.sinit.robot))
+        @info "s: ", pachSim.sinit.robot, " | sp: ", sp.robot , " | loc: ", loc, " | a: ", a 
+        pachSim.sinit = sp
+
         response = location_dict[loc[1]]
         commanded_alt = response[3] + pachSim.desired_agl_alt
 
@@ -128,7 +134,6 @@ function update_reward(data, ws_client, pachSim, desired_agl_alt, initialized)
         println("pachSim initialized")    
     end
 
-    pachSim.previous_action = a
     return pachSim
 end
 
@@ -164,13 +169,14 @@ function generate_next_action(data, ws_client, pachSim)
     b = update(up, b, previous_action, o)
     pachSim.b = b
 
+    remove_rewards(pachSim.msim, sinit.robot) # remove reward at current state
     #tree, b = conditional_path(pachSim)
-
-    tree = pachSim.planner._tree
-    hnode = BasicPOMCP.POMCPObsNode(tree, 1)
+    #@warn "rewards: ", pachSim.msim.reward
+    hnode = BasicPOMCP.POMCPObsNode(pachSim.planner._tree, 1)
     a = next_action(hnode, previous_action)
+    sp, _, _ = @gen(:sp,:o,:r)(pachSim.msim, pachSim.sinit, a)
     loc = HIPPO.loctostr(HIPPO.generatelocation(msim, [a], sinit.robot))
-
+    @info "s: ", pachSim.sinit.robot, " | sp: ", sp.robot , " | loc: ", loc, " | a: ", a, "prev a: ", previous_action
     response = pachSim.location_dict[loc[1]]
 
     println("Sending waypoint: ", response)
@@ -180,10 +186,13 @@ function generate_next_action(data, ws_client, pachSim)
                                                                                     "speed" => 2))))
 
     #Plan for reaching next waypoint
-    _, info = BasicPOMCP.action_info(pachSim.planner, pachSim.b, tree_in_info = true)
-    pachSim.planner._tree = info[:tree]
+    #inchrome(D3Tree(pachSim.planner._tree))
+    newa, info = BasicPOMCP.action_info(pachSim.planner, pachSim.b, tree_in_info = true)
+
 
     pachSim.previous_action = a
+    pachSim.sinit = sp
+
     return pachSim
 end
 

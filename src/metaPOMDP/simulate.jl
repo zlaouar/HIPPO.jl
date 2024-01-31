@@ -57,8 +57,6 @@ function loctostr(locvec)
     return [join(locvec[i], ',') for i in eachindex(locvec)]
 end
 
-
-
 function simulateHIPPO(sim::HIPPOSimulator)
     (;msim,max_iter) = sim 
     r_total = 0.0

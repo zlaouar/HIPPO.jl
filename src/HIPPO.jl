@@ -57,7 +57,8 @@ export BasicPOMDP,
 
 include(joinpath(@__DIR__,"metaPOMDP","simulate.jl"))
 # include(joinpath(@__DIR__,"metaPOMDP","simulate.jl"))
-export simulateHIPPO, 
+export remove_rewards,
+       simulateHIPPO, 
        predicted_path,
        HIPPOSimulator, 
        PachSimulator
