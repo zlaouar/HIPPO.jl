@@ -139,7 +139,7 @@ function update_reward(data, ws_client, pachSim, initialized, flightParams)
         write(ws_client, JSON.json(Dict("action" => "NextFlightWaypoint", "args" => Dict("latitude" => response[1],
                                                                                     "longitude" => response[2],
                                                                                     "altitude" => commanded_alt,
-                                                                                    "speed" => 2,
+                                                                                    "speed" => pachSim.flight_params.max_speed,
                                                                                     "waypointID" => pachSim.waypointID,
                                                                                     "plannerAction" => string(a),
                                                                                     "dwellTime" => 5.0))))
@@ -201,7 +201,7 @@ function generate_next_action(data, ws_client, pachSim)
     write(ws_client, JSON.json(Dict("action" => "NextFlightWaypoint", "args" => Dict("latitude" => response[1],
                                                                                     "longitude" => response[2],
                                                                                     "altitude" => response[3],
-                                                                                    "speed" => 2,
+                                                                                    "speed" => pachSim.flight_params.max_speed,
                                                                                     "waypointID" => pachSim.waypointID,
                                                                                     "plannerAction" => string(a),
                                                                                     "dwellTime" => 5.0))))
