@@ -23,6 +23,7 @@ mutable struct PachSimulator
     location_dict::Dict{String, Vector{Float64}}
     desired_agl_alt::Float64
     previous_action::Symbol
+    waypointID::Int
 end
 
 #function HIPPOSimulator(msim::TargetSearchPOMDP, planner::POMCPPlanner, up::BasicParticleFilter, b::ParticleCollection, sinit::TSState; 

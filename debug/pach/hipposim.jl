@@ -99,7 +99,7 @@ function initialize(rewarddist, location_dict, desired_agl_alt)
 
     planner = solve(solver, msolve)
     pachSim = PachSimulator(msolve, planner, particle_up, particle_b, sinit, 
-                            location_dict, desired_agl_alt, :nothing)
+                            location_dict, desired_agl_alt, :nothing, 0)
 
     return pachSim
 end
@@ -130,8 +130,13 @@ function update_reward(data, ws_client, pachSim, desired_agl_alt, initialized)
         write(ws_client, JSON.json(Dict("action" => "NextFlightWaypoint", "args" => Dict("latitude" => response[1],
                                                                                     "longitude" => response[2],
                                                                                     "altitude" => commanded_alt,
-                                                                                    "speed" => 2))))
-        println("pachSim initialized")    
+                                                                                    "speed" => 2,
+                                                                                    "waypointID" => pachSim.waypointID,
+                                                                                    "plannerAction" => string(a),
+                                                                                    "dwellTime" => 5.0))))
+        
+        println("pachSim initialized")
+        pachSim.waypointID += 1    
     end
 
     return pachSim
@@ -183,8 +188,10 @@ function generate_next_action(data, ws_client, pachSim)
     write(ws_client, JSON.json(Dict("action" => "NextFlightWaypoint", "args" => Dict("latitude" => response[1],
                                                                                     "longitude" => response[2],
                                                                                     "altitude" => response[3],
-                                                                                    "speed" => 2))))
-
+                                                                                    "speed" => 2,
+                                                                                    "waypointID" => pachSim.waypointID,
+                                                                                    "plannerAction" => string(a),
+                                                                                    "dwellTime" => 5.0))))
     #Plan for reaching next waypoint
     #inchrome(D3Tree(pachSim.planner._tree))
     newa, info = BasicPOMCP.action_info(pachSim.planner, pachSim.b, tree_in_info = true)
