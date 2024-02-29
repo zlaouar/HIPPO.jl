@@ -80,7 +80,7 @@ function generate_sim_path(data, ws_client)
     write(ws_client, JSON.json(Dict("action" => "ReturnPath", "args" => Dict("flightPath" => response))))
 end
 
-function initialize(rewarddist, location_dict, desired_agl_alt)
+function initialize(rewarddist, location_dict, flightParams)
     mapsize = reverse(size(rewarddist)) # (x,y)
     maxbatt = 100
     sinit = FullState([1, 1], mapsize, vec(trues(mapsize)), maxbatt)#rand(initialstate(msim))
@@ -98,13 +98,22 @@ function initialize(rewarddist, location_dict, desired_agl_alt)
     particle_b = initialize_belief(particle_up, b0)
 
     planner = solve(solver, msolve)
+    # default_flight_mode = "waypoint"
+    # default_max_speed = 20.0
+    # default_home_location = [37.7749, -122.4194]
+    # default_action = :nothing
+    # default_waypointID = 0
+    
+    default_action = :up
+    default_waypointID = 0
     pachSim = PachSimulator(msolve, planner, particle_up, particle_b, sinit, 
-                            location_dict, desired_agl_alt, :nothing, 0)
-
+                            location_dict, default_action, default_waypointID,
+                            flightParams)
+                        
     return pachSim
 end
 
-function update_reward(data, ws_client, pachSim, desired_agl_alt, initialized)
+function update_reward(data, ws_client, pachSim, initialized, flightParams)
     rewarddist = hcat(data["gridRewards"]...)
     rewarddist = rewarddist .+ abs(minimum(rewarddist)) .+ 0.01
     location_dict = data["locationDict"]
@@ -114,7 +123,7 @@ function update_reward(data, ws_client, pachSim, desired_agl_alt, initialized)
         pachSim.location_dict = location_dict
         println("reward updated")
     else
-        pachSim = initialize(rewarddist, location_dict, desired_agl_alt)
+        pachSim = initialize(rewarddist, location_dict, flightParams)
         a, _ = BasicPOMCP.action_info(pachSim.planner, pachSim.b)
         pachSim.previous_action = a
         sp, _, _ = @gen(:sp,:o,:r)(pachSim.msim, pachSim.sinit, a)
@@ -123,7 +132,7 @@ function update_reward(data, ws_client, pachSim, desired_agl_alt, initialized)
         pachSim.sinit = sp
 
         response = location_dict[loc[1]]
-        commanded_alt = response[3] + pachSim.desired_agl_alt
+        commanded_alt = response[3] + pachSim.flight_params.desired_agl_alt
 
         println("Sending first action: ", response)
 
@@ -142,9 +151,13 @@ function update_reward(data, ws_client, pachSim, desired_agl_alt, initialized)
     return pachSim
 end
 
-function update_params(data, pachSim)
-    pachSim.desired_agl_alt = data["altitudeCeiling"]
-    return pachSim
+function update_params(data)
+    flightParams = HIPPO.FlightParams(data["mode"], 
+                    data["altitudeCeiling"], 
+                    data["maxSpeed"], 
+                    [37.7749, -122.4194])
+
+    return flightParams
 end
 
 # 1) Update belief
@@ -206,10 +219,11 @@ end
 function main()
     println("HIPPO: Opening port\n")
     pachSim = nothing
+    flightParams = nothing
     initialized = false
-    desired_agl_alt = 0.0
-    while true
-        open("ws://127.0.0.1:8082") do ws_client
+    #while true
+    open("ws://127.0.0.1:8082") do ws_client
+        while !eof(ws_client)
             print("HIPPO: awaiting data...\n")
             data, success = readguarded(ws_client)
             if success
@@ -222,16 +236,16 @@ function main()
 
                 if action == "CalculatePath"
                     println("initialized: ", initialized)
-                    pachSim = update_reward(arguments, ws_client, pachSim, desired_agl_alt, initialized)
+                    pachSim = update_reward(arguments, ws_client, pachSim, initialized, flightParams)
                     initialized = true
                     #println("reward updated")
                 elseif action == "FlightStatus"
                     pachSim = generate_next_action(arguments, ws_client, pachSim)
 
                 elseif action == "FlightParams"
-                    desired_agl_alt = arguments["altitudeCeiling"]
-                    #pachSim = update_params(arguments, pachSim)
-                    println("desired altitude updated")
+                    #desired_agl_alt = arguments["altitudeCeiling"]
+                    flightParams = update_params(arguments)
+                    println("Updated Params")
                 end
             end
         end

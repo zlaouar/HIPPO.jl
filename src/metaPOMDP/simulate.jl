@@ -14,6 +14,12 @@ Base.@kwdef mutable struct HIPPOSimulator
     anim::Bool             = false
 end
 
+mutable struct FlightParams
+    flight_mode::String
+    desired_agl_alt::Float64
+    max_speed::Float64
+    home_location::Vector{Float64}
+end
 mutable struct PachSimulator 
     msim::PachPOMDP
     planner::POMCPPlanner
@@ -21,9 +27,9 @@ mutable struct PachSimulator
     b::ParticleCollection
     sinit::FullState
     location_dict::Dict{String, Vector{Float64}}
-    desired_agl_alt::Float64
     previous_action::Symbol
     waypointID::Int
+    flight_params::FlightParams
 end
 
 #function HIPPOSimulator(msim::TargetSearchPOMDP, planner::POMCPPlanner, up::BasicParticleFilter, b::ParticleCollection, sinit::TSState; 
