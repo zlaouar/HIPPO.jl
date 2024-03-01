@@ -152,10 +152,12 @@ function update_reward(data, ws_client, pachSim, initialized, flightParams)
 end
 
 function update_params(data)
+    println("homeLocation: ", data["homeLocation"])
     flightParams = HIPPO.FlightParams(data["mode"], 
                     data["altitudeCeiling"], 
                     data["maxSpeed"], 
-                    [37.7749, -122.4194])
+                    data["homeLocation"])
+                   # [37.7749, -122.4194]
 
     return flightParams
 end
