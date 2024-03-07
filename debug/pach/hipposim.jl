@@ -83,7 +83,14 @@ end
 function initialize(rewarddist, location_dict, flightParams)
     mapsize = reverse(size(rewarddist)) # (x,y)
     maxbatt = 100
-    sinit = FullState([1, 1], mapsize, vec(trues(mapsize)), maxbatt)#rand(initialstate(msim))
+
+    #if isnothing(flightParams)
+    #    flightParams = HIPPO.FlightParams("waypoint", 100, 20.0, [40.019375, -105.265566])#[37.7749, -122.4194])
+    #end
+
+    closest_point = find_closest_grid_point(location_dict, flightParams.home_location)
+    initial_point = mat_to_inertial_inds(mapsize, closest_point)
+    sinit = FullState(initial_point, mapsize, vec(trues(mapsize)), maxbatt)#rand(initialstate(msim))
 
     msolve = create_target_search_pomdp(sinit, 
                                     size=mapsize, 
@@ -152,7 +159,9 @@ function update_reward(data, ws_client, pachSim, initialized, flightParams)
 end
 
 function update_params(data)
-    println("homeLocation: ", data["homeLocation"])
+    if !haskey(data, "homeLocation")
+        data["homeLocation"] = [40.019375, -105.265566]#[37.7749, -122.4194]
+    end
     flightParams = HIPPO.FlightParams(data["mode"], 
                     data["altitudeCeiling"], 
                     data["maxSpeed"], 
@@ -225,8 +234,8 @@ function main()
     initialized = false
     #while true
     open("ws://127.0.0.1:8082") do ws_client
+        print("HIPPO: awaiting data...\n")
         while !eof(ws_client)
-            print("HIPPO: awaiting data...\n")
             data, success = readguarded(ws_client)
             if success
                 # Parse data as JSON {serviceName, args}
