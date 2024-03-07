@@ -61,7 +61,9 @@ export remove_rewards,
        simulateHIPPO, 
        predicted_path,
        HIPPOSimulator, 
-       PachSimulator
+       PachSimulator,
+       find_closest_grid_point,
+       mat_to_inertial_inds
 
 #= include(joinpath(@__DIR__,"baseline","simulate.jl"))
 include(joinpath(@__DIR__,"baseline","action.jl"))
