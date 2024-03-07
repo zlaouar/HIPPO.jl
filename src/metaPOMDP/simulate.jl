@@ -102,7 +102,7 @@ function simulateHIPPO(sim::HIPPOSimulator)
         (sim.anim || sim.display) && (belframe = render(msim, (sp=sp, bp=b)))
         (sim.anim || sim.display) && (rewardframe = render(msim, (sp=sp, bp=b), true))
         #display(belframe)
-        sim.display && display(belframe)
+        sim.display && display(rewardframe)
         sleep_until(tm += sim.dt)
         iter += 1
         println(iter,"- | s: ", s.robot, " | sp:", sp.robot, " | r:", r, " | o: ", o)

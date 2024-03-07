@@ -44,7 +44,7 @@ include(joinpath(@__DIR__,"metaPOMDP","observations.jl"))
  =#
 include(joinpath(@__DIR__,"pachPOMDP","core.jl"))
 include(joinpath(@__DIR__,"pachPOMDP","functions.jl"))
-include(joinpath(@__DIR__,"pachPOMDP","observations.jl")) 
+#include(joinpath(@__DIR__,"pachPOMDP","observations.jl")) 
 export BasicPOMDP,
        RewardPOMDP, 
        BatteryPOMDP, 
@@ -56,6 +56,8 @@ export BasicPOMDP,
        create_target_search_pomdp
 
 include(joinpath(@__DIR__,"metaPOMDP","simulate.jl"))
+include(joinpath(@__DIR__,"metaPOMDP","observations.jl")) 
+
 # include(joinpath(@__DIR__,"metaPOMDP","simulate.jl"))
 export remove_rewards,
        simulateHIPPO, 
@@ -63,13 +65,13 @@ export remove_rewards,
        HIPPOSimulator, 
        PachSimulator
 
-#= include(joinpath(@__DIR__,"baseline","simulate.jl"))
+include(joinpath(@__DIR__,"baseline","simulate.jl"))
 include(joinpath(@__DIR__,"baseline","action.jl"))
 include(joinpath(@__DIR__,"baseline","data.jl"))
 include(joinpath(@__DIR__,"baseline","truth.jl"))
 
 export simulateBaseline,
-       BaselineSimulator =#
+       BaselineSimulator
 #include(joinpath(@__DIR__,"basicPOMDP","core_vanilla.jl"))
 #export TSPOMDPBasic, TSStateBasic
 include(joinpath(@__DIR__,"basicPOMDP","functions_vanilla.jl"))

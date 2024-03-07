@@ -100,6 +100,8 @@ function POMDPTools.ModelTools.render(m::TargetSearchPOMDP, goal,
     for x in 1:nx, y in 1:ny
         cell = cell_ctx((x,y), m.size)
         r = m.reward[rewardinds(m, SA[x,y])...]
+        target = compose(context(), rectangle(), fill("white"), fillopacity(0.1), stroke("gray"))
+        #=
         if iszero(r)
             target = compose(context(), rectangle(), fill("black"), stroke("gray"))
         else
@@ -108,6 +110,7 @@ function POMDPTools.ModelTools.render(m::TargetSearchPOMDP, goal,
             target = compose(context(), rectangle(), fill(clr), stroke("gray"), fillopacity(0.3))
             #target = compose(context(), rectangle(), fillopacity(normie(m.reward[rewardinds(m,SA[x,y])...],m.reward)), fill("green"), stroke("gray"))
         end
+        =#
         if [x,y] ∈ hippo || [x,y] ∈ baseline
             # if [x,y] ∈ hippo
             #     hippoclr = get(ColorSchemes.linear_kbc_5_95_c73_n256, ophippo[[x,y]])
@@ -134,8 +137,13 @@ function POMDPTools.ModelTools.render(m::TargetSearchPOMDP, goal,
         iter += 1
     end
     # hippoline = compose(context(), line(Tuple.(hippo)), linewidth(1mm), stroke("red"))
+    background = read(joinpath(@__DIR__,"..","WalkerRanch_100_image.png"))
+    
     grid = compose(context(), linewidth(0.00000001mm), cells...)
-    outline = compose(context(), linewidth(0.01mm), rectangle(), fill("white"), stroke("black"))
+    #outline = compose(context(), linewidth(0.01mm), rectangle(), fill("white"), stroke("black"))
+    outline = compose(context(),
+    (context(), rectangle(), fill("transparent")),
+    (context(), bitmap("image/png", background, 0, 0, 1, 1)))
 
 
     robot_ctx = cell_ctx(hippo[end], m.size)

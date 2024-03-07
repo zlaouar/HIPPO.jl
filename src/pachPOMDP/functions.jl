@@ -25,7 +25,8 @@ end
 """
     actions
 """
-POMDPs.actions(m::TargetSearchPOMDP{S,A,O}) where {S,A,O} = (:left, :right, :up, :down, :stay, :nw, :ne, :sw, :se)
+POMDPs.actions(m::TargetSearchPOMDP{S,A,O}) where {S,A,O} = (:left, :right, :up, :down, :stay)
+#POMDPs.actions(m::TargetSearchPOMDP{S,A,O}) where {S,A,O} = (:left, :right, :up, :down, :stay, :nw, :ne, :sw, :se)
 
 POMDPs.actionindex(m::TargetSearchPOMDP, a) = actionind[a]
 
@@ -290,6 +291,62 @@ function POMDPTools.ModelTools.render(m::TargetSearchPOMDP{S,A,O}, step, points:
     end
     grid = compose(context(), linewidth(0.00000001mm), cells...)
     outline = compose(context(), linewidth(0.01mm), rectangle(), fill("white"), stroke("black"))
+
+    if haskey(step, :sp)
+        robot_ctx = cell_ctx(step[:sp].robot, m.size)
+        robot = compose(robot_ctx, circle(0.5, 0.5, 0.5), fill("blue"))
+        target_ctx = cell_ctx(step[:sp].target, m.size)
+        target = compose(target_ctx, star(0.5,0.5,1.8,5,0.5), fill("orange"), stroke("black"))
+    else
+        robot = nothing
+        target = nothing
+    end
+    sz = min(w,h)
+    return compose(context((w-sz)/2, (h-sz)/2, sz, (ny/nx)*sz), robot, target, grid, outline)
+end
+
+function POMDPTools.ModelTools.render(m::TargetSearchPOMDP{S,A,O}, step, 
+                                polypoints::Vector{Vector{Int}}, pospoints::Vector{Vector{Int}}) where {S,A,O}
+    nx, ny = m.size
+    cells = []
+    minr = minimum(m.reward)-1
+    maxr = maximum(m.reward)
+    iter = 1
+    for x in 1:nx, y in 1:ny
+        cell = cell_ctx((x,y), m.size)
+        r = m.reward[rewardinds(m, SA[x,y])...]
+        target = compose(context(), rectangle(), fill("white"), fillopacity(0.1), stroke("gray"))
+        #=
+        if iszero(r)
+            target = compose(context(), rectangle(), fill("black"), fillopacity(0.9), stroke("gray"))
+            compose!(cell, target)
+        else
+            frac = (r-minr)/(maxr-minr)
+            clr = get(ColorSchemes.turbo, frac)
+            target = compose(context(), rectangle(), fill(clr), stroke("gray"), fillopacity(0.5))
+            # target = compose(context(), rectangle(), fillopacity(normie(m.reward[rewardinds(m,SA[x,y])...],m.reward)), fill("green"), stroke("gray"))
+        end
+        =#
+        
+        if [x,y] ∈ polypoints
+            roi = compose(context(), rectangle(), fill("green2"), stroke("green2"), linewidth(0.5mm))
+            compose!(cell, roi)
+        elseif [x,y] ∈ pospoints
+            roi = compose(context(), rectangle(), fill("blue2"), stroke("blue2"), linewidth(0.5mm))
+            compose!(cell, roi)
+        else
+            compose!(cell, target)
+        end
+
+        push!(cells, cell)
+        iter += 1
+    end
+    background = read(joinpath(@__DIR__,"..","..","WalkerRanch_100_image.png"))
+    grid = compose(context(), linewidth(0.0001mm), cells...)
+    #outline = compose(context(), linewidth(0.01mm), rectangle(), fill("white"), stroke("black"))
+    outline = compose(context(),
+              (context(), rectangle(), fill("transparent"), stroke("orange")),
+              (context(), bitmap("image/png", background, 0, 0, 1, 1)))
 
     if haskey(step, :sp)
         robot_ctx = cell_ctx(step[:sp].robot, m.size)

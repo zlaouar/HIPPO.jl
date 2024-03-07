@@ -18,11 +18,11 @@ mapid = 1
 startid = 1
 # startid = parse(Int,ARGS[2])
 
-filevec = ["../data/opdata1.jld2", 
-           "../data/opdata2.jld2",
-           "../data/opdata3.jld2",
-           "../data/opdata4.jld2",
-           "../data/opdata5.jld2"]
+filevec = ["../../data/opdata1.jld2", 
+           "../../data/opdata2.jld2",
+           "../../data/opdata3.jld2",
+           "../../data/opdata4.jld2",
+           "../../data/opdata5.jld2"]
 
 file = filevec[mapid]
 
@@ -59,13 +59,13 @@ pomdp = FullPOMDP(sinit,
                 size=mapsize,
                 rewarddist=rewarddist,
                 maxbatt=maxbatt)
-basic_problem = BasicPOMDP(sinitBasic, size=mapsize)
+#basic_problem = BasicPOMDP(sinitBasic, size=mapsize)
 #mdp_solver = ValueIterationSolver() # creates the solver
 #mdp_policy = solve(mdp_solver, UnderlyingMDP(basic_problem))
 
-p = FunctionPolicy(FixedPolicy())
+#p = FunctionPolicy(FixedPolicy())
 #mdprollout = FORollout(TargetSearchMDPPolicy(mdp_policy))
-funcrollout = FORollout(p)
+#funcrollout = FORollout(p)
 
 #solver = POMCPSolver(estimate_value = mdprollout, tree_queries=10000, max_time=0.2, c=5) # mdp policy rollout
 #solver = POMCPSolver(estimate_value = funcrollout, tree_queries=10000, max_time=0.2, c=5) # up rollout
@@ -74,15 +74,16 @@ solver = POMCPSolver(tree_queries=10_000, max_time=0.2, c=5) # random
 planner = solve(solver, pomdp)
 
 b0 = initialstate(pomdp)
-N = 25000
+N = 10000
 particle_up = BootstrapFilter(pomdp, N)
 particle_b = initialize_belief(particle_up, b0)
 
 hipposim = HIPPOSimulator(msim=pomdp, planner=planner, up=particle_up, b=particle_b, 
-                sinit=sinit, dt=1/10, max_iter=maxbatt, display=false, logging=false,
+                sinit=sinit, dt=1/10, max_iter=maxbatt, display=true, logging=false,
                 rewardframes=Frames(MIME("image/png"), fps=15), belframes=Frames(MIME("image/png"), fps=15))
-bsim = BaselineSimulator(msim=pomdp, sinit=sinit, dt=1/4, max_iter=maxbatt, 
-                display=false, verbose=false, logging=false,
+
+bsim = BaselineSimulator(msim=pomdp, sinit=sinit, dt=1/20, max_iter=maxbatt, 
+                display=false, verbose=true, logging=true,
                 rewardframes=Frames(MIME("image/png"), fps=15))
 #newtarget = HIPPO.newtarget(mapsize, db)
 newtarget = sinit.target
@@ -91,8 +92,8 @@ newtarget = sinit.target
 
 
 
-hippo_hist, hippo_rtot, hippo_time, hippoframes, belframes = simulateHIPPO(hipposim)
-println("HIPPO target and last state: ", newtarget, " ", last(hippo_hist).s.robot, " | iterations: ", hippo_time)
+#hippo_hist, hippo_rtot, hippo_time, hippoframes, belframes = simulateHIPPO(hipposim)
+#println("HIPPO target and last state: ", newtarget, " ", last(hippo_hist).s.robot, " | iterations: ", hippo_time)
 
 begin
     pomdp = FullPOMDP(sinit,
