@@ -84,10 +84,6 @@ function initialize(rewarddist, location_dict, flightParams)
     mapsize = reverse(size(rewarddist)) # (x,y)
     maxbatt = 100
 
-    #if isnothing(flightParams)
-    #    flightParams = HIPPO.FlightParams("waypoint", 100, 20.0, [40.019375, -105.265566])#[37.7749, -122.4194])
-    #end
-
     closest_point = find_closest_grid_point(location_dict, flightParams.home_location)
     initial_point = mat_to_inertial_inds(mapsize, closest_point)
     sinit = FullState(initial_point, mapsize, vec(trues(mapsize)), maxbatt)#rand(initialstate(msim))
@@ -97,7 +93,6 @@ function initialize(rewarddist, location_dict, flightParams)
                                     rewarddist=rewarddist, 
                                     maxbatt=maxbatt, options=Dict(:observation_model=>:falco))
 
-    #msolve = RewardPOMDP(sinit, size=mapsize, rewarddist=rewarddist)
     solver = POMCPSolver(tree_queries=1000, max_time=0.2, c=80)
     b0 = initialstate(msolve)
     N = 1000
@@ -105,11 +100,6 @@ function initialize(rewarddist, location_dict, flightParams)
     particle_b = initialize_belief(particle_up, b0)
 
     planner = solve(solver, msolve)
-    # default_flight_mode = "waypoint"
-    # default_max_speed = 20.0
-    # default_home_location = [37.7749, -122.4194]
-    # default_action = :nothing
-    # default_waypointID = 0
     
     default_action = :up
     default_waypointID = 0
@@ -232,13 +222,14 @@ function main()
     pachSim = nothing
     flightParams = nothing
     initialized = false
-    #while true
+
+    flight_params_updated = false
+
     open("ws://127.0.0.1:8082") do ws_client
         print("HIPPO: awaiting data...\n")
         while !eof(ws_client)
             data, success = readguarded(ws_client)
             if success
-                # Parse data as JSON {serviceName, args}
                 payload = JSON.parse(String(data))
                 action = payload["action"]
                 arguments = payload["args"]
@@ -249,13 +240,18 @@ function main()
                     println("initialized: ", initialized)
                     pachSim = update_reward(arguments, ws_client, pachSim, initialized, flightParams)
                     initialized = true
-                    #println("reward updated")
+
+                    if flight_params_updated
+                        pachSim.flight_params = flightParams
+                        flight_params_updated = false
+                    end
+                    
                 elseif action == "FlightStatus"
                     pachSim = generate_next_action(arguments, ws_client, pachSim)
 
                 elseif action == "FlightParams"
-                    #desired_agl_alt = arguments["altitudeCeiling"]
-                    pachSim.flightParams = update_params(arguments)
+                    flightParams = update_params(arguments)
+                    flight_params_updated = true
                     println("Updated Params")
                 end
             end
