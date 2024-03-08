@@ -255,7 +255,7 @@ function main()
 
                 elseif action == "FlightParams"
                     #desired_agl_alt = arguments["altitudeCeiling"]
-                    flightParams = update_params(arguments)
+                    pachSim.flightParams = update_params(arguments)
                     println("Updated Params")
                 end
             end
