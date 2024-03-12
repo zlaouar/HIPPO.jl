@@ -198,10 +198,12 @@ function generate_next_action(data, ws_client, pachSim)
     @info "s: ", pachSim.sinit.robot, " | sp: ", sp.robot , " | loc: ", loc, " | a: ", a, "prev a: ", previous_action
     response = pachSim.location_dict[loc[1]]
 
+    commanded_alt = response[3] + pachSim.flight_params.desired_agl_alt
+
     println("Sending waypoint: ", response)
     write(ws_client, JSON.json(Dict("action" => "NextFlightWaypoint", "args" => Dict("latitude" => response[1],
                                                                                     "longitude" => response[2],
-                                                                                    "altitude" => response[3],
+                                                                                    "altitude" => commanded_alt,
                                                                                     "speed" => pachSim.flight_params.max_speed,
                                                                                     "waypointID" => pachSim.waypointID,
                                                                                     "plannerAction" => string(a),
