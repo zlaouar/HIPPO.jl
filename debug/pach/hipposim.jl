@@ -223,6 +223,7 @@ function generate_next_action(data, ws_client, pachSim)
 
     pachSim.previous_action = a
     pachSim.sinit = sp
+    pachSim.waypointID += 1
 
     return pachSim
 end
