@@ -139,7 +139,7 @@ function update_reward(data, ws_client, pachSim, initialized, flightParams)
                                                                                     "speed" => pachSim.flight_params.max_speed,
                                                                                     "waypointID" => pachSim.waypointID,
                                                                                     "plannerAction" => string(a),
-                                                                                    "dwellTime" => 5.0))))
+                                                                                    "dwellTime" => 5000.0))))
         
         println("pachSim initialized")
         pachSim.waypointID += 1    
@@ -207,7 +207,7 @@ function generate_next_action(data, ws_client, pachSim)
                                                                                     "speed" => pachSim.flight_params.max_speed,
                                                                                     "waypointID" => pachSim.waypointID,
                                                                                     "plannerAction" => string(a),
-                                                                                    "dwellTime" => 5.0))))
+                                                                                    "dwellTime" => 5000.0))))
     #Plan for reaching next waypoint
     #inchrome(D3Tree(pachSim.planner._tree))
     newa, info = BasicPOMCP.action_info(pachSim.planner, pachSim.b, tree_in_info = true)
