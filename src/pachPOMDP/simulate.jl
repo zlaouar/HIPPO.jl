@@ -14,12 +14,22 @@ Base.@kwdef mutable struct HIPPOSimulator
     anim::Bool             = false
 end
 
+mutable struct FlightParams
+    flight_mode::String
+    desired_agl_alt::Float64
+    max_speed::Float64
+    home_location::Vector{Float64}
+end
 mutable struct PachSimulator 
-    msim::RewardPOMDP
+    msim::PachPOMDP
     planner::POMCPPlanner
     up::BasicParticleFilter
     b::ParticleCollection
-    sinit::RewardState
+    sinit::FullState
+    location_dict::Dict{String, Vector{Float64}}
+    previous_action::Symbol
+    waypointID::Int
+    flight_params::FlightParams
 end
 
 #function HIPPOSimulator(msim::TargetSearchPOMDP, planner::POMCPPlanner, up::BasicParticleFilter, b::ParticleCollection, sinit::TSState; 
@@ -38,6 +48,53 @@ function convertinds(m::TargetSearchPOMDP, pos::Vector{Int})
     return inds
 end
 
+function inertial_to_mat_inds(size::Union{Vector{Int},Tuple}, pos::Union{Vector{Int},Tuple})
+    correct_ind = reverse(pos)
+    xind = size[2]+1 - correct_ind[1]
+    inds = [xind, correct_ind[2]]
+    return inds
+end
+
+function mat_to_inertial_inds(size::Union{SVector{2, Int64},Vector{Int},Tuple}, 
+                              pos::Union{SVector{2, Int64},Vector{Int},Tuple})
+    size = reverse(size)
+    yind = size[1]+1 - pos[1]
+    inds = [pos[2], yind]
+    return inds
+end
+
+function find_closest_grid_point(location_dict, point)
+    """Given a reference lat/lon point, this function will find the closest relevant point within the provided database"""
+    # println(coord_set)
+    # Check to make sure that the point is in the right orientation
+    coord_set = collect(values(location_dict))
+    grid_set = collect(keys(location_dict))
+    coord_set = [loc[1:2] for loc ∈ coord_set]
+
+    if point[1] < 0.0
+        point_coord = [point[2], point[1]]
+    else
+        point_coord = [point[1], point[2]]
+    end
+    # @show point_coord
+    #coord_set = coord_set .- point_coord
+    #display(coord_set)
+    #@show point_coord
+    coord_set = [loc - point_coord for loc ∈ coord_set]
+    tot_dist = [loc[1]^2 + loc[2]^2 for loc ∈ coord_set]
+    #tot_dist = coord_set[:,1].^2 + coord_set[:,2].^2
+    # println(length(tot_dist))
+    # best_match = sortperm(db,tot_dist)
+    _, i = findmin(tot_dist)
+    closest_point = grid_set[i]
+
+    closest_point = split(closest_point, ',')
+    closest_point = parse.(Int, closest_point)
+    
+    return closest_point
+    #return db[i,:].OBJECTID
+end
+
 function generatelocation(m::TargetSearchPOMDP, atraj, robotloc)
     loctraj = Vector{Vector{Int}}(undef, length(atraj))
     currloc = robotloc
@@ -53,8 +110,6 @@ end
 function loctostr(locvec)
     return [join(locvec[i], ',') for i in eachindex(locvec)]
 end
-
-
 
 function simulateHIPPO(sim::HIPPOSimulator)
     (;msim,max_iter) = sim 
@@ -88,6 +143,9 @@ function simulateHIPPO(sim::HIPPOSimulator)
         remove_rewards(msim, s.robot) # remove reward at current state
         #display(msim.reward)
         sp, o, r = @gen(:sp,:o,:r)(msim, s, a)
+        if sp.robot ∈ msim.obstacles
+            println("----COLLISION----")
+        end
         r_total += d*r
         d *= discount(msim)
         b = update(sim.up, b, a, o)
@@ -132,15 +190,6 @@ function predicted_path(sim::PachSimulator)
     s = sp
 
     return loctostr(generatelocation(msim, a_traj, sinit.robot)), b, s
-end
-
-function conditional_plan(sim::PachSimulator, o)
-    (;planner,b) = sim
-
-    _, info = action_info(planner, b, tree_in_info = true)
-    tree = info[:tree]
-    
-    return tree
 end
 
 function customsim(msolve::TargetSearchPOMDP, msim::TargetSearchPOMDP, planner, up, b, sinit)

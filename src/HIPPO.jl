@@ -55,7 +55,7 @@ export BasicPOMDP,
        FullState,
        create_target_search_pomdp
 
-include(joinpath(@__DIR__,"metaPOMDP","simulate.jl"))
+include(joinpath(@__DIR__,"pachPOMDP","simulate.jl"))
 # include(joinpath(@__DIR__,"metaPOMDP","simulate.jl"))
 export remove_rewards,
        simulateHIPPO, 

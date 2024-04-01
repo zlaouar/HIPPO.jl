@@ -30,6 +30,10 @@ POMDPs.actions(m::TargetSearchPOMDP{S,A,O}) where {S,A,O} = (:left, :right, :up,
 POMDPs.actionindex(m::TargetSearchPOMDP, a) = actionind[a]
 
 function bounce(m::TargetSearchPOMDP{S,A,O}, pos, offset) where {S,A,O}
+    if clamp.(pos + offset, SVector(1,1), m.size) ∈ m.obstacles
+        return pos
+    end
+
     clamp.(pos + offset, SVector(1,1), m.size)
 end
 

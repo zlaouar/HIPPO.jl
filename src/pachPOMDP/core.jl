@@ -70,7 +70,7 @@ end
 
 mutable struct PachPOMDP{S,A,O} <: TargetSearchPOMDP{S, A, O}
     size::SVector{2, Int}
-    obstacles::Set{SVector{}}
+    obstacles::Vector{SVector{}}
     robot_init::SVector{2, Int}
     tprob::Float64
     targetloc::SVector{2, Int}
@@ -92,9 +92,9 @@ function create_target_search_pomdp(sinit::FullState;
                                     size=(10,10), 
                                     rewarddist=Array{Float64}(undef, 0, 0),
                                     maxbatt=100, 
-                                    options)
+                                    options = Dict(:observation_model=>:falco),
+                                    obstacles = Vector{SVector{2, Int}}())
 
-    obstacles = Set{SVector{2, Int}}()
     robot_init = sinit.robot
     tprob = 0.7
     targetloc = sinit.target
