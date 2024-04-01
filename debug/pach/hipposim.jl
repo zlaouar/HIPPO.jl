@@ -80,7 +80,7 @@ function generate_sim_path(data, ws_client)
     write(ws_client, JSON.json(Dict("action" => "ReturnPath", "args" => Dict("flightPath" => response))))
 end
 
-function initialize(rewarddist, location_dict, flightParams)
+function initialize(rewarddist, location_dict, keepout_zones, flightParams)
     mapsize = reverse(size(rewarddist)) # (x,y)
     maxbatt = 100
 
@@ -88,10 +88,17 @@ function initialize(rewarddist, location_dict, flightParams)
     initial_point = mat_to_inertial_inds(mapsize, closest_point)
     sinit = FullState(initial_point, mapsize, vec(trues(mapsize)), maxbatt)#rand(initialstate(msim))
 
+    keepmat = stack(keepout_zones)
+    indices = findall(x -> x == 1, keepmat)
+    indtup = Tuple.(indices)
+    obstacles = SVector{2}.([mat_to_inertial_inds([6,4], indtup[i]) for i ∈ eachindex(indtup)])
+
     msolve = create_target_search_pomdp(sinit, 
                                     size=mapsize, 
                                     rewarddist=rewarddist, 
-                                    maxbatt=maxbatt, options=Dict(:observation_model=>:falco))
+                                    maxbatt=maxbatt, 
+                                    options=Dict(:observation_model=>:falco),
+                                    obstacles=obstacles)
 
     solver = POMCPSolver(tree_queries=1000, max_time=0.2, c=80)
     b0 = initialstate(msolve)
@@ -115,12 +122,14 @@ function update_reward(data, ws_client, pachSim, initialized, flightParams)
     rewarddist = rewarddist .+ abs(minimum(rewarddist)) .+ 0.01
     location_dict = data["locationDict"]
 
+    global keepout_zones = stack(data["keepOutZones"])
+
     if initialized
         pachSim.msim.reward = rewarddist
         pachSim.location_dict = location_dict
         println("reward updated")
     else
-        pachSim = initialize(rewarddist, location_dict, flightParams)
+        pachSim = initialize(rewarddist, location_dict, keepout_zones, flightParams)
         a, _ = BasicPOMCP.action_info(pachSim.planner, pachSim.b)
         pachSim.previous_action = a
         sp, _, _ = @gen(:sp,:o,:r)(pachSim.msim, pachSim.sinit, a)
@@ -149,9 +158,10 @@ function update_reward(data, ws_client, pachSim, initialized, flightParams)
 end
 
 function update_params(data)
-    if !haskey(data, "homeLocation")
+    if !haskey(data, "homeLocation") || isnothing(data["homeLocation"])
         data["homeLocation"] = [40.019375, -105.265566]#[37.7749, -122.4194]
     end
+
     flightParams = HIPPO.FlightParams(data["mode"], 
                     data["altitudeCeiling"], 
                     data["maxSpeed"], 
