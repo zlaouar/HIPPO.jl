@@ -8,6 +8,7 @@ using ParticleFilters
 using D3Trees
 using WebSockets: readguarded, open
 using JSON
+using StaticArrays
 
 
 function generate_predicted_path(data, ws_client)
