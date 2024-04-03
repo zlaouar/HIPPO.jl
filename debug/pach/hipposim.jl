@@ -10,30 +10,8 @@ using WebSockets: readguarded, open
 using JSON
 
 
-function generate_predicted_path(data, ws_client)
-    rewarddist = hcat(data["gridRewards"]...)
-    rewarddist = rewarddist .+ abs(minimum(rewarddist)) .+ 0.01
-
-    display(rewarddist)
-
-    mapsize = reverse(size(rewarddist)) # (x,y)
-    sinit = RewardState([1, 1], mapsize, vec(trues(mapsize)))#rand(initialstate(msim))
-    msolve = RewardPOMDP(sinit, size=mapsize, rewarddist=rewarddist)
-    solver = POMCPSolver(tree_queries=1000, max_time=0.2, c=80)
-    b0 = initialstate(msolve)
-    N = 1000
-    particle_up = BootstrapFilter(msolve, N)
-    particle_b = initialize_belief(particle_up, b0)
-
-
-    planner = solve(solver, msolve)
-
-    pachSim = PachSimulator(msolve, planner, particle_up, particle_b, sinit)
-
-
-    location_dict = data["locationDict"]
-
-    locvec, b, sinit = predicted_path(pachSim)
+function generate_predicted_path(location_dict, pachSim, ws_client)
+    locvec, b, sinit = predicted_path(pachSim; pathlen=15)
     @info locvec
     pachSim.sinit = sinit
     pachSim.b = b
@@ -122,7 +100,8 @@ function update_reward(data, ws_client, pachSim, initialized, flightParams)
     rewarddist = rewarddist .+ abs(minimum(rewarddist)) .+ 0.01
     location_dict = data["locationDict"]
 
-    global keepout_zones = stack(data["keepOutZones"])
+    keepout_zones = stack(data["keepOutZones"])
+
 
     if initialized
         pachSim.msim.reward = rewarddist
@@ -130,6 +109,11 @@ function update_reward(data, ws_client, pachSim, initialized, flightParams)
         println("reward updated")
     else
         pachSim = initialize(rewarddist, location_dict, keepout_zones, flightParams)
+
+        if flightParams.flight_mode == "path"
+            generate_predicted_path(location_dict, pachSim, ws_client)
+        end
+
         a, _ = BasicPOMCP.action_info(pachSim.planner, pachSim.b)
         pachSim.previous_action = a
         sp, _, _ = @gen(:sp,:o,:r)(pachSim.msim, pachSim.sinit, a)

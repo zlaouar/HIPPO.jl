@@ -63,10 +63,10 @@ function mat_to_inertial_inds(size::Union{SVector{2, Int64},Vector{Int},Tuple},
     return inds
 end
 
+"""
+    Given a reference lat/lon point, this function will find the closest relevant point within the provided database
+"""
 function find_closest_grid_point(location_dict, point)
-    """Given a reference lat/lon point, this function will find the closest relevant point within the provided database"""
-    # println(coord_set)
-    # Check to make sure that the point is in the right orientation
     coord_set = collect(values(location_dict))
     grid_set = collect(keys(location_dict))
     coord_set = [loc[1:2] for loc ∈ coord_set]
@@ -76,15 +76,10 @@ function find_closest_grid_point(location_dict, point)
     else
         point_coord = [point[1], point[2]]
     end
-    # @show point_coord
-    #coord_set = coord_set .- point_coord
-    #display(coord_set)
-    #@show point_coord
+
     coord_set = [loc - point_coord for loc ∈ coord_set]
     tot_dist = [loc[1]^2 + loc[2]^2 for loc ∈ coord_set]
-    #tot_dist = coord_set[:,1].^2 + coord_set[:,2].^2
-    # println(length(tot_dist))
-    # best_match = sortperm(db,tot_dist)
+
     _, i = findmin(tot_dist)
     closest_point = grid_set[i]
 
@@ -92,7 +87,6 @@ function find_closest_grid_point(location_dict, point)
     closest_point = parse.(Int, closest_point)
     
     return closest_point
-    #return db[i,:].OBJECTID
 end
 
 function generatelocation(m::TargetSearchPOMDP, atraj, robotloc)
@@ -169,13 +163,13 @@ function simulateHIPPO(sim::HIPPOSimulator)
     return history, r_total, iter, sim.rewardframes, sim.belframes
 end
 
-function predicted_path(sim::PachSimulator)
+function predicted_path(sim::PachSimulator; pathlen::Int=10)
     (;msim,planner,sinit,b,up) = sim
     s = sinit
 
     _, info = action_info(planner, b, tree_in_info = true)
     tree = info[:tree] # maybe set POMCP option tree_in_info = true
-    a_traj = extract_trajectory(root(tree), 12)
+    a_traj = extract_trajectory(root(tree), pathlen)
     println(a_traj)
     a = first(a_traj)
 

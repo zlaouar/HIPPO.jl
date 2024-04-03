@@ -49,12 +49,6 @@ function POMDPs.transition(m::TargetSearchPOMDP{S,A,O}, s, a) where {S,A,O}
         return Deterministic(FullState(SA[-1,-1], copy(s.target), s.visited, s.battery))
     end
     
-    #= if haskey(m.rois, s.robot)
-        push!(states, FullState(SA[-1,-1], SA[-1,-1], copy(s.visited))) # terminal state for regions of interest
-        push!(probs, m.rois[s.robot])
-        remaining_prob = 1-m.rois[s.robot]
-    end =#
-
     newrobot = bounce(m, s.robot, actiondir[a])
 
     push!(states, FullState(newrobot, s.target, copy(s.visited), s.battery-1))
