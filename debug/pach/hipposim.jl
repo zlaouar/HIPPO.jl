@@ -19,7 +19,7 @@ function generate_predicted_path(data, ws_client)
     mapsize = reverse(size(rewarddist)) # (x,y)
     sinit = RewardState([1, 1], mapsize, vec(trues(mapsize)))#rand(initialstate(msim))
     msolve = RewardPOMDP(sinit, size=mapsize, rewarddist=rewarddist)
-    solver = POMCPSolver(tree_queries=1000, max_time=0.2, c=80)
+    solver = POMCPSolver(tree_queries=1000, max_time=0.2, c=80, tree_in_info=true)
     b0 = initialstate(msolve)
     N = 1000
     particle_up = BootstrapFilter(msolve, N)
@@ -52,7 +52,7 @@ function generate_sim_path(data, ws_client)
     mapsize = reverse(size(rewarddist)) # (x,y)
     sinit = RewardState([1, 1], mapsize, vec(trues(mapsize)))#rand(initialstate(msim))
     msolve = RewardPOMDP(sinit, size=mapsize, rewarddist=rewarddist)
-    solver = POMCPSolver(tree_queries=1000, max_time=0.2, c=80)
+    solver = POMCPSolver(tree_queries=1000, max_time=0.2, c=80, tree_in_info=true)
     b0 = initialstate(msolve)
     N = 1000
     particle_up = BootstrapFilter(msolve, N)
@@ -93,7 +93,7 @@ function initialize(rewarddist, location_dict, flightParams)
                                     rewarddist=rewarddist, 
                                     maxbatt=maxbatt, options=Dict(:observation_model=>:falco))
 
-    solver = POMCPSolver(tree_queries=1000, max_time=0.2, c=80)
+    solver = POMCPSolver(tree_queries=1000, max_time=0.2, c=80, tree_in_info=true)
     b0 = initialstate(msolve)
     N = 1000
     particle_up = BootstrapFilter(msolve, N)
@@ -110,7 +110,7 @@ function initialize(rewarddist, location_dict, flightParams)
     return pachSim
 end
 
-function update_reward(data, ws_client, pachSim, initialized, flightParams)
+function update_reward(data, ws_client, pachSim, initialized, flightParams; show_waypoints=true)
     rewarddist = hcat(data["gridRewards"]...)
     rewarddist = rewarddist .+ abs(minimum(rewarddist)) .+ 0.01
     location_dict = data["locationDict"]
@@ -121,7 +121,11 @@ function update_reward(data, ws_client, pachSim, initialized, flightParams)
         println("reward updated")
     else
         pachSim = initialize(rewarddist, location_dict, flightParams)
-        a, _ = BasicPOMCP.action_info(pachSim.planner, pachSim.b)
+        a, a_info = BasicPOMCP.action_info(pachSim.planner, pachSim.b)
+        if show_waypoints ##
+            tree = a_info[:tree]
+            future_nodes,future_opacities = get_children(pachSim.msim,pachSim.b,tree;depth=2)
+        end
         pachSim.previous_action = a
         sp, _, _ = @gen(:sp,:o,:r)(pachSim.msim, pachSim.sinit, a)
         loc = HIPPO.loctostr(HIPPO.generatelocation(pachSim.msim, [a], pachSim.sinit.robot))
@@ -130,6 +134,17 @@ function update_reward(data, ws_client, pachSim, initialized, flightParams)
 
         response = location_dict[loc[1]]
         commanded_alt = response[3] + pachSim.flight_params.desired_agl_alt
+
+        if show_waypoints ##
+            dict_list = []
+            for i in eachindex(future_nodes)#[2:end]) #Exclude the point already passed as "NextFlightWaypoint"
+                lat,lon,_ = location_dict[HIPPO.loctostr(HIPPO.generatelocation(pachSim.msim, [a], future_nodes[i].robot))[1]]
+                push!(dict_list,Dict("latitude"=>lat,"longitude"=>lon,"opacity"=>future_opacities[i]))
+            end
+            write(ws_client, JSON.json(Dict("action"=>"FutureWaypoints", "args"=>dict_list)))
+            @info [node.robot for node in future_nodes]
+            @info dict_list
+        end
 
         println("Sending first action: ", response)
 
@@ -149,7 +164,7 @@ function update_reward(data, ws_client, pachSim, initialized, flightParams)
 end
 
 function update_params(data)
-    if !haskey(data, "homeLocation")
+    if !haskey(data, "homeLocation") || isnothing(data["homeLocation"])
         data["homeLocation"] = [40.019375, -105.265566]#[37.7749, -122.4194]
     end
     flightParams = HIPPO.FlightParams(data["mode"], 
@@ -157,7 +172,6 @@ function update_params(data)
                     data["maxSpeed"], 
                     data["homeLocation"])
                    # [37.7749, -122.4194]
-
     return flightParams
 end
 
@@ -166,7 +180,7 @@ end
 # 3) Send next waypoint
 
 
-function generate_next_action(data, ws_client, pachSim)
+function generate_next_action(data, ws_client, pachSim; show_waypoints=true)
     (msim, up, b, sinit, previous_action) = (pachSim.msim, pachSim.up, pachSim.b, 
                                              pachSim.sinit, pachSim.previous_action)
     println("data: ", data)
@@ -253,6 +267,7 @@ function main()
                     pachSim = generate_next_action(arguments, ws_client, pachSim)
 
                 elseif action == "FlightParams"
+                    @info "in FP"
                     flightParams = update_params(arguments)
                     flight_params_updated = true
                     println("Updated Params")
