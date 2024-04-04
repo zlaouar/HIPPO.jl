@@ -77,6 +77,7 @@ mutable struct PachPOMDP{S,A,O} <: TargetSearchPOMDP{S, A, O}
     rois::Dict{Vector{Int64}, Float64}
     reward::Matrix{Float64}
     maxbatt::Int
+    resolution::Int
 end
 
 function obs_type(options)
@@ -92,15 +93,18 @@ function create_target_search_pomdp(sinit::FullState;
                                     size=(10,10), 
                                     rewarddist=Array{Float64}(undef, 0, 0),
                                     maxbatt=100, 
-                                    options = Dict(:observation_model=>:falco),
-                                    obstacles = Vector{SVector{2, Int}}())
+                                    options=Dict(:observation_model=>:falco),
+                                    obstacles=Vector{SVector{2, Int}}(),
+                                    resolution=25)
 
     robot_init = sinit.robot
     tprob = 0.7
     targetloc = sinit.target
     rois = roi_points
 
-    PachPOMDP{TSState, Symbol, obs_type(options)}(size, obstacles, robot_init, tprob, targetloc, rois, copy(rewarddist), maxbatt)
+    PachPOMDP{TSState, Symbol, obs_type(options)}(size, obstacles, robot_init, tprob, 
+                                                targetloc, rois, copy(rewarddist), 
+                                                maxbatt, resolution)
 end
 
 function BasicPOMDP(sinit::BasicState; 
@@ -165,7 +169,8 @@ function PachPOMDP(sinit::FullState;
                     roi_points=Dict(), 
                     size=(10,10), 
                     rewarddist=Array{Float64}(undef, 0, 0),
-                    maxbatt=100)
+                    maxbatt=100,
+                    resolution=25)
 
     obstacles = Set{SVector{2, Int}}()
     robot_init = sinit.robot
@@ -173,5 +178,6 @@ function PachPOMDP(sinit::FullState;
     targetloc = sinit.target
     rois = roi_points
 
-    PachPOMDP(size, obstacles, robot_init, tprob, targetloc, rois, copy(rewarddist), maxbatt)
+    PachPOMDP(size, obstacles, robot_init, tprob, targetloc, 
+                rois, copy(rewarddist), maxbatt, resolution)
 end

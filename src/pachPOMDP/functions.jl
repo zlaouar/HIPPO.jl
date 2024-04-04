@@ -51,7 +51,7 @@ function POMDPs.transition(m::TargetSearchPOMDP{S,A,O}, s, a) where {S,A,O}
     
     newrobot = bounce(m, s.robot, actiondir[a])
 
-    push!(states, FullState(newrobot, s.target, copy(s.visited), s.battery-1))
+    push!(states, FullState(newrobot, s.target, copy(s.visited), s.battery-(m.resolution/25)))
     push!(probs, remaining_prob)
 
     for sp ∈ states

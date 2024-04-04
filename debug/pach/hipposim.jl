@@ -59,9 +59,9 @@ function generate_sim_path(data, ws_client)
     write(ws_client, JSON.json(Dict("action" => "ReturnPath", "args" => Dict("flightPath" => response))))
 end
 
-function initialize(rewarddist, location_dict, keepout_zones, flightParams)
+function initialize(rewarddist, location_dict, keepout_zones, resolution, flightParams)
     mapsize = reverse(size(rewarddist)) # (x,y)
-    maxbatt = 100
+    maxbatt = 1000
 
     closest_point = find_closest_grid_point(location_dict, flightParams.home_location)
     initial_point = mat_to_inertial_inds(mapsize, closest_point)
@@ -77,7 +77,8 @@ function initialize(rewarddist, location_dict, keepout_zones, flightParams)
                                     rewarddist=rewarddist, 
                                     maxbatt=maxbatt, 
                                     options=Dict(:observation_model=>:falco),
-                                    obstacles=obstacles)
+                                    obstacles=obstacles,
+                                    resolution=resolution)
 
     solver = POMCPSolver(tree_queries=1000, max_time=0.2, c=80)
     b0 = initialstate(msolve)
@@ -100,8 +101,8 @@ function update_reward(data, ws_client, pachSim, initialized, flightParams)
     rewarddist = hcat(data["gridRewards"]...)
     rewarddist = rewarddist .+ abs(minimum(rewarddist)) .+ 0.01
     location_dict = data["locationDict"]
-
     keepout_zones = stack(data["keepOutZones"])
+    resolution = data["resolution"]
 
 
     if initialized
@@ -109,7 +110,7 @@ function update_reward(data, ws_client, pachSim, initialized, flightParams)
         pachSim.location_dict = location_dict
         println("reward updated")
     else
-        pachSim = initialize(rewarddist, location_dict, keepout_zones, flightParams)
+        pachSim = initialize(rewarddist, location_dict, keepout_zones, resolution, flightParams)
 
         if flightParams.flight_mode == "path"
             generate_predicted_path(location_dict, pachSim, ws_client)
@@ -156,11 +157,6 @@ function update_params(data)
     return flightParams
 end
 
-# 1) Update belief
-# 2) Plan for reaching next waypoint
-# 3) Send next waypoint
-
-
 function generate_next_action(data, ws_client, pachSim)
     (msim, up, b, sinit, previous_action) = (pachSim.msim, pachSim.up, pachSim.b, 
                                              pachSim.sinit, pachSim.previous_action)
@@ -175,9 +171,6 @@ function generate_next_action(data, ws_client, pachSim)
         o = :nothing
     end
 
-    #o = status == "waypoint-reached" ? :waypoint_reached : 
-    #    status == "gather-info" ? :gather_info : :nothing
-
     println("status: ", status)
     println("o: ", o)
     b = update(up, b, previous_action, o)
@@ -190,7 +183,7 @@ function generate_next_action(data, ws_client, pachSim)
     a = next_action(hnode, previous_action)
     sp, _, _ = @gen(:sp,:o,:r)(pachSim.msim, pachSim.sinit, a)
     loc = HIPPO.loctostr(HIPPO.generatelocation(msim, [a], sinit.robot))
-    @info "s: ", pachSim.sinit.robot, " | sp: ", sp.robot , " | loc: ", loc, " | a: ", a, "prev a: ", previous_action
+    @info "s: ", pachSim.sinit.robot, " | sp: ", sp.robot , " | loc: ", loc, " | a: ", a, "prev a: ", previous_action, " | batt: ", sp.battery
     response = pachSim.location_dict[loc[1]]
 
     commanded_alt = response[3] + pachSim.flight_params.desired_agl_alt
@@ -205,8 +198,7 @@ function generate_next_action(data, ws_client, pachSim)
                                                                                     "dwellTime" => 5000.0))))
     #Plan for reaching next waypoint
     #inchrome(D3Tree(pachSim.planner._tree))
-    newa, info = BasicPOMCP.action_info(pachSim.planner, pachSim.b, tree_in_info = true)
-
+    BasicPOMCP.action_info(pachSim.planner, pachSim.b, tree_in_info = true)
 
     pachSim.previous_action = a
     pachSim.sinit = sp
