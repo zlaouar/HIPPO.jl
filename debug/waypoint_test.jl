@@ -89,6 +89,8 @@ tree = act_info[:tree]
 
 child_nodes = get_children(pomdp,particle_b,tree;depth=2)
 
+child_nodes2 = get_children_from_node(pomdp,particle_b,tree,observations(pomdp)[1];depth=2)
+
 #a, info = action_info(planner, Deterministic(FullState([13,4],mapsize,vec(trues(mapsize)), maxbatt)), tree_in_info=true)
 #inchrome(D3Tree(info[:tree], init_expand=3))
 

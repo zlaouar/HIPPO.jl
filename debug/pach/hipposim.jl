@@ -122,10 +122,6 @@ function update_reward(data, ws_client, pachSim, initialized, flightParams; show
     else
         pachSim = initialize(rewarddist, location_dict, flightParams)
         a, a_info = BasicPOMCP.action_info(pachSim.planner, pachSim.b)
-        if show_waypoints ##
-            tree = a_info[:tree]
-            future_nodes,future_opacities = get_children(pachSim.msim,pachSim.b,tree;depth=2)
-        end
         pachSim.previous_action = a
         sp, _, _ = @gen(:sp,:o,:r)(pachSim.msim, pachSim.sinit, a)
         loc = HIPPO.loctostr(HIPPO.generatelocation(pachSim.msim, [a], pachSim.sinit.robot))
@@ -134,17 +130,6 @@ function update_reward(data, ws_client, pachSim, initialized, flightParams; show
 
         response = location_dict[loc[1]]
         commanded_alt = response[3] + pachSim.flight_params.desired_agl_alt
-
-        if show_waypoints ##
-            dict_list = []
-            for i in eachindex(future_nodes)#[2:end]) #Exclude the point already passed as "NextFlightWaypoint"
-                lat,lon,_ = location_dict[HIPPO.loctostr(HIPPO.generatelocation(pachSim.msim, [a], future_nodes[i].robot))[1]]
-                push!(dict_list,Dict("latitude"=>lat,"longitude"=>lon,"opacity"=>future_opacities[i]))
-            end
-            write(ws_client, JSON.json(Dict("action"=>"FutureWaypoints", "args"=>dict_list)))
-            @info [node.robot for node in future_nodes]
-            @info dict_list
-        end
 
         println("Sending first action: ", response)
 
@@ -156,6 +141,18 @@ function update_reward(data, ws_client, pachSim, initialized, flightParams; show
                                                                                     "plannerAction" => string(a),
                                                                                     "dwellTime" => 5000.0))))
         
+        if show_waypoints ##
+            tree = a_info[:tree]
+            future_nodes,future_opacities = get_children(pachSim.msim,pachSim.b,tree;depth=2)
+            dict_list = []
+            for i in eachindex(future_nodes)#[2:end]) #Exclude the point already passed as "NextFlightWaypoint"
+                lat,lon,_ = location_dict[HIPPO.loctostr(HIPPO.generatelocation(pachSim.msim, [a], future_nodes[i].robot))[1]]
+                push!(dict_list,Dict("latitude"=>lat,"longitude"=>lon,"opacity"=>future_opacities[i]))
+            end
+            write(ws_client, JSON.json(Dict("action"=>"FutureWaypoints", "args"=>dict_list)))
+            @info [node.robot for node in future_nodes]
+            @info dict_list
+        end
         println("pachSim initialized")
         pachSim.waypointID += 1    
     end
@@ -222,6 +219,19 @@ function generate_next_action(data, ws_client, pachSim; show_waypoints=true)
                                                                                     "waypointID" => pachSim.waypointID,
                                                                                     "plannerAction" => string(a),
                                                                                     "dwellTime" => 5000.0))))
+
+    if show_waypoints ##
+        future_nodes,future_opacities = get_children_from_node(pachSim.msim,pachSim.b,pachSim.planner._tree,o;depth=2)
+        dict_list = []
+        for i in eachindex(future_nodes)#[2:end]) #Exclude the point already passed as "NextFlightWaypoint"
+            lat,lon,_ = location_dict[HIPPO.loctostr(HIPPO.generatelocation(pachSim.msim, [a], future_nodes[i].robot))[1]]
+            push!(dict_list,Dict("latitude"=>lat,"longitude"=>lon,"opacity"=>future_opacities[i]))
+        end
+        write(ws_client, JSON.json(Dict("action"=>"FutureWaypoints", "args"=>dict_list)))
+        @info [node.robot for node in future_nodes]
+        @info dict_list
+    end
+
     #Plan for reaching next waypoint
     #inchrome(D3Tree(pachSim.planner._tree))
     newa, info = BasicPOMCP.action_info(pachSim.planner, pachSim.b, tree_in_info = true)
@@ -267,7 +277,6 @@ function main()
                     pachSim = generate_next_action(arguments, ws_client, pachSim)
 
                 elseif action == "FlightParams"
-                    @info "in FP"
                     flightParams = update_params(arguments)
                     flight_params_updated = true
                     println("Updated Params")

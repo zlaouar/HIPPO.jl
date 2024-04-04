@@ -67,28 +67,24 @@ function get_children(pomdp::PachPOMDP{S,A,O},b,tree::BasicPOMCP.POMCPTree;depth
     return (state_list,opac_list)
 end
 
-function get_children_from_node(pomdp::PachPOMDP{S,A,O},b,tree::BasicPOMCP.POMCPTree;depth=2) where {S,A,O}
+function get_children_from_node(pomdp::PachPOMDP{S,A,O},b,tree::BasicPOMCP.POMCPTree,obs;depth=2) where {S,A,O}
     #Borrow from next_action?
     state_list = S[]
     opac_list = Float64[]
     
     ai_new,_= best_a_node(tree,1)
-    root_n = tree.n[ai_new]
+    # root_n = tree.n[ai_new]
     s = first(support(b))
     sp = @gen(:sp)(pomdp, s, tree.a_labels[ai_new])
-    push!(state_list,sp)
-    push!(opac_list,tree.n[ai_new]/root_n)
+    # push!(state_list,sp)
+    # push!(opac_list,tree.n[ai_new]/root_n)
 
-    new_inds = Int[]
-    for o in POMDPs.observations(pomdp)
-        idx = get(tree.o_lookup,(ai_new,o),nothing)
-        !isnothing(idx) && push!(new_inds,idx)
-    end
+    
+    idx = get(tree.o_lookup,(ai_new,obs),nothing)
     # [get(tree.o_lookup,(ai_new,o),nothing) for o in POMDPs.observations(pomdp)]
-    total_vis = max(sum(tree.total_n[new_inds]),1)
-
-    for ind in new_inds
-        recursive_children(ind,sp,tree,pomdp,state_list,opac_list,total_vis,depth,2,1.0)
+    if !isnothing(idx) 
+        total_vis = tree.total_n[idx]
+        recursive_children(idx,sp,tree,pomdp,state_list,opac_list,total_vis,depth+1,2,1.0)
     end
 
     return (state_list,opac_list)
