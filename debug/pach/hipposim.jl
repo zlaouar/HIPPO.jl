@@ -119,7 +119,7 @@ function update_reward(data, ws_client, pachSim, initialized, flightParams; show
         a, a_info = BasicPOMCP.action_info(pachSim.planner, pachSim.b)
         pachSim.previous_action = a
         sp, _, _ = @gen(:sp,:o,:r)(pachSim.msim, pachSim.sinit, a)
-        loc = HIPPO.loctostr(HIPPO.generatelocation(pachSim.msim, [a], pachSim.sinit.robot))
+        loc = HIPPO.loctostr(HIPPO.generatelocation(pachSim.msim, [a], sp.robot))
         @info "s: ", pachSim.sinit.robot, " | sp: ", sp.robot , " | loc: ", loc, " | a: ", a 
         pachSim.sinit = sp
 
@@ -135,13 +135,13 @@ function update_reward(data, ws_client, pachSim, initialized, flightParams; show
                                                                                     "waypointID" => pachSim.waypointID,
                                                                                     "plannerAction" => string(a),
                                                                                     "dwellTime" => 5000.0))))
-        
-        if show_waypoints ##
+        if show_waypoints && flightParams.flight_mode == "waypoint" ##
             tree = a_info[:tree]
             future_nodes,future_opacities = get_children(pachSim.msim,pachSim.b,tree;depth=2)
             dict_list = []
             for i in eachindex(future_nodes)#[2:end]) #Exclude the point already passed as "NextFlightWaypoint"
-                lat,lon,_ = location_dict[HIPPO.loctostr(HIPPO.generatelocation(pachSim.msim, [a], future_nodes[i].robot))[1]]
+                lc_str = HIPPO.loctostr(HIPPO.generatelocation(pachSim.msim, [a], future_nodes[i].robot))
+                lat,lon,_ = location_dict[lc_str[1]]
                 push!(dict_list,Dict("latitude"=>lat,"longitude"=>lon,"opacity"=>future_opacities[i]))
             end
             write(ws_client, JSON.json(Dict("action"=>"FutureWaypoints", "args"=>dict_list)))
@@ -213,7 +213,7 @@ function generate_next_action(data, ws_client, pachSim; show_waypoints=true)
                                                                                     "plannerAction" => string(a),
                                                                                     "dwellTime" => 5000.0))))
 
-    if show_waypoints ##
+    if show_waypoints  && flightParams.flight_mode == "waypoint"##
         future_nodes,future_opacities = get_children_from_node(pachSim.msim,pachSim.b,pachSim.planner._tree,o;depth=2)
         dict_list = []
         for i in eachindex(future_nodes)#[2:end]) #Exclude the point already passed as "NextFlightWaypoint"
@@ -256,6 +256,7 @@ function main()
                 println("Executing Action: ", action)
 
                 if action == "CalculatePath"
+                    @info "In Calc Path"
                     println("initialized: ", initialized)
                     pachSim = update_reward(arguments, ws_client, pachSim, initialized, flightParams)
                     initialized = true
@@ -266,9 +267,11 @@ function main()
                     end
                     
                 elseif action == "FlightStatus"
+                    @info "In FS"
                     pachSim = generate_next_action(arguments, ws_client, pachSim)
 
                 elseif action == "FlightParams"
+                    @info "In FP"
                     flightParams = update_params(arguments)
                     flight_params_updated = true
                     println("Updated Params")
