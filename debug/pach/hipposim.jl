@@ -8,32 +8,11 @@ using ParticleFilters
 using D3Trees
 using WebSockets: readguarded, open
 using JSON
+using StaticArrays
 
 
-function generate_predicted_path(data, ws_client)
-    rewarddist = hcat(data["gridRewards"]...)
-    rewarddist = rewarddist .+ abs(minimum(rewarddist)) .+ 0.01
-
-    display(rewarddist)
-
-    mapsize = reverse(size(rewarddist)) # (x,y)
-    sinit = RewardState([1, 1], mapsize, vec(trues(mapsize)))#rand(initialstate(msim))
-    msolve = RewardPOMDP(sinit, size=mapsize, rewarddist=rewarddist)
-    solver = POMCPSolver(tree_queries=1000, max_time=0.2, c=80, tree_in_info=true)
-    b0 = initialstate(msolve)
-    N = 1000
-    particle_up = BootstrapFilter(msolve, N)
-    particle_b = initialize_belief(particle_up, b0)
-
-
-    planner = solve(solver, msolve)
-
-    pachSim = PachSimulator(msolve, planner, particle_up, particle_b, sinit)
-
-
-    location_dict = data["locationDict"]
-
-    locvec, b, sinit = predicted_path(pachSim)
+function generate_predicted_path(location_dict, pachSim, ws_client)
+    locvec, b, sinit = predicted_path(pachSim; pathlen=15)
     @info locvec
     pachSim.sinit = sinit
     pachSim.b = b
@@ -80,18 +59,26 @@ function generate_sim_path(data, ws_client)
     write(ws_client, JSON.json(Dict("action" => "ReturnPath", "args" => Dict("flightPath" => response))))
 end
 
-function initialize(rewarddist, location_dict, flightParams)
+function initialize(rewarddist, location_dict, keepout_zones, resolution, flightParams)
     mapsize = reverse(size(rewarddist)) # (x,y)
-    maxbatt = 100
+    maxbatt = 1000
 
     closest_point = find_closest_grid_point(location_dict, flightParams.home_location)
     initial_point = mat_to_inertial_inds(mapsize, closest_point)
     sinit = FullState(initial_point, mapsize, vec(trues(mapsize)), maxbatt)#rand(initialstate(msim))
 
+    keepmat = stack(keepout_zones)
+    indices = findall(x -> x == 1, keepmat)
+    indtup = Tuple.(indices)
+    obstacles = SVector{2}.([mat_to_inertial_inds([6,4], indtup[i]) for i ∈ eachindex(indtup)])
+
     msolve = create_target_search_pomdp(sinit, 
                                     size=mapsize, 
                                     rewarddist=rewarddist, 
-                                    maxbatt=maxbatt, options=Dict(:observation_model=>:falco))
+                                    maxbatt=maxbatt, 
+                                    options=Dict(:observation_model=>:falco),
+                                    obstacles=obstacles,
+                                    resolution=resolution)
 
     solver = POMCPSolver(tree_queries=1000, max_time=0.2, c=80, tree_in_info=true)
     b0 = initialstate(msolve)
@@ -114,13 +101,21 @@ function update_reward(data, ws_client, pachSim, initialized, flightParams; show
     rewarddist = hcat(data["gridRewards"]...)
     rewarddist = rewarddist .+ abs(minimum(rewarddist)) .+ 0.01
     location_dict = data["locationDict"]
+    keepout_zones = stack(data["keepOutZones"])
+    resolution = data["resolution"]
+
 
     if initialized
         pachSim.msim.reward = rewarddist
         pachSim.location_dict = location_dict
         println("reward updated")
     else
-        pachSim = initialize(rewarddist, location_dict, flightParams)
+        pachSim = initialize(rewarddist, location_dict, keepout_zones, resolution, flightParams)
+
+        if flightParams.flight_mode == "path"
+            generate_predicted_path(location_dict, pachSim, ws_client)
+        end
+
         a, a_info = BasicPOMCP.action_info(pachSim.planner, pachSim.b)
         pachSim.previous_action = a
         sp, _, _ = @gen(:sp,:o,:r)(pachSim.msim, pachSim.sinit, a)
@@ -161,9 +156,10 @@ function update_reward(data, ws_client, pachSim, initialized, flightParams; show
 end
 
 function update_params(data)
-    if !haskey(data, "homeLocation") || isnothing(data["homeLocation"])
+    if !haskey(data, "homeLocation") || isnothing(data["homeLocation"]) || isnothing(data["homeLocation"])
         data["homeLocation"] = [40.019375, -105.265566]#[37.7749, -122.4194]
     end
+
     flightParams = HIPPO.FlightParams(data["mode"], 
                     data["altitudeCeiling"], 
                     data["maxSpeed"], 
@@ -191,9 +187,6 @@ function generate_next_action(data, ws_client, pachSim; show_waypoints=true)
         o = :nothing
     end
 
-    #o = status == "waypoint-reached" ? :waypoint_reached : 
-    #    status == "gather-info" ? :gather_info : :nothing
-
     println("status: ", status)
     println("o: ", o)
     b = update(up, b, previous_action, o)
@@ -206,7 +199,7 @@ function generate_next_action(data, ws_client, pachSim; show_waypoints=true)
     a = next_action(hnode, previous_action)
     sp, _, _ = @gen(:sp,:o,:r)(pachSim.msim, pachSim.sinit, a)
     loc = HIPPO.loctostr(HIPPO.generatelocation(msim, [a], sinit.robot))
-    @info "s: ", pachSim.sinit.robot, " | sp: ", sp.robot , " | loc: ", loc, " | a: ", a, "prev a: ", previous_action
+    @info "s: ", pachSim.sinit.robot, " | sp: ", sp.robot , " | loc: ", loc, " | a: ", a, "prev a: ", previous_action, " | batt: ", sp.battery
     response = pachSim.location_dict[loc[1]]
 
     commanded_alt = response[3] + pachSim.flight_params.desired_agl_alt
@@ -234,8 +227,7 @@ function generate_next_action(data, ws_client, pachSim; show_waypoints=true)
 
     #Plan for reaching next waypoint
     #inchrome(D3Tree(pachSim.planner._tree))
-    newa, info = BasicPOMCP.action_info(pachSim.planner, pachSim.b, tree_in_info = true)
-
+    BasicPOMCP.action_info(pachSim.planner, pachSim.b, tree_in_info = true)
 
     pachSim.previous_action = a
     pachSim.sinit = sp

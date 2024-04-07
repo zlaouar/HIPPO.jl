@@ -48,7 +48,7 @@ function convertinds(m::TargetSearchPOMDP, pos::Vector{Int})
     return inds
 end
 
-function intertial_to_mat_inds(size::Union{Vector{Int},Tuple}, pos::Union{Vector{Int},Tuple})
+function inertial_to_mat_inds(size::Union{Vector{Int},Tuple}, pos::Union{Vector{Int},Tuple})
     correct_ind = reverse(pos)
     xind = size[2]+1 - correct_ind[1]
     inds = [xind, correct_ind[2]]
