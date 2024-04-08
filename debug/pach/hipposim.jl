@@ -119,7 +119,7 @@ function update_reward(data, ws_client, pachSim, initialized, flightParams; show
         a, a_info = BasicPOMCP.action_info(pachSim.planner, pachSim.b)
         pachSim.previous_action = a
         sp, _, _ = @gen(:sp,:o,:r)(pachSim.msim, pachSim.sinit, a)
-        loc = HIPPO.loctostr(HIPPO.generatelocation(pachSim.msim, [a], sp.robot))
+        loc = HIPPO.loctostr([HIPPO.convertinds(pachSim.msim, sp.robot)])
         @info "s: ", pachSim.sinit.robot, " | sp: ", sp.robot , " | loc: ", loc, " | a: ", a 
         pachSim.sinit = sp
 
@@ -140,7 +140,7 @@ function update_reward(data, ws_client, pachSim, initialized, flightParams; show
             future_nodes,future_opacities = get_children(pachSim.msim,pachSim.b,tree;depth=2)
             dict_list = []
             for i in eachindex(future_nodes)#[2:end]) #Exclude the point already passed as "NextFlightWaypoint"
-                lc_str = HIPPO.loctostr(HIPPO.generatelocation(pachSim.msim, [a], future_nodes[i].robot))
+                lc_str = HIPPO.loctostr([HIPPO.convertinds(pachSim.msim, future_nodes[i].robot)])
                 lat,lon,_ = location_dict[lc_str[1]]
                 push!(dict_list,Dict("latitude"=>lat,"longitude"=>lon,"opacity"=>future_opacities[i]))
             end

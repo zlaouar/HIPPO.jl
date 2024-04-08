@@ -41,7 +41,7 @@ function remove_rewards(pomdp, s)
     pomdp.reward[rewardinds(pomdp,s)...] = 0.0
 end
 
-function convertinds(m::TargetSearchPOMDP, pos::Vector{Int})
+function convertinds(m::TargetSearchPOMDP, pos::Union{Vector{Int},SVector{2,Int}})
     correct_ind = reverse(pos)
     xind = m.size[2]+1 - correct_ind[1]
     inds = [xind, correct_ind[2]]
