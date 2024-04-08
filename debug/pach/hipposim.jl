@@ -137,16 +137,19 @@ function update_reward(data, ws_client, pachSim, initialized, flightParams; show
                                                                                     "dwellTime" => 5000.0))))
         if show_waypoints && flightParams.flight_mode == "waypoint" ##
             tree = a_info[:tree]
-            future_nodes,future_opacities = get_children(pachSim.msim,pachSim.b,tree;depth=2)
+            future_nodes,future_opacities,future_parents = get_children(pachSim.msim,pachSim.b,tree;depth=7)
             dict_list = []
             for i in eachindex(future_nodes)#[2:end]) #Exclude the point already passed as "NextFlightWaypoint"
                 lc_str = HIPPO.loctostr([HIPPO.convertinds(pachSim.msim, future_nodes[i].robot)])
                 lat,lon,_ = location_dict[lc_str[1]]
-                push!(dict_list,Dict("latitude"=>lat,"longitude"=>lon,"opacity"=>future_opacities[i]))
+                par_lc_str = HIPPO.loctostr([HIPPO.convertinds(pachSim.msim, future_parents[i].robot)])
+                par_lat,par_lon,_ = location_dict[par_lc_str[1]]
+                push!(dict_list,Dict("latitude"=>lat,"longitude"=>lon,"opacity"=>future_opacities[i],"par_latitude"=>par_lat,"par_longitude"=>par_lon))
             end
             write(ws_client, JSON.json(Dict("action"=>"FutureWaypoints", "args"=>dict_list)))
-            @info [node.robot for node in future_nodes]
-            @info dict_list
+            @info [future_parents[i].robot => future_nodes[i].robot for i in eachindex(future_nodes)]
+            @info future_opacities
+            # @info dict_list
         end
         println("pachSim initialized")
         pachSim.waypointID += 1    
@@ -214,14 +217,18 @@ function generate_next_action(data, ws_client, pachSim; show_waypoints=true)
                                                                                     "dwellTime" => 5000.0))))
 
     if show_waypoints  && flightParams.flight_mode == "waypoint"##
-        future_nodes,future_opacities = get_children_from_node(pachSim.msim,pachSim.b,pachSim.planner._tree,o;depth=2)
+        future_nodes,future_opacities,future_parents = get_children_from_node(pachSim.msim,pachSim.b,pachSim.planner._tree,o;depth=4)
         dict_list = []
         for i in eachindex(future_nodes)#[2:end]) #Exclude the point already passed as "NextFlightWaypoint"
-            lat,lon,_ = location_dict[HIPPO.loctostr(HIPPO.generatelocation(pachSim.msim, [a], future_nodes[i].robot))[1]]
-            push!(dict_list,Dict("latitude"=>lat,"longitude"=>lon,"opacity"=>future_opacities[i]))
+            lc_str = HIPPO.loctostr([HIPPO.convertinds(pachSim.msim, future_nodes[i].robot)])
+            lat,lon,_ = location_dict[lc_str[1]]
+            par_lc_str = HIPPO.loctostr([HIPPO.convertinds(pachSim.msim, future_parents[i].robot)])
+            par_lat,par_lon,_ = location_dict[par_lc_str[1]]
+            push!(dict_list,Dict("latitude"=>lat,"longitude"=>lon,"opacity"=>future_opacities[i],"par_latitude"=>par_lat,"par_longitude"=>par_lon))
         end
         write(ws_client, JSON.json(Dict("action"=>"FutureWaypoints", "args"=>dict_list)))
         @info [node.robot for node in future_nodes]
+        @info [future_parents[i].robot => future_nodes[i].robot for i in eachindex(future_nodes)]
         @info dict_list
     end
 
