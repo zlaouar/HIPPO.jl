@@ -4,7 +4,7 @@ function best_a_node(tree::BasicPOMCP.POMCPTree,index::Int)
     max_visits = 0
     for i in root_actions
         vis = tree.n[i]
-        if vis >= max_visits
+        if vis > max_visits
             max_node = i
             max_visits = vis
         end
@@ -17,6 +17,10 @@ function recursive_children(ind,s,tree,pomdp,state_list,opac_list,parent_list,pa
         visits = tree.total_n[ind]
         if visits != 0
             ai_new,_ = best_a_node(tree,ind)
+            # if d == 2
+            #     @info "Wypt current: $(tree.a_labels[ai_new])"
+            #     @info ai_new
+            # end
             sp = @gen(:sp)(pomdp, s, tree.a_labels[ai_new])
             
             sp_idx = findall(x->x==sp,state_list)
@@ -67,7 +71,7 @@ function get_children(pomdp::PachPOMDP{S,A,O},b,tree::BasicPOMCP.POMCPTree;depth
         recursive_children(ind,sp,tree,pomdp,state_list,opac_list,parent_list,sp,total_vis,depth,2,1.0)
     end
 
-    opac_thresh = 0.3
+    opac_thresh = 0.4
     for i in eachindex(opac_list)
         opac_list[i]<opac_thresh ? opac_list[i]=opac_thresh : nothing
     end
@@ -75,25 +79,46 @@ function get_children(pomdp::PachPOMDP{S,A,O},b,tree::BasicPOMCP.POMCPTree;depth
     return (state_list,opac_list,parent_list)
 end
 
-function get_children_from_node(pomdp::PachPOMDP{S,A,O},b,tree::BasicPOMCP.POMCPTree,obs;depth=2) where {S,A,O}
+function get_children_from_node(pomdp::PachPOMDP{S,A,O},b,tree::BasicPOMCP.POMCPTree,obs,aprev;depth=2) where {S,A,O}
     #Borrow from next_action?
     state_list = S[]
     opac_list = Float64[]
     parent_list = S[]
 
-    ai_new,_= best_a_node(tree,1)
+    # ai_new,_= best_a_node(tree,1)
+    # @info tree.a_labels[ai_new]
     # root_n = tree.n[ai_new]
-    s = first(support(b))
-    sp = @gen(:sp)(pomdp, s, tree.a_labels[ai_new])
+    # s = first(support(b))
+    # sp = @gen(:sp)(pomdp, s, tree.a_labels[ai_new])
     # push!(state_list,sp)
     # push!(opac_list,tree.n[ai_new]/root_n)
+    # push!(parent_list,s)
 
+    #From next_action
+    # ha = findfirst(a -> a == aprev, tree.a_labels[t.children[1]])
+    # hao = get(t.o_lookup, (ha, obs), 0)
+    # if hao == 0
+    #     @warn "wp reached observation not in tree"
+    #     inchrome(D3Tree(t))
+    #     return :stay
+    # end
+    # @info "wypt obs: $obs"
+    ai_new = findfirst(a -> a == aprev, tree.a_labels[tree.children[1]])
+    # @info ai_new
+    # @info "wypt prev: $aprev"
+    sp = first(support(b))
     
     idx = get(tree.o_lookup,(ai_new,obs),nothing)
+    # @info idx
     # [get(tree.o_lookup,(ai_new,o),nothing) for o in POMDPs.observations(pomdp)]
     if !isnothing(idx) 
         total_vis = tree.total_n[idx]
         recursive_children(idx,sp,tree,pomdp,state_list,opac_list,parent_list,sp,total_vis,depth+1,2,1.0)
+    end
+
+    opac_thresh = 0.4
+    for i in eachindex(opac_list)
+        opac_list[i]<opac_thresh ? opac_list[i]=opac_thresh : nothing
     end
 
     return (state_list,opac_list,parent_list)
