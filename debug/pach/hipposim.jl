@@ -119,6 +119,7 @@ function update_reward(data, ws_client, pachSim, initialized, flightParams)
 
         if flightParams.flight_mode == "path"
             generate_predicted_path(location_dict, pachSim, ws_client)
+            return pachSim
         end
 
         a, _ = BasicPOMCP.action_info(pachSim.planner, pachSim.b)
