@@ -117,6 +117,7 @@ function update_reward(data, ws_client, pachSim, initialized, flightParams; show
         end
 
         a, a_info = BasicPOMCP.action_info(pachSim.planner, pachSim.b)
+        # inchrome(D3Tree(a_info[:tree]))
         pachSim.previous_action = a
         sp, _, _ = @gen(:sp,:o,:r)(pachSim.msim, pachSim.sinit, a)
         loc = HIPPO.loctostr([HIPPO.convertinds(pachSim.msim, sp.robot)])
@@ -137,7 +138,7 @@ function update_reward(data, ws_client, pachSim, initialized, flightParams; show
                                                                                     "dwellTime" => 5000.0))))
         if show_waypoints && flightParams.flight_mode == "waypoint" ##
             tree = a_info[:tree]
-            future_nodes,future_opacities,future_parents = get_children(pachSim.msim,pachSim.b,tree;depth=7)
+            future_nodes,future_opacities,future_parents = get_children(pachSim.msim,pachSim.b,tree;depth=10)
             dict_list = []
             for i in eachindex(future_nodes)#[2:end]) #Exclude the point already passed as "NextFlightWaypoint"
                 lc_str = HIPPO.loctostr([HIPPO.convertinds(pachSim.msim, future_nodes[i].robot)])

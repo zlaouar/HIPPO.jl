@@ -67,11 +67,11 @@ function get_children(pomdp::PachPOMDP{S,A,O},b,tree::BasicPOMCP.POMCPTree;depth
         recursive_children(ind,sp,tree,pomdp,state_list,opac_list,parent_list,sp,total_vis,depth,2,1.0)
     end
 
-    opac_thresh = 0.4
+    opac_thresh = 0.3
     for i in eachindex(opac_list)
         opac_list[i]<opac_thresh ? opac_list[i]=opac_thresh : nothing
     end
-    
+
     return (state_list,opac_list,parent_list)
 end
 
