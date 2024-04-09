@@ -108,6 +108,9 @@ function update_reward(data, ws_client, pachSim, initialized, flightParams)
 
 
     if initialized
+        if flightParams.flight_mode == "path"
+            generate_predicted_path(location_dict, pachSim, ws_client)
+        end
         pachSim.msim.reward = rewarddist
         pachSim.location_dict = location_dict
         println("reward updated")
