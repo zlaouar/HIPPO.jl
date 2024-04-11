@@ -82,7 +82,7 @@ function initialize(rewarddist, location_dict, keepout_zones, resolution, flight
                                     obstacles=obstacles,
                                     resolution=resolution)
 
-    solver = POMCPSolver(tree_queries=1000, max_time=0.2, c=80, tree_in_info=true)
+    solver = POMCPSolver(tree_queries=50000, max_time=1.0, c=200, tree_in_info=true) #max_depth=3,c=1000,
     b0 = initialstate(msolve)
     N = 1000
     particle_up = BootstrapFilter(msolve, N)
@@ -140,7 +140,7 @@ function update_reward(data, ws_client, pachSim, initialized, flightParams; show
                                                                                     "dwellTime" => 5000.0))))
         if show_waypoints && flightParams.flight_mode == "waypoint" ##
             tree = a_info[:tree]
-            future_nodes,future_opacities,future_parents = get_children(pachSim.msim,pachSim.b,tree;depth=5)
+            future_nodes,future_opacities,future_parents = get_children(pachSim.msim,pachSim.b,tree;depth=2,n_actions=4)
             dict_list = []
             for i in eachindex(future_nodes)#[2:end]) #Exclude the point already passed as "NextFlightWaypoint"
                 lc_str = HIPPO.loctostr([HIPPO.convertinds(pachSim.msim, future_nodes[i].robot)])
@@ -199,9 +199,10 @@ function generate_next_action(data, ws_client, pachSim, flightParams; show_waypo
     pachSim.b = b
     @info support(b)[1].robot
 
-    remove_rewards(pachSim.msim, sinit.robot) # remove reward at current state
+    # remove_rewards(pachSim.msim, sinit.robot) # remove reward at current state
     #tree, b = conditional_path(pachSim)
     #@warn "rewards: ", pachSim.msim.reward
+    # inchrome(D3Tree(pachSim.planner._tree))
     hnode = BasicPOMCP.POMCPObsNode(pachSim.planner._tree, 1)
     a = next_action(hnode, previous_action)
     sp, _, _ = @gen(:sp,:o,:r)(pachSim.msim, pachSim.sinit, a)
@@ -221,7 +222,7 @@ function generate_next_action(data, ws_client, pachSim, flightParams; show_waypo
                                                                                     "dwellTime" => 5000.0))))
 
     if show_waypoints  && flightParams.flight_mode == "waypoint"##
-        future_nodes,future_opacities,future_parents = get_children_from_node(pachSim.msim,pachSim.b,pachSim.planner._tree,o,pachSim.previous_action;depth=5)
+        future_nodes,future_opacities,future_parents = get_children_from_node(pachSim.msim,pachSim.b,pachSim.planner._tree,o,pachSim.previous_action;depth=2,n_actions=4)
         dict_list = []
         for i in eachindex(future_nodes)#[2:end]) #Exclude the point already passed as "NextFlightWaypoint"
             lc_str = HIPPO.loctostr([HIPPO.convertinds(pachSim.msim, future_nodes[i].robot)])
