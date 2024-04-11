@@ -12,6 +12,11 @@ using WebSockets: readguarded, open
 using JSON
 using StaticArrays
 
+struct WaypointParams
+    show::Bool
+    depth::Int
+    n_actions::Int
+end
 
 function generate_predicted_path(location_dict, pachSim, ws_client)
     locvec, b, sinit = predicted_path(pachSim; pathlen=15)
@@ -99,7 +104,7 @@ function initialize(rewarddist, location_dict, keepout_zones, resolution, flight
     return pachSim
 end
 
-function update_reward(data, ws_client, pachSim, initialized, flightParams; show_waypoints=true)
+function update_reward(data, ws_client, pachSim, initialized, flightParams; waypoint_params=WaypointParams(false,0,0))
     rewarddist = hcat(data["gridRewards"]...)
     rewarddist = rewarddist .+ abs(minimum(rewarddist)) .+ 0.01
     location_dict = data["locationDict"]
@@ -142,9 +147,9 @@ function update_reward(data, ws_client, pachSim, initialized, flightParams; show
                                                                                     "waypointID" => pachSim.waypointID,
                                                                                     "plannerAction" => string(a),
                                                                                     "dwellTime" => 5000.0))))
-        if show_waypoints && flightParams.flight_mode == "waypoint" ##
+        if waypoint_params.show && flightParams.flight_mode == "waypoint" ##
             tree = a_info[:tree]
-            future_nodes,future_opacities,future_parents = get_children(pachSim.msim,pachSim.b,tree;depth=2,n_actions=4)
+            future_nodes,future_opacities,future_parents = get_children(pachSim.msim,pachSim.b,tree;depth=waypoint_params.depth,n_actions=waypoint_params.n_actions)
             dict_list = []
             for i in eachindex(future_nodes)#[2:end]) #Exclude the point already passed as "NextFlightWaypoint"
                 lc_str = HIPPO.loctostr([HIPPO.convertinds(pachSim.msim, future_nodes[i].robot)])
@@ -183,7 +188,7 @@ end
 # 3) Send next waypoint
 
 
-function generate_next_action(data, ws_client, pachSim, flightParams; show_waypoints=true)
+function generate_next_action(data, ws_client, pachSim, flightParams; waypoint_params=WaypointParams(false,0,0))
     (msim, up, b, sinit, previous_action) = (pachSim.msim, pachSim.up, pachSim.b, 
                                              pachSim.sinit, pachSim.previous_action)
     println("data: ", data)
@@ -225,8 +230,8 @@ function generate_next_action(data, ws_client, pachSim, flightParams; show_waypo
                                                                                     "plannerAction" => string(a),
                                                                                     "dwellTime" => 5000.0))))
 
-    if show_waypoints  && flightParams.flight_mode == "waypoint"##
-        future_nodes,future_opacities,future_parents = get_children_from_node(pachSim.msim,pachSim.b,pachSim.planner._tree,o,pachSim.previous_action;depth=2,n_actions=4)
+    if waypoint_params.show  && flightParams.flight_mode == "waypoint"##
+        future_nodes,future_opacities,future_parents = get_children_from_node(pachSim.msim,pachSim.b,pachSim.planner._tree,o,pachSim.previous_action;depth=waypoint_params.depth,n_actions=waypoint_params.n_actions)
         dict_list = []
         for i in eachindex(future_nodes)#[2:end]) #Exclude the point already passed as "NextFlightWaypoint"
             lc_str = HIPPO.loctostr([HIPPO.convertinds(pachSim.msim, future_nodes[i].robot)])
@@ -258,6 +263,11 @@ function main()
     flightParams = nothing
     initialized = false
 
+    show_way = true
+    way_depth = 2
+    way_actions = 4
+    way_params = WaypointParams(show_way,way_depth,way_actions)
+
     flight_params_updated = false
 
     open("ws://127.0.0.1:8082") do ws_client
@@ -274,7 +284,7 @@ function main()
                 if action == "CalculatePath"
                     @info "In Calc Path"
                     println("initialized: ", initialized)
-                    pachSim = update_reward(arguments, ws_client, pachSim, initialized, flightParams)
+                    pachSim = update_reward(arguments, ws_client, pachSim, initialized, flightParams; waypoint_params=way_params)
                     initialized = true
 
                     if flight_params_updated
@@ -285,7 +295,7 @@ function main()
                 elseif action == "FlightStatus"
                     println("=========================")
                     @info "In FS"
-                    pachSim = generate_next_action(arguments, ws_client, pachSim, flightParams)
+                    pachSim = generate_next_action(arguments, ws_client, pachSim, flightParams; waypoint_params=way_params)
 
                 elseif action == "FlightParams"
                     @info "In FP"
