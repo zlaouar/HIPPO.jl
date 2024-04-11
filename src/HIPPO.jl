@@ -91,6 +91,8 @@ export rendhist
 #    convert_estimator,
 #    simulate
 
+include(joinpath(@__DIR__,"XAI","waypoints.jl"))
+export get_children, get_children_from_node
 
 end
 

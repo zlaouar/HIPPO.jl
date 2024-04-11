@@ -148,9 +148,11 @@ function next_action(hnode::BasicPOMCP.POMCPObsNode, aprev)
     
     # what is the action node index that the agent took at the previous wp
     ha = findfirst(a -> a == aprev, t.a_labels[t.children[h]])
+    # @info ha
 
     # descend down tree from "waypoint reached" observation node
     hao = get(t.o_lookup, (ha, :next_waypoint), 0)
+    # @info hao
 
     if hao == 0
         @warn "wp reached observation not in tree"
@@ -160,8 +162,10 @@ function next_action(hnode::BasicPOMCP.POMCPObsNode, aprev)
 
     # find best child action to take from wp reached observation 
     ainds = t.children[hao]
-    avals = t.v[ainds]
+    # avals = t.v[ainds]
+    avals = t.n[ainds]
     _, ind = findmax(avals) # find action with highest value
+    # @info ind
     haoa = ainds[ind]
     
     return t.a_labels[haoa]
