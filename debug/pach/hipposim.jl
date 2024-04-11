@@ -159,8 +159,8 @@ function update_reward(data, ws_client, pachSim, initialized, flightParams; wayp
                 push!(dict_list,Dict("latitude"=>lat,"longitude"=>lon,"opacity"=>future_opacities[i],"par_latitude"=>par_lat,"par_longitude"=>par_lon))
             end
             write(ws_client, JSON.json(Dict("action"=>"FutureWaypoints", "args"=>dict_list)))
-            @info [future_parents[i].robot => future_nodes[i].robot for i in eachindex(future_nodes)]
-            @info future_opacities
+            # @info [future_parents[i].robot => future_nodes[i].robot for i in eachindex(future_nodes)]
+            # @info future_opacities
             # @info dict_list
         end
         println("pachSim initialized")
@@ -171,7 +171,7 @@ function update_reward(data, ws_client, pachSim, initialized, flightParams; wayp
 end
 
 function update_params(data)
-    if !haskey(data, "homeLocation") || isnothing(data["homeLocation"]) || isnothing(data["homeLocation"])
+    if !haskey(data, "homeLocation") || isnothing(data["homeLocation"])
         data["homeLocation"] = [40.019375, -105.265566]#[37.7749, -122.4194]
     end
 
@@ -206,7 +206,6 @@ function generate_next_action(data, ws_client, pachSim, flightParams; waypoint_p
     println("o: ", o)
     b = update(up, b, previous_action, o)
     pachSim.b = b
-    @info support(b)[1].robot
 
     # remove_rewards(pachSim.msim, sinit.robot) # remove reward at current state
     #tree, b = conditional_path(pachSim)
@@ -241,9 +240,9 @@ function generate_next_action(data, ws_client, pachSim, flightParams; waypoint_p
             push!(dict_list,Dict("latitude"=>lat,"longitude"=>lon,"opacity"=>future_opacities[i],"par_latitude"=>par_lat,"par_longitude"=>par_lon))
         end
         write(ws_client, JSON.json(Dict("action"=>"FutureWaypoints", "args"=>dict_list)))
-        @info [node.robot for node in future_nodes]
-        @info [future_parents[i].robot => future_nodes[i].robot for i in eachindex(future_nodes)]
-        @info dict_list
+        # @info [node.robot for node in future_nodes]
+        # @info [future_parents[i].robot => future_nodes[i].robot for i in eachindex(future_nodes)]
+        # @info dict_list
     end
 
     #Plan for reaching next waypoint
@@ -282,7 +281,7 @@ function main()
                 println("Executing Action: ", action)
 
                 if action == "CalculatePath"
-                    @info "In Calc Path"
+                    # @info "In Calc Path"
                     println("initialized: ", initialized)
                     pachSim = update_reward(arguments, ws_client, pachSim, initialized, flightParams; waypoint_params=way_params)
                     initialized = true
@@ -293,12 +292,12 @@ function main()
                     end
                     
                 elseif action == "FlightStatus"
-                    println("=========================")
-                    @info "In FS"
+                    # println("=========================")
+                    # @info "In FS"
                     pachSim = generate_next_action(arguments, ws_client, pachSim, flightParams; waypoint_params=way_params)
 
                 elseif action == "FlightParams"
-                    @info "In FP"
+                    # @info "In FP"
                     flightParams = update_params(arguments)
                     flight_params_updated = true
                     println("Updated Params")
