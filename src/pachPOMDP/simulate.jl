@@ -142,7 +142,9 @@ function simulateHIPPO(sim::HIPPOSimulator)
         end
         r_total += d*r
         d *= discount(msim)
-        b = update(sim.up, b, a, o)
+        bp = update(sim.up, b, a, o)
+        b = bp
+        @show unique([s[1] for s in weighted_iterator(b)])
         (sim.anim || sim.display) && (belframe = render(msim, (sp=sp, bp=b)))
         (sim.anim || sim.display) && (rewardframe = render(msim, (sp=sp, bp=b), true))
         #display(belframe)

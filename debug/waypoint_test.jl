@@ -87,9 +87,9 @@ particle_b = initialize_belief(particle_up, b0)
 act,act_info = action_info(planner,particle_b)
 tree = act_info[:tree]
 
-child_nodes = get_children(pomdp,particle_b,tree;depth=3)
+child_nodes = get_children(pomdp,particle_b,tree;depth=3,n_actions=3)
 
-child_nodes2 = get_children_from_node(pomdp,particle_b,tree,observations(pomdp)[1];depth=3)
+child_nodes2 = get_children_from_node(pomdp,particle_b,tree,observations(pomdp)[1],act;depth=3,n_actions=3)
 
 #a, info = action_info(planner, Deterministic(FullState([13,4],mapsize,vec(trues(mapsize)), maxbatt)), tree_in_info=true)
 #inchrome(D3Tree(info[:tree], init_expand=3))
