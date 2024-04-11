@@ -156,7 +156,7 @@ function next_action(hnode::BasicPOMCP.POMCPObsNode, aprev)
 
     if hao == 0
         @warn "wp reached observation not in tree"
-        inchrome(D3Tree(t))
+        #inchrome(D3Tree(t))
         return :stay
     end
 
