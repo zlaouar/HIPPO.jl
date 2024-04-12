@@ -80,7 +80,7 @@ planner = solve(solver,pomdp)
 
 
 b0 = initialstate(pomdp)
-N = 1000
+N = 10000
 particle_up = BootstrapFilter(pomdp, N)
 particle_b = initialize_belief(particle_up, b0)
 

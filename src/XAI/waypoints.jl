@@ -35,33 +35,36 @@ function recursive_children(ind,s,tree,pomdp,state_list,opac_list,parent_list,pa
                 #     @info "wypt max_ind: $ai_new"
                 #     @info tree.children[ind]
                 # end
-                sp = @gen(:sp)(pomdp, s, tree.a_labels[ai_new])
-                
-                sp_idx = findall(x->x==sp,state_list)
-                prob = tree.n[ai_new]/total_vis #prev_prob*(visits/total_vis)
-                if isempty(sp_idx)
-                    push!(state_list,sp)
-                    push!(opac_list,prob)
-                    push!(parent_list,parent)
-                else
-                    s_idx = findall(x->parent_list[x]==s,sp_idx)
-                    if isempty(s_idx)
-                        push!(state_list,sp)
-                        push!(opac_list,prob)
-                        push!(parent_list,parent)
-                    else
-                        opac_list[s_idx[1]] += prob
-                    end
-                end
+                if !isterminal(pomdp, s)
+                    sp = @gen(:sp)(pomdp, s, tree.a_labels[ai_new])
+                    if !isterminal(pomdp, sp)
+                        sp_idx = findall(x->x==sp,state_list)
+                        prob = tree.n[ai_new]/total_vis #prev_prob*(visits/total_vis)
+                        if isempty(sp_idx)
+                            push!(state_list,sp)
+                            push!(opac_list,prob)
+                            push!(parent_list,parent)
+                        else
+                            s_idx = findall(x->parent_list[x]==s,sp_idx)
+                            if isempty(s_idx)
+                                push!(state_list,sp)
+                                push!(opac_list,prob)
+                                push!(parent_list,parent)
+                            else
+                                opac_list[s_idx[1]] += prob
+                            end
+                        end
 
-                new_inds = Int[]
-                for o in POMDPs.observations(pomdp)
-                    idx = get(tree.o_lookup,(ai_new,o),nothing)
-                    !isnothing(idx) && push!(new_inds,idx)
-                end
-                # total_vis = max(sum(tree.total_n[new_inds]),1)
-                for ind2 in new_inds
-                    recursive_children(ind2,sp,tree,pomdp,state_list,opac_list,parent_list,sp,total_vis,depth,d+1,prob,n_actions,from_node)
+                        new_inds = Int[]
+                        for o in POMDPs.observations(pomdp)
+                            idx = get(tree.o_lookup,(ai_new,o),nothing)
+                            !isnothing(idx) && push!(new_inds,idx)
+                        end
+                        # total_vis = max(sum(tree.total_n[new_inds]),1)
+                        for ind2 in new_inds
+                            recursive_children(ind2,sp,tree,pomdp,state_list,opac_list,parent_list,sp,total_vis,depth,d+1,prob,n_actions,from_node)
+                        end
+                    end
                 end
             end
         end

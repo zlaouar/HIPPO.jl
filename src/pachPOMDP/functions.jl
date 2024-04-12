@@ -155,28 +155,29 @@ function POMDPTools.ModelTools.render(m::TargetSearchPOMDP{S,A,O}, step) where {
         end
     end
     #display(target_marginal)
-    norm_top = normalize(target_marginal)
+    #norm_top = normalize(target_marginal)
+    norm_top = target_marginal
     #display(norm_top)
     for x in 1:nx, y in 1:ny
         cell = cell_ctx((x,y), m.size)
         t_op = norm_top[x,y]
         
         # TO-DO Fix This
-        if t_op > 1.0
-            if t_op < 1.001
-                t_op = 0.999
-            else
-                @error("t_op > 1.001", t_op)
-            end
-        end
+        # if t_op > 1.0
+        #     if t_op < 1.001
+        #         t_op = 0.999
+        #     else
+        #         @error("t_op > 1.001", t_op)
+        #     end
+        # end
         opval = t_op
         if opval > 0.0 
-           opval = clamp(t_op*2,0.05,1.0)
+           opval = clamp(t_op,0.0,1.0)
         end
         max_op = maximum(norm_top)
         min_op = minimum(norm_top)
-        frac = (opval-min_op)/(max_op-min_op)
-        clr = get(ColorSchemes.bamako, frac)
+        #frac = (opval-min_op)/(max_op-min_op)
+        clr = get(ColorSchemes.acton, sqrt(opval))
         
 
 

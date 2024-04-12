@@ -69,10 +69,10 @@ end
 function initialize(rewarddist, location_dict, keepout_zones, resolution, flightParams)
     mapsize = reverse(size(rewarddist)) # (x,y)
     maxbatt = 1000
-
+    terminalstate = 
     closest_point = find_closest_grid_point(location_dict, flightParams.home_location)
     initial_point = mat_to_inertial_inds(mapsize, closest_point)
-    sinit = FullState(initial_point, mapsize, vec(trues(mapsize)), maxbatt)#rand(initialstate(msim))
+    sinit = FullState(initial_point, collect(mapsize) + [1,1], vec(trues(mapsize)), maxbatt)#rand(initialstate(msim))
 
     keepmat = stack(keepout_zones)
     indices = findall(x -> x == 1, keepmat)
@@ -301,6 +301,9 @@ function main()
                     flightParams = update_params(arguments)
                     flight_params_updated = true
                     println("Updated Params")
+
+                elseif action == "Error"
+                    println("Error: ", arguments)
                 end
             end
         end
