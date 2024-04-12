@@ -77,7 +77,7 @@ function initialize(rewarddist, location_dict, keepout_zones, resolution, flight
     keepmat = stack(keepout_zones)
     indices = findall(x -> x == 1, keepmat)
     indtup = Tuple.(indices)
-    obstacles = SVector{2}.([mat_to_inertial_inds([6,4], indtup[i]) for i ∈ eachindex(indtup)])
+    obstacles = SVector{2}.([mat_to_inertial_inds(mapsize, indtup[i]) for i ∈ eachindex(indtup)])
 
     msolve = create_target_search_pomdp(sinit, 
                                     size=mapsize, 
