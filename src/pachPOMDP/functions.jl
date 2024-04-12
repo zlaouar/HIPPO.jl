@@ -66,12 +66,15 @@ end
 function POMDPs.reward(m::TargetSearchPOMDP{S,A,O}, s::FullState, a::Symbol, sp::FullState) where {S,A,O}
     reward_running = -1.0
     reward_target = 0.0
-    #reward_roi = 0.0
+    reward_nogo = 0.0
 
     if isequal(sp.robot, sp.target)# if target is found
         reward_running = 0.0
         reward_target = 1000.0 
         return reward_running + reward_target
+    end
+    if sp.robot ∈ m.obstacles
+        reward_nogo = typemin(Float64)
     end
     if isterminal(m, sp) # IS THIS NECCESSARY?
         return 0.0
@@ -81,7 +84,7 @@ function POMDPs.reward(m::TargetSearchPOMDP{S,A,O}, s::FullState, a::Symbol, sp:
     spind = LinearIndices((1:m.size[1], 1:m.size[2]))[sp.robot...]
 
     if !isempty(m.reward) && sp.robot != SA[-1,-1]
-        return reward_running + reward_target + m.reward[inds...]*s.visited[spind]
+        return reward_running + reward_target + m.reward[inds...]*s.visited[spind] + reward_nogo
     end
 end
 
