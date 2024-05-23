@@ -305,7 +305,7 @@ function main()
                 elseif action == "Error"
                     println("Error: ", arguments)
 
-                elseif action == "ResetHippo"
+                elseif action == "ResetHIPPO"
                     pachSim = nothing
                     flightParams = nothing
                     initialized = false
