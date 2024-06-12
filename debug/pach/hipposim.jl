@@ -294,7 +294,11 @@ function main()
                 elseif action == "FlightStatus"
                     # println("=========================")
                     # @info "In FS"
-                    pachSim = generate_next_action(arguments, ws_client, pachSim, flightParams; waypoint_params=way_params)
+                    if initialized 
+                        pachSim = generate_next_action(arguments, ws_client, pachSim, flightParams; waypoint_params=way_params)
+                    else
+                        println("FlightStatus: Not initialized, waiting on new params")
+                    end
 
                 elseif action == "FlightParams"
                     # @info "In FP"
