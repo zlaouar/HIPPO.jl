@@ -6,6 +6,8 @@ mutable struct GridWorldEnv
     targetInit::SVector{2, Int}
 end
 
+set_default_graphic_size(18cm,14cm)
+
 function GridWorldEnv(m, rewards::Matrix{Float64}, targetInit; size=(10,10), robotInit=(1,1))
     return GridWorldEnv(m, SA[size[1], size[2]], rewards, robotInit, targetInit)
 end
@@ -155,4 +157,167 @@ function POMDPTools.ModelTools.render(m::TargetSearchPOMDP, goal,
     sz = min(w,h)
     return compose(context((w-sz)/2, (h-sz)/2, sz, (44/59)*sz), robot, target, grid, outline)
     #return compose(context((w-sz)/2, (h-sz)/2, sz, (44/59)*sz), legend, hippotrajec, basetrajec, robot, target, grid, outline)
+end
+
+function POMDPTools.ModelTools.render(m::TargetSearchPOMDP{S,A,O}, step) where {S,A,O}
+    #set_default_graphic_size(14cm,14cm)
+    nx, ny = m.size
+    cells = []
+    target_marginal = zeros(nx, ny)
+
+    if haskey(step, :bp) && !ismissing(step[:bp])
+        for sp in support(step[:bp])
+            p = pdf(step[:bp], sp)
+            if sp.target != [-1,-1] # TO-DO Fix this
+                target_marginal[sp.target...] += p
+            end
+        end
+    end
+    #display(target_marginal)
+    #norm_top = normalize(target_marginal)
+    norm_top = target_marginal
+    #display(norm_top)
+    for x in 1:nx, y in 1:ny
+        cell = cell_ctx((x,y), m.size)
+        t_op = norm_top[x,y]
+        
+        # TO-DO Fix This
+        # if t_op > 1.0
+        #     if t_op < 1.001
+        #         t_op = 0.999
+        #     else
+        #         @error("t_op > 1.001", t_op)
+        #     end
+        # end
+        opval = t_op
+        if opval > 0.0 
+           opval = clamp(t_op,0.0,1.0)
+        end
+        max_op = maximum(norm_top)
+        min_op = minimum(norm_top)
+        #frac = (opval-min_op)/(max_op-min_op)
+        clr = get(reverse(ColorSchemes.acton), 1.5*sqrt(opval))
+        
+
+
+        target = compose(context(), rectangle(), fill(clr), stroke("gray"))
+        #println("opval: ", t_op)
+        compose!(cell, target)
+
+        push!(cells, cell)
+    end
+    grid = compose(context(), linewidth(0.00000001mm), cells...)
+    outline = compose(context(), linewidth(0.01mm), rectangle(), fill("white"), stroke("black"))
+
+    if haskey(step, :sp)
+        robot_ctx = cell_ctx(step[:sp].robot, m.size)
+        robot = compose(robot_ctx, circle(0.5, 0.5, 0.5), fill("blue"))
+        target_ctx = cell_ctx(step[:sp].target, m.size)
+        target = compose(target_ctx, star(0.5,0.5,0.8,5,0.5), fill("orange"), stroke("black"))
+    else
+        robot = nothing
+        target = nothing
+    end 
+    #img = read(joinpath(@__DIR__,"../..","drone.png"));
+    #robot = compose(robot_ctx, bitmap("image/png",img, 0, 0, 1, 1))
+    #person = read(joinpath(@__DIR__,"../..","missingperson.png"));
+    #target = compose(target_ctx, bitmap("image/png",person, 0, 0, 1, 1))
+
+    sz = min(w,h)
+    
+    return compose(context((w-sz)/2, (h-sz)/2, sz, sz), robot, target, grid, outline)
+end
+
+function normie(input, a)
+    return (input-minimum(a))/(maximum(a)-minimum(a))
+end
+
+function rewardinds(m, pos::SVector{2, Int64})
+    correct_ind = reverse(pos)
+    xind = m.size[2]+1 - correct_ind[1]
+    inds = [xind, correct_ind[2]]
+
+    return inds
+end
+
+
+function POMDPTools.ModelTools.render(m::TargetSearchPOMDP{S,A,O}, step, plt_reward::Bool) where {S,A,O}
+    nx, ny = m.size
+    cells = []
+    
+    minr = minimum(m.reward)-1
+    maxr = maximum(m.reward)
+    for x in 1:nx, y in 1:ny
+        cell = cell_ctx((x,y), m.size)
+        r = m.reward[rewardinds(m, SA[x,y])...]
+        if iszero(r)
+            target = compose(context(), rectangle(), fill("black"), stroke("gray"))
+        else
+            frac = (r-minr)/(maxr-minr)
+            clr = get(ColorSchemes.turbo, frac)
+            target = compose(context(), rectangle(), fill(clr), stroke("gray"), fillopacity(0.5))
+        end
+
+        compose!(cell, target)
+        push!(cells, cell)
+    end
+    grid = compose(context(), linewidth(0.00000001mm), cells...)
+    outline = compose(context(), linewidth(0.01mm), rectangle(), fill("white"), stroke("black"))
+
+    if haskey(step, :sp)
+        robot_ctx = cell_ctx(step[:sp].robot, m.size)
+        robot = compose(robot_ctx, circle(0.5, 0.5, 0.5), fill("blue"))
+        target_ctx = cell_ctx(step[:sp].target, m.size)
+        target = compose(target_ctx, star(0.5,0.5,1.0,5,0.5), fill("orange"), stroke("black"))
+    else
+        robot = nothing
+        target = nothing
+    end
+    sz = min(w,h)
+    #return compose(context((w-sz)/2, (h-sz)/2, sz, (ny/nx)*sz), robot, target, grid, outline)
+    return compose(context((w-sz)/2, (h-sz)/2, sz, sz), robot, target, grid, outline)
+end
+
+function POMDPTools.ModelTools.render(m::TargetSearchPOMDP{S,A,O}, step, points::Vector{Vector{Int}}) where {S,A,O}
+    nx, ny = m.size
+    cells = []
+    minr = minimum(m.reward)-1
+    maxr = maximum(m.reward)
+    iter = 1
+    for x in 1:nx, y in 1:ny
+        cell = cell_ctx((x,y), m.size)
+        r = m.reward[rewardinds(m, SA[x,y])...]
+        if iszero(r)
+            target = compose(context(), rectangle(), fill("black"), fillopacity(0.9), stroke("gray"))
+            compose!(cell, target)
+        else
+            frac = (r-minr)/(maxr-minr)
+            clr = get(ColorSchemes.turbo, frac)
+            target = compose(context(), rectangle(), fill(clr), stroke("gray"), fillopacity(0.5))
+            # target = compose(context(), rectangle(), fillopacity(normie(m.reward[rewardinds(m,SA[x,y])...],m.reward)), fill("green"), stroke("gray"))
+        end
+        if [x,y] ∈ points
+            roi = compose(context(), circle(), fill("green2"), stroke("green2"), linewidth(0.5mm))
+            compose!(cell, roi)
+        else
+            compose!(cell, target)
+        end
+
+        push!(cells, cell)
+        iter += 1
+    end
+    grid = compose(context(), linewidth(0.00000001mm), cells...)
+    outline = compose(context(), linewidth(0.01mm), rectangle(), fill("white"), stroke("black"))
+
+    if haskey(step, :sp)
+        robot_ctx = cell_ctx(step[:sp].robot, m.size)
+        robot = compose(robot_ctx, circle(0.5, 0.5, 0.5), fill("blue"))
+        target_ctx = cell_ctx(step[:sp].target, m.size)
+        target = compose(target_ctx, star(0.5,0.5,1.8,5,0.5), fill("orange"), stroke("black"))
+    else
+        robot = nothing
+        target = nothing
+    end
+    sz = min(w,h)
+    return compose(context((w-sz)/2, (h-sz)/2, sz, (ny/nx)*sz), robot, target, grid, outline)
 end

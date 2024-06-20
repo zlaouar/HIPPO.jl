@@ -44,7 +44,7 @@ include(joinpath(@__DIR__,"metaPOMDP","observations.jl"))
  =#
 include(joinpath(@__DIR__,"pachPOMDP","core.jl"))
 include(joinpath(@__DIR__,"pachPOMDP","functions.jl"))
-include(joinpath(@__DIR__,"pachPOMDP","observations.jl")) 
+#include(joinpath(@__DIR__,"pachPOMDP","observations.jl")) 
 export BasicPOMDP,
        RewardPOMDP, 
        BatteryPOMDP, 

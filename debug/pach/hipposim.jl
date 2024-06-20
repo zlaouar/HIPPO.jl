@@ -199,7 +199,8 @@ function generate_next_action(data, ws_client, pachSim, flightParams; waypoint_p
     elseif status == "gather-info"
         o = :gather_action 
     else 
-        o = :nothing
+        error("Invalid observation")
+        # o = :nothing
     end
 
     println("status: ", status)

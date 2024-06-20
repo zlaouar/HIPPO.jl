@@ -38,7 +38,7 @@ hallway = [80.0 80.0;
            0.0 0.0;
            0.0 0.0;
            0.0 0.0]
-#rewarddist = smallreward
+rewarddist = smallreward
 #rewarddist = hallway
 #rewarddist = load("rewardmat.jld2","rewarddist")
 #rewarddist = rewarddist .+ abs(minimum(rewarddist)) .+ 0.01
@@ -46,6 +46,8 @@ rewarddist = abs.(rewarddist)
 mapsize = reverse(size(rewarddist)) #(13,16)
 maxbatt = 1000
 sinit = FullState([3,1], [10,11], vec(trues(mapsize)), maxbatt)#rand(initialstate(msim))
+sinit = FullState([3,1], [4,5], vec(trues(mapsize)), maxbatt)#rand(initialstate(msim))
+
 #mapsize = (13,16)
 #sinit = TSState([10,1],[13,16],trues(prod(mapsize)))#rand(initialstate(msim))
 #mapsize = (4,4)
@@ -88,7 +90,7 @@ particle_b = initialize_belief(particle_up, b0)
 #a, info = action_info(planner, Deterministic(FullState([13,4],mapsize,vec(trues(mapsize)), maxbatt)), tree_in_info=true)
 #inchrome(D3Tree(info[:tree], init_expand=3))
 
-hipposim = HIPPOSimulator(msim=pomdp, planner=planner, up=particle_up, b=particle_b, sinit=sinit, dt=1/10, max_iter=maxbatt, display=true)
+hipposim = HIPPOSimulator(msim=pomdp, planner=planner, up=particle_up, b=particle_b, sinit=sinit, dt=2, max_iter=maxbatt, display=true)
 hist, r_total = simulateHIPPO(hipposim)
 
 #renderVIPolicy(mdp_policy, basic_pomdp, sinitBasic) # render MDP policy
