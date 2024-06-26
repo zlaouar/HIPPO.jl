@@ -66,6 +66,14 @@ function generate_sim_path(data, ws_client)
     write(ws_client, JSON.json(Dict("action" => "ReturnPath", "args" => Dict("flightPath" => response))))
 end
 
+function get_obstacles(keepout_zones, mapsize)
+    keepmat = stack(keepout_zones)
+    indices = findall(x -> x == 1, keepmat)
+    indtup = Tuple.(indices)
+    obstacles = SVector{2}.([mat_to_inertial_inds(mapsize, indtup[i]) for i ∈ eachindex(indtup)])
+    return obstacles
+end
+
 function initialize(rewarddist, location_dict, keepout_zones, resolution, flightParams)
     mapsize = reverse(size(rewarddist)) # (x,y)
     maxbatt = 1000
@@ -74,10 +82,12 @@ function initialize(rewarddist, location_dict, keepout_zones, resolution, flight
     initial_point = mat_to_inertial_inds(mapsize, closest_point)
     sinit = FullState(initial_point, collect(mapsize) + [1,1], vec(trues(mapsize)), maxbatt)#rand(initialstate(msim))
 
-    keepmat = stack(keepout_zones)
-    indices = findall(x -> x == 1, keepmat)
-    indtup = Tuple.(indices)
-    obstacles = SVector{2}.([mat_to_inertial_inds(mapsize, indtup[i]) for i ∈ eachindex(indtup)])
+    # keepmat = stack(keepout_zones)
+    # indices = findall(x -> x == 1, keepmat)
+    # indtup = Tuple.(indices)
+    # obstacles = SVector{2}.([mat_to_inertial_inds(mapsize, indtup[i]) for i ∈ eachindex(indtup)])
+
+    obstacles = get_obstacles(keepout_zones, mapsize)
 
     msolve = create_target_search_pomdp(sinit, 
                                     size=mapsize, 
@@ -117,6 +127,7 @@ function update_reward(data, ws_client, pachSim, initialized, flightParams; wayp
             generate_predicted_path(location_dict, pachSim, ws_client)
         end
         pachSim.msim.reward = rewarddist
+        pachSim.msim.obstacles = get_obstacles(keepout_zones, reverse(size(rewarddist)))
         pachSim.location_dict = location_dict
         println("reward updated")
     else
@@ -295,7 +306,11 @@ function main()
                 elseif action == "FlightStatus"
                     # println("=========================")
                     # @info "In FS"
-                    pachSim = generate_next_action(arguments, ws_client, pachSim, flightParams; waypoint_params=way_params)
+                    if initialized 
+                        pachSim = generate_next_action(arguments, ws_client, pachSim, flightParams; waypoint_params=way_params)
+                    else
+                        println("FlightStatus: Not initialized, waiting on new params")
+                    end
 
                 elseif action == "FlightParams"
                     # @info "In FP"
@@ -305,6 +320,12 @@ function main()
 
                 elseif action == "Error"
                     println("Error: ", arguments)
+
+                elseif action == "ResetHIPPO"
+                    pachSim = nothing
+                    flightParams = nothing
+                    initialized = false
+                    flight_params_updated = false
                 end
             end
         end
