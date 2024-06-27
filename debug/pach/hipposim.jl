@@ -77,7 +77,6 @@ end
 function initialize(rewarddist, location_dict, keepout_zones, resolution, flightParams)
     mapsize = reverse(size(rewarddist)) # (x,y)
     maxbatt = 1000
-    terminalstate = 
     closest_point = find_closest_grid_point(location_dict, flightParams.home_location)
     initial_point = mat_to_inertial_inds(mapsize, closest_point)
     sinit = FullState(initial_point, collect(mapsize) + [1,1], vec(trues(mapsize)), maxbatt)#rand(initialstate(msim))
@@ -176,6 +175,11 @@ function update_reward(data, ws_client, pachSim, initialized, flightParams; wayp
         end
         println("pachSim initialized")
         pachSim.waypointID += 1    
+
+        #Plan for reaching next waypoint
+        nextwp_belief = update(pachSim.up, pachSim.b, a, :next_waypoint)
+        BasicPOMCP.action_info(pachSim.planner, nextwp_belief, tree_in_info = true)
+        pachSim.b = nextwp_belief
     end
 
     return pachSim
@@ -197,7 +201,20 @@ end
 # 1) Update belief
 # 2) Plan for reaching next waypoint
 # 3) Send next waypoint
+function best_action(t::BasicPOMCP.POMCPTree)
+    h = 1
+    best_node = first(t.children[h])
+    best_v = t.v[best_node]
+    @assert !isnan(best_v)
+    for node in t.children[h][2:end]
+        if t.v[node] >= best_v
+            best_v = t.v[node]
+            best_node = node
+        end
+    end
 
+    return t.a_labels[best_node]
+end
 
 function generate_next_action(data, ws_client, pachSim, flightParams; waypoint_params=WaypointParams(false,0,0))
     (msim, up, b, sinit, previous_action) = (pachSim.msim, pachSim.up, pachSim.b, 
@@ -216,15 +233,18 @@ function generate_next_action(data, ws_client, pachSim, flightParams; waypoint_p
 
     println("status: ", status)
     println("o: ", o)
-    b = update(up, b, previous_action, o)
-    pachSim.b = b
+    #b = update(up, b, previous_action, o)
+    #pachSim.b = b
 
     # remove_rewards(pachSim.msim, sinit.robot) # remove reward at current state
     #tree, b = conditional_path(pachSim)
     #@warn "rewards: ", pachSim.msim.reward
     # inchrome(D3Tree(pachSim.planner._tree))
-    hnode = BasicPOMCP.POMCPObsNode(pachSim.planner._tree, 1)
-    a = next_action(hnode, previous_action)
+
+    a = best_action(pachSim.planner._tree)
+    
+    # hnode = BasicPOMCP.POMCPObsNode(pachSim.planner._tree, 1)
+    # a = next_action(hnode, previous_action)
     sp, _, _ = @gen(:sp,:o,:r)(pachSim.msim, pachSim.sinit, a)
     loc = HIPPO.loctostr([HIPPO.convertinds(pachSim.msim, sp.robot)])
     @info "s: ", pachSim.sinit.robot, " | sp: ", sp.robot , " | loc: ", loc, " | a: ", a, "prev a: ", previous_action, " | batt: ", sp.battery
@@ -257,9 +277,12 @@ function generate_next_action(data, ws_client, pachSim, flightParams; waypoint_p
         # @info dict_list
     end
 
+    inchrome(D3Tree(pachSim.planner._tree))
     #Plan for reaching next waypoint
-    #inchrome(D3Tree(pachSim.planner._tree))
-    BasicPOMCP.action_info(pachSim.planner, pachSim.b, tree_in_info = true)
+    nextwp_belief = update(pachSim.up, pachSim.b, a, :next_waypoint)
+    BasicPOMCP.action_info(pachSim.planner, nextwp_belief, tree_in_info = true)
+
+    pachSim.b = nextwp_belief #??????
 
     pachSim.previous_action = a
     pachSim.sinit = sp

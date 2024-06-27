@@ -15,7 +15,7 @@ function POMDPs.states(m::TargetSearchPOMDP{S,A,O}) where {S,A,O}
 end
 
 function POMDPs.initialstate(m::TargetSearchPOMDP{S,A,O}) where {S,A,O}
-    return POMDPTools.Uniform(FullState(m.robot_init, SVector(x, y), trues(prod(m.size)), z) for x in 1:m.size[1], y in 1:m.size[2], z in 1:m.maxbatt)
+    return POMDPTools.Uniform(FullState(m.robot_init, SVector(x, y), trues(prod(m.size)), m.maxbatt) for x in 1:m.size[1], y in 1:m.size[2])
 end
 
 function POMDPs.initialstate(m::RewardPOMDP)
@@ -62,61 +62,78 @@ POMDPs.discount(m::TargetSearchPOMDP{S,A,O}) where {S,A,O} = 0.95
 #     return SparseCat(states, probs)
 
 # end
-
-function projected_states(m, s, a)
-    if s.robot[1]-s.target[1] >= 2.0 && a == :left 
-        states = [bounce(m, s.robot, SVector(-1,0)), 
-                  bounce(m, s.robot, SVector(-2,0))]
-    elseif s.robot[1]-s.target[1] <= 2.0 && a == :right
-        states = [bounce(m, s.robot, SVector(1,0)), 
-                  bounce(m, s.robot, SVector(2,0))]
-    elseif s.robot[2]-s.target[2] >= 2.0 && a == :down
-        states = [bounce(m, s.robot, SVector(0,-1)), 
-                  bounce(m, s.robot, SVector(0,-2))]
-    elseif s.robot[2]-s.target[2] <= 2.0 && a == :up
-        states = [bounce(m, s.robot, SVector(0,1)), 
-                  bounce(m, s.robot, SVector(0,2))]
-    elseif (s.robot[1]-s.target[1] >= 2.0) && (s.robot[2]-s.target[2] >= 2.0) && a == :sw
-        states = [bounce(m, s.robot, SVector(-1,-1)), 
-                  bounce(m, s.robot, SVector(-2,-2))]
-    elseif (s.robot[1]-s.target[1] <= 2.0) && (s.robot[2]-s.target[2] >= 2.0) && a == :se
-        states = [bounce(m, s.robot, SVector(1,-1)), 
-                  bounce(m, s.robot, SVector(2,-2))]
-    elseif (s.robot[1]-s.target[1] >= 2.0) && (s.robot[2]-s.target[2] <= 2.0) && a == :nw
-        states = [bounce(m, s.robot, SVector(-1,1)), 
-                  bounce(m, s.robot, SVector(-2,2))]
-    elseif (s.robot[1]-s.target[1] <= 2.0) && (s.robot[2]-s.target[2] <= 2.0) && a == :ne
-        states = [bounce(m, s.robot, SVector(1,1)), 
-                  bounce(m, s.robot, SVector(2,2))]
-    else
-        states = []
+function projected_states(m, s, diff)
+    states = []
+    for i in 0:8
+        push!(states, bounce(m, s.robot, diff + SVector(i%3-1, i÷3-1)))
     end
-
-
-    # elseif s.robot[1]-s.target[1] <= 2.0 && a == :right
-    #     states = [s.robot + SVector(1,0), s.robot + SVector(2,0)]
-    # elseif s.robot[2]-s.target[2] >= 2.0 && a == :down
-    #     states = [s.robot + SVector(0,-1), s.robot + SVector(0,-2)]
-    # elseif s.robot[2]-s.target[2] <= 2.0 && a == :up
-    #     states = [s.robot + SVector(0,1), s.robot + SVector(0,2)]
-    # elseif (s.robot[1]-s.target[1] >= 2.0) && (s.robot[2]-s.target[2] >= 2.0) && a == :sw
-    #     states = [s.robot + SVector(-1,-1), s.robot + SVector(-2,-2)]
-    # elseif (s.robot[1]-s.target[1] <= 2.0) && (s.robot[2]-s.target[2] >= 2.0) && a == :se
-    #     states = [s.robot + SVector(1,-1), s.robot + SVector(2,-2)]
-    # elseif (s.robot[1]-s.target[1] >= 2.0) && (s.robot[2]-s.target[2] <= 2.0) && a == :nw
-    #     states = [s.robot + SVector(-1,1), s.robot + SVector(-2,2)]
-    # elseif (s.robot[1]-s.target[1] <= 2.0) && (s.robot[2]-s.target[2] <= 2.0) && a == :ne
-    #     states = [s.robot + SVector(1,1), s.robot + SVector(2,2)]
-    # else
-    #     states = []
-    # end
+    return unique(states)
 end
+
+function projected_state_random(m, s)
+    states = []
+    for i in 0:8
+        push!(states, bounce(m, s.robot, SVector(i%3-1, i÷3-1)))
+    end
+    return rand(unique(states))
+end
+
+# function projected_states(m, s, a)
+#     if s.robot[1]-s.target[1] >= 2.0 && a == :left 
+#         states = [bounce(m, s.robot, SVector(-1,0)), 
+#                   bounce(m, s.robot, SVector(-2,0))]
+#     elseif s.robot[1]-s.target[1] <= 2.0 && a == :right
+#         states = [bounce(m, s.robot, SVector(1,0)), 
+#                   bounce(m, s.robot, SVector(2,0))]
+#     elseif s.robot[2]-s.target[2] >= 2.0 && a == :down
+#         states = [bounce(m, s.robot, SVector(0,-1)), 
+#                   bounce(m, s.robot, SVector(0,-2))]
+#     elseif s.robot[2]-s.target[2] <= 2.0 && a == :up
+#         states = [bounce(m, s.robot, SVector(0,1)), 
+#                   bounce(m, s.robot, SVector(0,2))]
+#     elseif (s.robot[1]-s.target[1] >= 2.0) && (s.robot[2]-s.target[2] >= 2.0) && a == :sw
+#         states = [bounce(m, s.robot, SVector(-1,-1)), 
+#                   bounce(m, s.robot, SVector(-2,-2))]
+#     elseif (s.robot[1]-s.target[1] <= 2.0) && (s.robot[2]-s.target[2] >= 2.0) && a == :se
+#         states = [bounce(m, s.robot, SVector(1,-1)), 
+#                   bounce(m, s.robot, SVector(2,-2))]
+#     elseif (s.robot[1]-s.target[1] >= 2.0) && (s.robot[2]-s.target[2] <= 2.0) && a == :nw
+#         states = [bounce(m, s.robot, SVector(-1,1)), 
+#                   bounce(m, s.robot, SVector(-2,2))]
+#     elseif (s.robot[1]-s.target[1] <= 2.0) && (s.robot[2]-s.target[2] <= 2.0) && a == :ne
+#         states = [bounce(m, s.robot, SVector(1,1)), 
+#                   bounce(m, s.robot, SVector(2,2))]
+#     else
+#         states = []
+#     end
+
+
+#     # elseif s.robot[1]-s.target[1] <= 2.0 && a == :right
+#     #     states = [s.robot + SVector(1,0), s.robot + SVector(2,0)]
+#     # elseif s.robot[2]-s.target[2] >= 2.0 && a == :down
+#     #     states = [s.robot + SVector(0,-1), s.robot + SVector(0,-2)]
+#     # elseif s.robot[2]-s.target[2] <= 2.0 && a == :up
+#     #     states = [s.robot + SVector(0,1), s.robot + SVector(0,2)]
+#     # elseif (s.robot[1]-s.target[1] >= 2.0) && (s.robot[2]-s.target[2] >= 2.0) && a == :sw
+#     #     states = [s.robot + SVector(-1,-1), s.robot + SVector(-2,-2)]
+#     # elseif (s.robot[1]-s.target[1] <= 2.0) && (s.robot[2]-s.target[2] >= 2.0) && a == :se
+#     #     states = [s.robot + SVector(1,-1), s.robot + SVector(2,-2)]
+#     # elseif (s.robot[1]-s.target[1] >= 2.0) && (s.robot[2]-s.target[2] <= 2.0) && a == :nw
+#     #     states = [s.robot + SVector(-1,1), s.robot + SVector(-2,2)]
+#     # elseif (s.robot[1]-s.target[1] <= 2.0) && (s.robot[2]-s.target[2] <= 2.0) && a == :ne
+#     #     states = [s.robot + SVector(1,1), s.robot + SVector(2,2)]
+#     # else
+#     #     states = []
+#     # end
+# end
 
 function POMDPs.transition(m::TargetSearchPOMDP{S,A,O}, s, a) where {S,A,O}
     states = FullState[]
     probs = Float64[]
-    gather_info_prob = 0.2
-    wp_reached_prob = 0.8
+    gather_info_prob = 0.5
+    gather_info_false_prob = 0.05
+    wp_reached_prob = 1 - gather_info_prob 
+    wp_reached_false_prob = 1 - gather_info_false_prob
     gather_info_time = 2*(m.resolution/25)
 
     if isequal(s.robot, s.target)
@@ -131,7 +148,7 @@ function POMDPs.transition(m::TargetSearchPOMDP{S,A,O}, s, a) where {S,A,O}
     # FALCO gather_action is executed
     if norm(s.robot-s.target) <= 2.0*sqrt(2.0)
         push!(probs, wp_reached_prob)
-        locs = projected_states(m, s, a)
+        locs = projected_states(m, s, s.target-s.robot)
         #@info locs
         loc_prob = gather_info_prob/length(locs)
         for loc in locs
@@ -143,7 +160,14 @@ function POMDPs.transition(m::TargetSearchPOMDP{S,A,O}, s, a) where {S,A,O}
             push!(probs, loc_prob)
         end
     else
-        push!(probs, 1.0)
+        push!(probs, wp_reached_false_prob)
+        loc = projected_state_random(m, s)
+        dist = norm(loc-s.robot)
+        # TO-DO model float battery loss as a function of distance (remove round())
+        battery_loss = round(dist) == 0.0 ? (m.resolution/25) + gather_info_time : round(dist)*(m.resolution/25) + gather_info_time
+        #@info "battery_loss: ", battery_loss
+        push!(states, FullState(loc, s.target, copy(s.visited), s.battery-battery_loss))
+        push!(probs, gather_info_false_prob)
     end
 
     for sp ∈ states

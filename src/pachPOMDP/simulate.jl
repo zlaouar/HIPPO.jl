@@ -120,6 +120,8 @@ function simulateHIPPO(sim::HIPPOSimulator)
     a = :nothing 
     info = nothing
     history = NamedTuple[]
+    (sim.anim || sim.display) && (belframe = render(msim, (sp=s, bp=bp)))
+    sim.display && display(belframe)
     while !isterminal(msim, s) && iter < max_iter
         tm = time()
         #_, info = action_info(sim.planner, sim.b, tree_in_info = true)
@@ -152,8 +154,8 @@ function simulateHIPPO(sim::HIPPOSimulator)
         #println(iter,"- | battery: ", sp.battery, " | dist_to_home: ", dist(sp.robot, msim.robot_init), " | s: ", sp.robot)
         sim.anim && push!(sim.rewardframes, rewardframe)
         sim.anim && push!(sim.belframes, belframe)
-        #sim.logging && push!(history, (s=s, a=a, sp=sp, o=o, r=r, bp=b, info=info))
-        sim.logging && push!(history, (s=s,a=a))
+        sim.logging && push!(history, (s=s, a=a, sp=sp, o=o, r=r, bp=b, info=info))
+        #sim.logging && push!(history, (s=s,a=a))
         finalstate = s
         s = sp
         b = bp
