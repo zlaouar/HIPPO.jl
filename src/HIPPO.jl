@@ -44,7 +44,7 @@ include(joinpath(@__DIR__,"metaPOMDP","observations.jl"))
  =#
 include(joinpath(@__DIR__,"pachPOMDP","core.jl"))
 include(joinpath(@__DIR__,"pachPOMDP","functions.jl"))
-include(joinpath(@__DIR__,"pachPOMDP","observations.jl")) 
+#include(joinpath(@__DIR__,"pachPOMDP","observations.jl")) 
 export BasicPOMDP,
        RewardPOMDP, 
        BatteryPOMDP, 
@@ -79,7 +79,10 @@ include(joinpath(@__DIR__,"basicPOMDP","functions_vanilla.jl"))
 
 
 include(joinpath(@__DIR__,"helper.jl"))
-export FixedPolicy, TargetSearchMDPPolicy, next_action
+export GreedyPolicy,
+       FixedPolicy, 
+       TargetSearchMDPPolicy, 
+       next_action
 
 include("visualize.jl")
 export rendhist

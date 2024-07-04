@@ -38,14 +38,16 @@ hallway = [80.0 80.0;
            0.0 0.0;
            0.0 0.0;
            0.0 0.0]
-#rewarddist = smallreward
+rewarddist = smallreward
 #rewarddist = hallway
 #rewarddist = load("rewardmat.jld2","rewarddist")
 #rewarddist = rewarddist .+ abs(minimum(rewarddist)) .+ 0.01
 rewarddist = abs.(rewarddist)
 mapsize = reverse(size(rewarddist)) #(13,16)
 maxbatt = 1000
-sinit = FullState([3,1], [10,11], vec(trues(mapsize)), maxbatt)#rand(initialstate(msim))
+#sinit = FullState([3,1], [10,11], vec(trues(mapsize)), maxbatt)#rand(initialstate(msim))
+sinit = FullState([3,1], [4,6], vec(trues(mapsize)), maxbatt)#rand(initialstate(msim))
+
 #mapsize = (13,16)
 #sinit = TSState([10,1],[13,16],trues(prod(mapsize)))#rand(initialstate(msim))
 #mapsize = (4,4)
@@ -69,11 +71,13 @@ mdp_policy = solve(mdp_solver, UnderlyingMDP(basic_pomdp))
 
 p = FunctionPolicy(FixedPolicy())
 mdprollout = FORollout(TargetSearchMDPPolicy(mdp_policy))
+greedyrollout = FORollout(GreedyPolicy(pomdp))
 funcrollout = FORollout(p)
 #mdprollout = FORollout(mdp_policy) # change MDP reward mat to pompdp reward mat
 #solver = POMCPSolver(estimate_value = mdprollout, tree_queries=10000, max_time=0.2, c=5) # mdp policy rollout
 #solver = POMCPSolver(estimate_value = funcrollout, tree_queries=10000, max_time=0.2, c=5) # up rollout
-solver = POMCPSolver(tree_queries=10_000, max_time=0.2, c=5) # random
+#solver = POMCPSolver(tree_queries=10_000, max_time=0.2, c=5) # random
+solver = POMCPSolver(estimate_value=greedyrollout,tree_queries=10_000, max_time=0.2, c=100) # random
 
 
 planner = solve(solver,pomdp)

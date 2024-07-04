@@ -17,11 +17,11 @@ const actionvals = values(actiondir)
                     BitVector([0,0,0,1,0]), 
                     BitVector([0,0,0,0,1])] =#
 
-const OBSERVATIONS = [:next_waypoint, :gather_action]
+const OBSERVATIONS = [:next_waypoint, :gather_action, :target_found]
 
 # const obsind = Dict(OBSERVATIONS .=> 1:6)
 
-const obsind = Dict(OBSERVATIONS .=> 1:2)
+const obsind = Dict(OBSERVATIONS .=> 1:3)
 
 function targetdir(sp)
     if (sp.robot[1]-sp.target[1]) == 1 # target left of robot

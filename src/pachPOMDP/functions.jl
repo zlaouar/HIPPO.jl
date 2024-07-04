@@ -15,7 +15,7 @@ function POMDPs.states(m::TargetSearchPOMDP{S,A,O}) where {S,A,O}
 end
 
 function POMDPs.initialstate(m::TargetSearchPOMDP{S,A,O}) where {S,A,O}
-    return POMDPTools.Uniform(FullState(m.robot_init, SVector(x, y), trues(prod(m.size)), z) for x in 1:m.size[1], y in 1:m.size[2], z in 1:m.maxbatt)
+    return POMDPTools.Uniform(FullState(m.robot_init, SVector(x, y), trues(prod(m.size)), m.maxbatt) for x in 1:m.size[1], y in 1:m.size[2])
 end
 
 function POMDPs.initialstate(m::RewardPOMDP)
@@ -40,10 +40,104 @@ end
 POMDPs.discount(m::TargetSearchPOMDP{S,A,O}) where {S,A,O} = 0.95 
 
 
+# function POMDPs.transition(m::TargetSearchPOMDP{S,A,O}, s, a) where {S,A,O}
+#     states = FullState[]
+#     probs = Float64[]
+#     remaining_prob = 1.0
+
+#     if isequal(s.robot, s.target)
+#         return Deterministic(FullState(SA[-1,-1], copy(s.target), s.visited, s.battery))
+#     end
+    
+#     newrobot = bounce(m, s.robot, actiondir[a])
+
+#     push!(states, FullState(newrobot, s.target, copy(s.visited), s.battery-(m.resolution/25)))
+#     push!(probs, remaining_prob)
+
+#     for sp ∈ states
+#         sind = LinearIndices((1:m.size[1], 1:m.size[2]))[s.robot...]
+#         sp.visited[sind] = 0
+#     end
+
+#     return SparseCat(states, probs)
+
+# end
+function projected_states(m, s, diff)
+    states = []
+    for i in 0:8
+        push!(states, bounce(m, s.robot, diff + SVector(i%3-1, i÷3-1)))
+    end
+    return unique(states)
+end
+
+function projected_state_random(m, s)
+    states = []
+    for i in 0:8
+        push!(states, bounce(m, s.robot, SVector(i%3-1, i÷3-1)))
+    end
+    return rand(unique(states))
+end
+
+# function projected_states(m, s, a)
+#     if s.robot[1]-s.target[1] >= 2.0 && a == :left 
+#         states = [bounce(m, s.robot, SVector(-1,0)), 
+#                   bounce(m, s.robot, SVector(-2,0))]
+#     elseif s.robot[1]-s.target[1] <= 2.0 && a == :right
+#         states = [bounce(m, s.robot, SVector(1,0)), 
+#                   bounce(m, s.robot, SVector(2,0))]
+#     elseif s.robot[2]-s.target[2] >= 2.0 && a == :down
+#         states = [bounce(m, s.robot, SVector(0,-1)), 
+#                   bounce(m, s.robot, SVector(0,-2))]
+#     elseif s.robot[2]-s.target[2] <= 2.0 && a == :up
+#         states = [bounce(m, s.robot, SVector(0,1)), 
+#                   bounce(m, s.robot, SVector(0,2))]
+#     elseif (s.robot[1]-s.target[1] >= 2.0) && (s.robot[2]-s.target[2] >= 2.0) && a == :sw
+#         states = [bounce(m, s.robot, SVector(-1,-1)), 
+#                   bounce(m, s.robot, SVector(-2,-2))]
+#     elseif (s.robot[1]-s.target[1] <= 2.0) && (s.robot[2]-s.target[2] >= 2.0) && a == :se
+#         states = [bounce(m, s.robot, SVector(1,-1)), 
+#                   bounce(m, s.robot, SVector(2,-2))]
+#     elseif (s.robot[1]-s.target[1] >= 2.0) && (s.robot[2]-s.target[2] <= 2.0) && a == :nw
+#         states = [bounce(m, s.robot, SVector(-1,1)), 
+#                   bounce(m, s.robot, SVector(-2,2))]
+#     elseif (s.robot[1]-s.target[1] <= 2.0) && (s.robot[2]-s.target[2] <= 2.0) && a == :ne
+#         states = [bounce(m, s.robot, SVector(1,1)), 
+#                   bounce(m, s.robot, SVector(2,2))]
+#     else
+#         states = []
+#     end
+
+
+#     # elseif s.robot[1]-s.target[1] <= 2.0 && a == :right
+#     #     states = [s.robot + SVector(1,0), s.robot + SVector(2,0)]
+#     # elseif s.robot[2]-s.target[2] >= 2.0 && a == :down
+#     #     states = [s.robot + SVector(0,-1), s.robot + SVector(0,-2)]
+#     # elseif s.robot[2]-s.target[2] <= 2.0 && a == :up
+#     #     states = [s.robot + SVector(0,1), s.robot + SVector(0,2)]
+#     # elseif (s.robot[1]-s.target[1] >= 2.0) && (s.robot[2]-s.target[2] >= 2.0) && a == :sw
+#     #     states = [s.robot + SVector(-1,-1), s.robot + SVector(-2,-2)]
+#     # elseif (s.robot[1]-s.target[1] <= 2.0) && (s.robot[2]-s.target[2] >= 2.0) && a == :se
+#     #     states = [s.robot + SVector(1,-1), s.robot + SVector(2,-2)]
+#     # elseif (s.robot[1]-s.target[1] >= 2.0) && (s.robot[2]-s.target[2] <= 2.0) && a == :nw
+#     #     states = [s.robot + SVector(-1,1), s.robot + SVector(-2,2)]
+#     # elseif (s.robot[1]-s.target[1] <= 2.0) && (s.robot[2]-s.target[2] <= 2.0) && a == :ne
+#     #     states = [s.robot + SVector(1,1), s.robot + SVector(2,2)]
+#     # else
+#     #     states = []
+#     # end
+# end
+
 function POMDPs.transition(m::TargetSearchPOMDP{S,A,O}, s, a) where {S,A,O}
     states = FullState[]
     probs = Float64[]
-    remaining_prob = 1.0
+    gather_info_prob = 0.3
+    gather_info_false_prob = 0.01
+    wp_reached_prob = 1 - gather_info_prob 
+    wp_reached_false_prob = 1 - gather_info_false_prob
+    gather_info_time = 2*(m.resolution/25)
+
+    sind = LinearIndices((1:m.size[1], 1:m.size[2]))[s.robot...]
+    s.visited[sind] = 0
 
     if isequal(s.robot, s.target)
         return Deterministic(FullState(SA[-1,-1], copy(s.target), s.visited, s.battery))
@@ -51,15 +145,104 @@ function POMDPs.transition(m::TargetSearchPOMDP{S,A,O}, s, a) where {S,A,O}
     
     newrobot = bounce(m, s.robot, actiondir[a])
 
+    # drone reached next waypoint
     push!(states, FullState(newrobot, s.target, copy(s.visited), s.battery-(m.resolution/25)))
-    push!(probs, remaining_prob)
 
-    for sp ∈ states
-        sind = LinearIndices((1:m.size[1], 1:m.size[2]))[s.robot...]
-        sp.visited[sind] = 0
+    # FALCO gather_action is executed
+    if norm(s.robot-s.target) <= 2.0*sqrt(2.0)
+        push!(probs, wp_reached_prob)
+        locs = projected_states(m, s, s.target-s.robot)
+        #@info locs
+        loc_prob = gather_info_prob/length(locs)
+        for loc in locs
+            dist = norm(loc-s.robot)
+            # TO-DO model float battery loss as a function of distance (remove round())
+            battery_loss = round(dist) == 0.0 ? (m.resolution/25) + gather_info_time : round(dist)*(m.resolution/25) + gather_info_time
+            #@info "battery_loss: ", battery_loss
+            push!(states, FullState(loc, s.target, copy(s.visited), s.battery-battery_loss))
+            push!(probs, loc_prob)
+        end
+    else
+        push!(probs, wp_reached_false_prob)
+        loc = projected_state_random(m, s)
+        dist = norm(loc-s.robot)
+        # TO-DO model float battery loss as a function of distance (remove round())
+        battery_loss = round(dist) == 0.0 ? (m.resolution/25) + gather_info_time : round(dist)*(m.resolution/25) + gather_info_time
+        #@info "battery_loss: ", battery_loss
+        push!(states, FullState(loc, s.target, copy(s.visited), s.battery-battery_loss))
+        push!(probs, gather_info_false_prob)
     end
 
+    #for sp ∈ states
+    #    sind = LinearIndices((1:m.size[1], 1:m.size[2]))[s.robot...]
+    #    sp.visited[sind] = 0
+    #end
+
+    #@info "batt losses: ", [s.battery-sp.battery for sp in states]
     return SparseCat(states, probs)
+
+end
+
+"""
+    observations(m::TargetSearchPOMDP)
+
+Retrieve observations in TargetSearch observation space
+
+The the observations are ordered as follows:
+    1: The next waypoint is reached
+    2: FALCO gather_action is executed
+    3: Target is found
+"""
+
+
+POMDPs.observations(m::TargetSearchPOMDP) = OBSERVATIONS #vec(collect(BitVector([c[1],c[2],c[3],c[4],c[5]]) for c in Iterators.product(0:1, 0:1, 0:1, 0:1, 0:1)))
+POMDPs.obsindex(m::TargetSearchPOMDP, o::Symbol) = obsind[o]
+
+function POMDPs.observation(m::TargetSearchPOMDP, s::TSState, a::Symbol, sp::TSState)
+    # TODO: parametrize battery loss for gather info
+    if sp.robot == sp.target #sp.robot == [-1,-1]
+        return Deterministic(:target_found)
+    elseif s.battery - sp.battery > m.resolution/25
+        return Deterministic(:gather_info)
+        # return SparseCat(OBSERVATIONS, [0.0, 0.9, 0.1])
+    elseif s.battery - sp.battery == m.resolution/25
+        return Deterministic(:next_waypoint)
+    else
+        @show s.robot, sp.robot, a
+        println(s==sp ? "same state" : "diff state")
+        error("Invalid battery loss: ", s.battery - sp.battery)
+    end
+    
+    
+    #=
+    
+    if norm(sp.robot-sp.target) <= 2.0
+        if sp.robot[1]-sp.target[1] >= 2.0 && a == :left 
+            return SparseCat(OBSERVATIONS, [0.2, 0.8])
+        elseif sp.robot[1]-sp.target[1] <= 2.0 && a == :right
+            return SparseCat(OBSERVATIONS, [0.2, 0.8])
+        elseif sp.robot[2]-sp.target[2] >= 2.0 && a == :down
+            return SparseCat(OBSERVATIONS, [0.2, 0.8])
+        elseif sp.robot[2]-sp.target[2] <= 2.0 && a == :up
+            return SparseCat(OBSERVATIONS, [0.2, 0.8])
+        elseif (sp.robot[1]-sp.target[1] >= 2.0) && (sp.robot[2]-sp.target[2] >= 2.0) && a == :sw
+            return SparseCat(OBSERVATIONS, [0.2, 0.8])
+        elseif (sp.robot[1]-sp.target[1] <= 2.0) && (sp.robot[2]-sp.target[2] >= 2.0) && a == :se
+            return SparseCat(OBSERVATIONS, [0.2, 0.8])
+        elseif (sp.robot[1]-sp.target[1] >= 2.0) && (sp.robot[2]-sp.target[2] <= 2.0) && a == :nw
+            return SparseCat(OBSERVATIONS, [0.2, 0.8])
+        elseif (sp.robot[1]-sp.target[1] <= 2.0) && (sp.robot[2]-sp.target[2] <= 2.0) && a == :ne
+            return SparseCat(OBSERVATIONS, [0.2, 0.8])
+        else
+
+            return SparseCat(OBSERVATIONS, [0.95, 0.05])
+        end
+    else
+        return SparseCat(OBSERVATIONS, [0.95, 0.05])
+    end
+
+    return SparseCat(OBSERVATIONS, probs)
+    =#
 
 end
 
@@ -84,14 +267,17 @@ function POMDPs.reward(m::TargetSearchPOMDP{S,A,O}, s::FullState, a::Symbol, sp:
     spind = LinearIndices((1:m.size[1], 1:m.size[2]))[sp.robot...]
 
     if !isempty(m.reward) && sp.robot != SA[-1,-1]
-        return reward_running + reward_target + m.reward[inds...]*s.visited[spind] + reward_nogo
+        return reward_running + reward_target + m.reward[inds...]*sp.visited[spind] + reward_nogo
     end
 end
+
 
 function POMDPs.transition(m::RewardPOMDP, s, a)
     states = RewardState[]
     probs = Float64[]
     remaining_prob = 1.0
+
+    s.visited[LinearIndices((1:m.size[1], 1:m.size[2]))[s.robot...]] = 0
 
     if isequal(s.robot, s.target)
         return Deterministic(RewardState(SA[-1,-1], copy(s.target), s.visited))
@@ -109,15 +295,17 @@ function POMDPs.transition(m::RewardPOMDP, s, a)
     push!(states, RewardState(newrobot, s.target, copy(s.visited)))
     push!(probs, remaining_prob)
 
-
-    for sp ∈ states
-        sind = LinearIndices((1:m.size[1], 1:m.size[2]))[s.robot...]
-        sp.visited[sind] = 0
-    end
+    #for sp ∈ states
+    #    sind = LinearIndices((1:m.size[1], 1:m.size[2]))[s.robot...]
+    #    sp.visited[sind] = 0
+    #end
 
     return SparseCat(states, probs)
 
 end
+
+
+
 
 function POMDPs.reward(m::RewardPOMDP, s::RewardState, a::Symbol, sp::RewardState)
     reward_running = -1.0
@@ -137,83 +325,8 @@ function POMDPs.reward(m::RewardPOMDP, s::RewardState, a::Symbol, sp::RewardStat
     spind = LinearIndices((1:m.size[1], 1:m.size[2]))[sp.robot...]
 
     if !isempty(m.reward) && sp.robot != SA[-1,-1]
-        return reward_running + reward_target + reward_roi + m.reward[inds...]*s.visited[spind] # running cost
+        return reward_running + reward_target + reward_roi + m.reward[inds...]*sp.visited[spind] # running cost
     end
-end
-
-set_default_graphic_size(18cm,14cm)
-
-function POMDPTools.ModelTools.render(m::TargetSearchPOMDP{S,A,O}, step) where {S,A,O}
-    #set_default_graphic_size(14cm,14cm)
-    nx, ny = m.size
-    cells = []
-    target_marginal = zeros(nx, ny)
-
-    if haskey(step, :bp) && !ismissing(step[:bp])
-        for sp in support(step[:bp])
-            p = pdf(step[:bp], sp)
-            if sp.target != [-1,-1] # TO-DO Fix this
-                target_marginal[sp.target...] += p
-            end
-        end
-    end
-    #display(target_marginal)
-    #norm_top = normalize(target_marginal)
-    norm_top = target_marginal
-    #display(norm_top)
-    for x in 1:nx, y in 1:ny
-        cell = cell_ctx((x,y), m.size)
-        t_op = norm_top[x,y]
-        
-        # TO-DO Fix This
-        # if t_op > 1.0
-        #     if t_op < 1.001
-        #         t_op = 0.999
-        #     else
-        #         @error("t_op > 1.001", t_op)
-        #     end
-        # end
-        opval = t_op
-        if opval > 0.0 
-           opval = clamp(t_op,0.0,1.0)
-        end
-        max_op = maximum(norm_top)
-        min_op = minimum(norm_top)
-        #frac = (opval-min_op)/(max_op-min_op)
-        clr = get(ColorSchemes.acton, sqrt(opval))
-        
-
-
-        target = compose(context(), rectangle(), fill(clr), stroke("gray"))
-        #println("opval: ", t_op)
-        compose!(cell, target)
-
-        push!(cells, cell)
-    end
-    grid = compose(context(), linewidth(0.00000001mm), cells...)
-    outline = compose(context(), linewidth(0.01mm), rectangle(), fill("white"), stroke("black"))
-
-    if haskey(step, :sp)
-        robot_ctx = cell_ctx(step[:sp].robot, m.size)
-        robot = compose(robot_ctx, circle(0.5, 0.5, 0.5), fill("blue"))
-        target_ctx = cell_ctx(step[:sp].target, m.size)
-        target = compose(target_ctx, star(0.5,0.5,0.8,5,0.5), fill("orange"), stroke("black"))
-    else
-        robot = nothing
-        target = nothing
-    end 
-    #img = read(joinpath(@__DIR__,"../..","drone.png"));
-    #robot = compose(robot_ctx, bitmap("image/png",img, 0, 0, 1, 1))
-    #person = read(joinpath(@__DIR__,"../..","missingperson.png"));
-    #target = compose(target_ctx, bitmap("image/png",person, 0, 0, 1, 1))
-
-    sz = min(w,h)
-    
-    return compose(context((w-sz)/2, (h-sz)/2, sz, sz), robot, target, grid, outline)
-end
-
-function normie(input, a)
-    return (input-minimum(a))/(maximum(a)-minimum(a))
 end
 
 function rewardinds(m, pos::SVector{2, Int64})
@@ -224,95 +337,13 @@ function rewardinds(m, pos::SVector{2, Int64})
     return inds
 end
 
-
-function POMDPTools.ModelTools.render(m::TargetSearchPOMDP{S,A,O}, step, plt_reward::Bool) where {S,A,O}
-    nx, ny = m.size
-    cells = []
-    
-    minr = minimum(m.reward)-1
-    maxr = maximum(m.reward)
-    for x in 1:nx, y in 1:ny
-        cell = cell_ctx((x,y), m.size)
-        r = m.reward[rewardinds(m, SA[x,y])...]
-        if iszero(r)
-            target = compose(context(), rectangle(), fill("black"), stroke("gray"))
-        else
-            frac = (r-minr)/(maxr-minr)
-            clr = get(ColorSchemes.turbo, frac)
-            target = compose(context(), rectangle(), fill(clr), stroke("gray"), fillopacity(0.5))
-        end
-
-        compose!(cell, target)
-        push!(cells, cell)
-    end
-    grid = compose(context(), linewidth(0.00000001mm), cells...)
-    outline = compose(context(), linewidth(0.01mm), rectangle(), fill("white"), stroke("black"))
-
-    if haskey(step, :sp)
-        robot_ctx = cell_ctx(step[:sp].robot, m.size)
-        robot = compose(robot_ctx, circle(0.5, 0.5, 0.5), fill("blue"))
-        target_ctx = cell_ctx(step[:sp].target, m.size)
-        target = compose(target_ctx, star(0.5,0.5,1.0,5,0.5), fill("orange"), stroke("black"))
-    else
-        robot = nothing
-        target = nothing
-    end
-    sz = min(w,h)
-    #return compose(context((w-sz)/2, (h-sz)/2, sz, (ny/nx)*sz), robot, target, grid, outline)
-    return compose(context((w-sz)/2, (h-sz)/2, sz, sz), robot, target, grid, outline)
-end
-
-function POMDPTools.ModelTools.render(m::TargetSearchPOMDP{S,A,O}, step, points::Vector{Vector{Int}}) where {S,A,O}
-    nx, ny = m.size
-    cells = []
-    minr = minimum(m.reward)-1
-    maxr = maximum(m.reward)
-    iter = 1
-    for x in 1:nx, y in 1:ny
-        cell = cell_ctx((x,y), m.size)
-        r = m.reward[rewardinds(m, SA[x,y])...]
-        if iszero(r)
-            target = compose(context(), rectangle(), fill("black"), fillopacity(0.9), stroke("gray"))
-            compose!(cell, target)
-        else
-            frac = (r-minr)/(maxr-minr)
-            clr = get(ColorSchemes.turbo, frac)
-            target = compose(context(), rectangle(), fill(clr), stroke("gray"), fillopacity(0.5))
-            # target = compose(context(), rectangle(), fillopacity(normie(m.reward[rewardinds(m,SA[x,y])...],m.reward)), fill("green"), stroke("gray"))
-        end
-        if [x,y] ∈ points
-            roi = compose(context(), circle(), fill("green2"), stroke("green2"), linewidth(0.5mm))
-            compose!(cell, roi)
-        else
-            compose!(cell, target)
-        end
-
-        push!(cells, cell)
-        iter += 1
-    end
-    grid = compose(context(), linewidth(0.00000001mm), cells...)
-    outline = compose(context(), linewidth(0.01mm), rectangle(), fill("white"), stroke("black"))
-
-    if haskey(step, :sp)
-        robot_ctx = cell_ctx(step[:sp].robot, m.size)
-        robot = compose(robot_ctx, circle(0.5, 0.5, 0.5), fill("blue"))
-        target_ctx = cell_ctx(step[:sp].target, m.size)
-        target = compose(target_ctx, star(0.5,0.5,1.8,5,0.5), fill("orange"), stroke("black"))
-    else
-        robot = nothing
-        target = nothing
-    end
-    sz = min(w,h)
-    return compose(context((w-sz)/2, (h-sz)/2, sz, (ny/nx)*sz), robot, target, grid, outline)
-end
-
 function dist(curr, start)
     sum(abs.(curr-start))
 end
 
 function POMDPs.isterminal(m::TargetSearchPOMDP{S,A,O}, s::FullState) where {S,A,O}
     required_batt = dist(s.robot, m.robot_init)
-    return s.battery - required_batt <= 1 || s.robot == SA[-1,-1] 
+    return s.battery - required_batt <= 1 || s.robot == s.target#SA[-1,-1] 
 end
 
 POMDPs.isterminal(m::RewardPOMDP, s::TSState) = s.robot == SA[-1,-1]

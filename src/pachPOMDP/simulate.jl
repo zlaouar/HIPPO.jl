@@ -120,6 +120,8 @@ function simulateHIPPO(sim::HIPPOSimulator)
     a = :nothing 
     info = nothing
     history = NamedTuple[]
+    (sim.anim || sim.display) && (belframe = render(msim, (sp=s, bp=bp)))
+    sim.display && display(belframe)
     while !isterminal(msim, s) && iter < max_iter
         tm = time()
         #_, info = action_info(sim.planner, sim.b, tree_in_info = true)
@@ -128,9 +130,9 @@ function simulateHIPPO(sim::HIPPOSimulator)
         #a = first(a_traj)
         try 
             a, info = action_info(sim.planner, b, tree_in_info = true)
-        catch
+        catch e
             #a = :stay
-            @warn "POMCP failed to find an action"
+            @warn "POMCP failed to find an action: ", e
             push!(history, (s=finalstate, a=a, sp=sp, o=o, r=r, bp=b, info=info))
             return history, r_total, iter
         end
@@ -142,21 +144,23 @@ function simulateHIPPO(sim::HIPPOSimulator)
         end
         r_total += d*r
         d *= discount(msim)
-        b = update(sim.up, b, a, o)
-        (sim.anim || sim.display) && (belframe = render(msim, (sp=sp, bp=b)))
-        (sim.anim || sim.display) && (rewardframe = render(msim, (sp=sp, bp=b), true))
+        bp = update(sim.up, b, a, o)
+        (sim.anim || sim.display) && (belframe = render(msim, (sp=sp, bp=bp)))
+        (sim.anim || sim.display) && (rewardframe = render(msim, (sp=sp, bp=bp), true))
         #display(belframe)
         sim.display && display(belframe)
-        sleep_until(tm += sim.dt)
         iter += 1
-        println(iter,"- | s: ", s.robot, " | sp:", sp.robot, " | r:", r, " | o: ", o)
+        println(iter,"- | s: ", s.robot, " | sbatt: ", s.battery, " | a: ", a, 
+        " | sp_robot:", sp.robot, " | sp_target:", sp.target, " | spbatt: ", sp.battery, " | r:", r, " | o: ", o)
         #println(iter,"- | battery: ", sp.battery, " | dist_to_home: ", dist(sp.robot, msim.robot_init), " | s: ", sp.robot)
         sim.anim && push!(sim.rewardframes, rewardframe)
         sim.anim && push!(sim.belframes, belframe)
-        #sim.logging && push!(history, (s=s, a=a, sp=sp, o=o, r=r, bp=b, info=info))
-        sim.logging && push!(history, (s=s,a=a))
+        sim.logging && push!(history, (s=s, a=a, sp=sp, o=o, r=r, bp=b, info=info))
+        #sim.logging && push!(history, (s=s,a=a))
         finalstate = s
         s = sp
+        b = bp
+        sleep_until(tm += sim.dt)
     end
     !sim.logging && push!(history, (s=finalstate, a=a, sp=sp, o=o, r=r, bp=b, info=info))
     #!sim.logging && push!(history, (a=a,))
