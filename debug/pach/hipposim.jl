@@ -261,8 +261,15 @@ function generate_next_action(data, ws_client, pachSim, flightParams; waypoint_p
                                                                                     "plannerAction" => string(a),
                                                                                     "dwellTime" => 5000.0))))
 
+    
+    #Plan for reaching next waypoint
+    nextwp_belief = update(pachSim.up, pachSim.b, a, :next_waypoint)
+    BasicPOMCP.action_info(pachSim.planner, nextwp_belief, tree_in_info = true)
+
     if waypoint_params.show  && flightParams.flight_mode == "waypoint"##
-        future_nodes,future_opacities,future_parents = get_children_from_node(pachSim.msim,pachSim.b,pachSim.planner._tree,o,pachSim.previous_action;depth=waypoint_params.depth,n_actions=waypoint_params.n_actions)
+        #future_nodes,future_opacities,future_parents = get_children_from_node(pachSim.msim,pachSim.b,pachSim.planner._tree,o,pachSim.previous_action;depth=waypoint_params.depth,n_actions=waypoint_params.n_actions)
+        future_nodes,future_opacities,future_parents = get_children(pachSim.msim,pachSim.b,pachSim.planner._tree;depth=waypoint_params.depth,n_actions=waypoint_params.n_actions)
+
         dict_list = []
         for i in eachindex(future_nodes)#[2:end]) #Exclude the point already passed as "NextFlightWaypoint"
             lc_str = HIPPO.loctostr([HIPPO.convertinds(pachSim.msim, future_nodes[i].robot)])
@@ -277,12 +284,7 @@ function generate_next_action(data, ws_client, pachSim, flightParams; waypoint_p
         # @info dict_list
     end
 
-    inchrome(D3Tree(pachSim.planner._tree))
-    #Plan for reaching next waypoint
-    nextwp_belief = update(pachSim.up, pachSim.b, a, :next_waypoint)
-    BasicPOMCP.action_info(pachSim.planner, nextwp_belief, tree_in_info = true)
-
-    pachSim.b = nextwp_belief #??????
+    pachSim.b = nextwp_belief
 
     pachSim.previous_action = a
     pachSim.sinit = sp
@@ -349,6 +351,7 @@ function main()
                     flightParams = nothing
                     initialized = false
                     flight_params_updated = false
+                    println("HIPPO Reset")
                 end
             end
         end

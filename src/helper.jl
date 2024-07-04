@@ -10,8 +10,33 @@ struct FixedPolicy <: Function end
 
 (::FixedPolicy)(s) = :up
 
+function statedir(pos1, pos2)
+    if (pos1[1]-pos2[1]) >= 1 # pos2 left of robot
+        return :left
+    elseif (pos1[1]-pos2[1]) <= -1 # pos2 right of robot
+        return :right
+    elseif (pos1[2]-pos2[2]) >= 1 # pos2 below robot
+        return :down
+    elseif (pos1[2]-pos2[2]) <= -1 # pos2 above robot
+        return :up
+    else
+        return :stay
+    end
+end
+
 struct TargetSearchMDPPolicy{P} <: Policy
     vi_policy::P
+end
+
+struct GreedyPolicy{P} <: Policy
+    pomdp::P
+end
+
+function POMDPs.action(p::GreedyPolicy, s)
+    max_reward_ind = mat_to_inertial_inds(p.pomdp.size, Tuple(argmax(p.pomdp.reward)))
+    a = statedir(s.robot, max_reward_ind)
+    #@info "maxR ind: , $max_reward_ind, | , greedy action: $a"
+    return a
 end
 
 function POMDPs.action(p::TargetSearchMDPPolicy, s)
@@ -20,9 +45,6 @@ function POMDPs.action(p::TargetSearchMDPPolicy, s)
 end
 
 function AbstractTrees.children(t::BasicPOMCP.POMCPObsNode)
-    #
-    
-
     return t.tree.children[t.node]
 end
 

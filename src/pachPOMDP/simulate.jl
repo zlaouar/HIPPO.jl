@@ -150,7 +150,8 @@ function simulateHIPPO(sim::HIPPOSimulator)
         #display(belframe)
         sim.display && display(belframe)
         iter += 1
-        println(iter,"- | s: ", s.robot, " | a: ", a, " | sp:", sp.robot, " | r:", r, " | o: ", o)
+        println(iter,"- | s: ", s.robot, " | sbatt: ", s.battery, " | a: ", a, 
+        " | sp_robot:", sp.robot, " | sp_target:", sp.target, " | spbatt: ", sp.battery, " | r:", r, " | o: ", o)
         #println(iter,"- | battery: ", sp.battery, " | dist_to_home: ", dist(sp.robot, msim.robot_init), " | s: ", sp.robot)
         sim.anim && push!(sim.rewardframes, rewardframe)
         sim.anim && push!(sim.belframes, belframe)
