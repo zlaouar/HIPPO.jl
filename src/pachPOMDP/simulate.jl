@@ -128,14 +128,14 @@ function simulateHIPPO(sim::HIPPOSimulator)
         #tree = info[:tree] # maybe set POMCP option tree_in_info = true
         #a_traj = extract_trajectory(root(tree), 5)
         #a = first(a_traj)
-        try 
-            a, info = action_info(sim.planner, b, tree_in_info = true)
-        catch e
+        #try 
+        a, info = action_info(sim.planner, b, tree_in_info = true)
+        #catch e
             #a = :stay
-            @warn "POMCP failed to find an action: ", e
-            push!(history, (s=finalstate, a=a, sp=sp, o=o, r=r, bp=b, info=info))
-            return history, r_total, iter
-        end
+        #    @warn "POMCP failed to find an action: ", e
+        #    push!(history, (s=finalstate, a=a, sp=sp, o=o, r=r, bp=b, info=info))
+        #    return history, r_total, iter
+        #end
         remove_rewards(msim, s.robot) # remove reward at current state
         #display(msim.reward)
         sp, o, r = @gen(:sp,:o,:r)(msim, s, a)
@@ -150,7 +150,7 @@ function simulateHIPPO(sim::HIPPOSimulator)
         #display(belframe)
         sim.display && display(belframe)
         iter += 1
-        println(iter,"- | s: ", s.robot, " | sbatt: ", s.battery, " | a: ", a, 
+        println(iter,"- | s: ", s.robot, " | human: ", s.human_in_fov, " | sbatt: ", s.battery, " | a: ", a, 
         " | sp_robot:", sp.robot, " | sp_target:", sp.target, " | spbatt: ", sp.battery, " | r:", r, " | o: ", o)
         #println(iter,"- | battery: ", sp.battery, " | dist_to_home: ", dist(sp.robot, msim.robot_init), " | s: ", sp.robot)
         sim.anim && push!(sim.rewardframes, rewardframe)

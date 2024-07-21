@@ -24,6 +24,25 @@ function statedir(pos1, pos2)
     end
 end
 
+function cell_list(pos1, pos2)
+    pos1 = collect(pos1)
+    list = []
+    while pos1 != pos2
+        if pos1[1] < pos2[1]
+            pos1[1] += 1
+        elseif pos1[1] > pos2[1]
+            pos1[1] -= 1
+        end
+        if pos1[2] < pos2[2]
+            pos1[2] += 1
+        elseif pos1[2] > pos2[2]
+            pos1[2] -= 1
+        end
+        push!(list, copy(pos1))
+    end    
+    return list
+end
+
 struct TargetSearchMDPPolicy{P} <: Policy
     vi_policy::P
 end
