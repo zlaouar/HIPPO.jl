@@ -8,6 +8,10 @@ using D3Trees
 using JSON, FileIO
 using StaticArrays
 using HIPPO
+using Random
+
+state = Xoshiro(0x5aa1ded317c45a72, 0x6274e82977b27df2, 0x4f74b5bfae714dfa, 0x60af0bc0a1220e51)
+Random.seed!(state)
 
 rewarddist = [-3.08638     1.04508  -38.9812     6.39193    7.2648     5.96755     9.32665   -9.62812   -0.114036    7.38693      3.39033   -5.17863  -12.7841;
 -8.50139     2.3827   -30.2106   -74.7224   -33.9783    -3.63283    -4.73628   -6.19297   -4.34958    -6.13309    -36.2926    -7.35857    0.417866;
@@ -44,7 +48,7 @@ hallway = [80.0 80.0;
 #rewarddist = rewarddist .+ abs(minimum(rewarddist)) .+ 0.01
 rewarddist = abs.(rewarddist)
 mapsize = reverse(size(rewarddist)) #(13,16)
-maxbatt = 1000
+maxbatt = 200
 sinit = UnifiedState([3,1], [10,11], vec(trues(mapsize)), maxbatt, false, :up)#rand(initialstate(msim))
 #sinit = UnifiedState([3,1], [4,6], vec(trues(mapsize)), maxbatt, false, :up) #rand(initialstate(msim))
 
@@ -65,7 +69,7 @@ funcrollout = FORollout(p)
 #mdprollout = FORollout(mdp_policy) # change MDP reward mat to pompdp reward mat
 #solver = POMCPSolver(estimate_value = mdprollout, tree_queries=10000, max_time=0.2, c=5) # mdp policy rollout
 #solver = POMCPSolver(estimate_value = funcrollout, tree_queries=10000, max_time=0.2, c=5) # up rollout
-#solver = POMCPSolver(tree_queries=10_000, max_time=0.2, c=5) # random
+#solver = POMCPSolver(tree_queries=10_000, max_time=0.2, c=100) # random
 solver = POMCPSolver(estimate_value=greedyrollout,tree_queries=10_000, max_time=0.2, c=100) # random
 
 

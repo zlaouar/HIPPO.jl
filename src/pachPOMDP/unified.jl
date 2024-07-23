@@ -36,6 +36,10 @@ const PRIMITIVE_ACTIONS = (:left, :right, :up, :down, :stay, :nw, :ne, :sw, :se)
 
 const ORIENTATIONS = [:left, :right, :up, :down, :nw, :ne, :sw, :se]
 
+function POMDPs.actions(m::UnifiedPOMDP)
+    return PRIMITIVE_ACTIONS
+end
+
 function POMDPs.actions(m::UnifiedPOMDP, b::LeafNodeBelief)
     o = currentobs(b)
     if o == :low
@@ -51,15 +55,19 @@ end
 
 function POMDPs.actions(m::UnifiedPOMDP, b::ParticleCollection)
     # parametrize macro actions initial state and belief
-    current_state = b.particles[1]
-    fov_states = non_cardinal_states_in_fov(m, current_state)
+    robot_state = b.particles[1]
+    fov_states = non_cardinal_states_in_fov(m, robot_state)
     newdict = filter(s -> s[1].target ∈ fov_states, b._probs)
-    isempty(newdict) && @warn "---TARGET NOT IN FOV---" && return PRIMITIVE_ACTIONS
+    if isempty(newdict)
+        @warn "---TARGET NOT IN FOV---"
+        return PRIMITIVE_ACTIONS
+    end
     newdist = SparseCat(keys(newdict), values(newdict))
     states = [Vector(s.target) for s ∈ unique(rand(newdist, m.num_macro_actions(b)))]
     isempty(states) && @warn "---NO AVAILABLE MACRO-ACTIONS---" && return PRIMITIVE_ACTIONS
     #@show "BELIEF MACRO-ACTIONS: ", states
     return (PRIMITIVE_ACTIONS..., states...)
+        
 end
 
 function states_in_fov(m::UnifiedPOMDP, s::UnifiedState)
@@ -182,10 +190,11 @@ function POMDPs.transition(m::TargetSearchPOMDP, s::UnifiedState, a::Symbol)
     
     newrobot = bounce(m, s.robot, actiondir[a])
 
+    human_in_fov = a == :stay ? s.human_in_fov : is_in_fov(m, s.target, newrobot, a)
+
     # TO-DO model float battery loss as a function of distance (remove round())
-    push!(states, UnifiedState(newrobot, s.target, copy(s.visited), s.battery-nominal_battery_loss, false, a))
-    push!(states, UnifiedState(newrobot, s.target, copy(s.visited), s.battery-nominal_battery_loss, true, a))
-    push!(probs, 0.8, 0.2)
+    push!(states, UnifiedState(newrobot, s.target, copy(s.visited), s.battery-nominal_battery_loss, human_in_fov, a))
+    push!(probs, 1.0)
     
     return SparseCat(states, probs)
 
@@ -220,7 +229,7 @@ function POMDPs.transition(m::TargetSearchPOMDP, s::UnifiedState, a::MacroAction
     # TODO: model float battery loss as a function of distance (remove round())
 
     # TODO: human_in_fov should be known from target and orientation
-    human_in_fov = is_in_fov(m, s.target, s.robot, s.orientation)
+    human_in_fov = is_in_fov(m, s.target, s.robot, new_orientation)
 
     battery_loss = round(distance) == 0.0 ? (m.resolution/25) + gather_info_time : round(distance)*(m.resolution/25) + gather_info_time
     push!(states, UnifiedState(newrobot, s.target, copy(s.visited), s.battery-battery_loss, human_in_fov, new_orientation))
@@ -277,24 +286,38 @@ end
 #POMDPs.observation(m::TargetSearchPOMDP, s::UnifiedState, a::Symbol, sp::UnifiedState) = observation(m, a, sp)
 
 function POMDPs.observation(m::TargetSearchPOMDP, a::Union{Symbol,Vector{Int}}, sp::UnifiedState)
-    if proximal(sp, a) 
-        if isa(a, MacroAction)
-            if sp.human_in_fov # not function of action taken
-                return SparseCat(E2E_OBSERVATIONS, [0.01, 0.09, 0.9])
-            else    
-                return SparseCat(E2E_OBSERVATIONS, [0.9, 0.09, 0.01])
-            end
-        else
-            if sp.human_in_fov # not function of action taken
-                return SparseCat(E2E_OBSERVATIONS, [0.1, 0.2, 0.7])
-            else    
-                return SparseCat(E2E_OBSERVATIONS, [0.95, 0.04, 0.01])
-            end
+    # if proximal(sp, a) 
+    #     if isa(a, MacroAction)
+    #         if sp.human_in_fov # not function of action taken
+    #             return SparseCat(E2E_OBSERVATIONS, [0.01, 0.09, 0.9])
+    #         else    
+    #             return SparseCat(E2E_OBSERVATIONS, [0.9, 0.09, 0.01])
+    #         end
+    #     else
+    #         if sp.human_in_fov # not function of action taken
+    #             return SparseCat(E2E_OBSERVATIONS, [0.1, 0.2, 0.7])
+    #         else    
+    #             return SparseCat(E2E_OBSERVATIONS, [0.95, 0.04, 0.01])
+    #         end
+    #     end
+    # else
+    #     return SparseCat(E2E_OBSERVATIONS, [0.9, 0.09, 0.01])
+    # end
+
+    if isa(a, MacroAction)
+        if sp.human_in_fov # not function of action taken
+            return SparseCat(E2E_OBSERVATIONS, [0.01, 0.09, 0.9])
+        else    
+            return SparseCat(E2E_OBSERVATIONS, [0.9, 0.09, 0.01])
         end
     else
-        return SparseCat(E2E_OBSERVATIONS, [0.9, 0.09, 0.01])
+        if sp.human_in_fov # not function of action taken
+            return SparseCat(E2E_OBSERVATIONS, [0.1, 0.2, 0.7])
+        else    
+            return SparseCat(E2E_OBSERVATIONS, [0.95, 0.04, 0.01])
+        end
     end
-
+    
     # if norm(sp.robot-sp.target) <= 2.0
     #     if sp.robot[1]-sp.target[1] >= 2.0 && a == :left 
     #         return SparseCat(OBSERVATIONS, [0.2, 0.8])
@@ -395,4 +418,4 @@ end
 
 POMDPs.isterminal(m::RewardPOMDP, s::UnifiedState) = s.robot == SA[-1,-1]
 
-POMDPs.isterminal(m::TargetSearchPOMDP, s::UnifiedState, target) = s.robot == target
+#POMDPs.isterminal(m::TargetSearchPOMDP, s::UnifiedState, target) = s.robot == target

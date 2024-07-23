@@ -52,10 +52,11 @@ struct GreedyPolicy{P} <: Policy
 end
 
 function POMDPs.action(p::GreedyPolicy, s)
-    max_reward_ind = mat_to_inertial_inds(p.pomdp.size, Tuple(argmax(p.pomdp.reward)))
-    a = statedir(s.robot, max_reward_ind)
-    #@info "maxR ind: , $max_reward_ind, | , greedy action: $a"
-    return a
+    if rand() < 0.5
+        return statedir(s.robot, s.target)
+    else
+        return statedir(s.robot, mat_to_inertial_inds(p.pomdp.size, Tuple(argmax(p.pomdp.reward))))
+    end
 end
 
 function POMDPs.action(p::TargetSearchMDPPolicy, s)
