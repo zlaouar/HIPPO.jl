@@ -270,7 +270,6 @@ function generate_next_action(data, ws_client, pachSim, flightParams; waypoint_p
     nextwp_belief = update(pachSim.up, pachSim.b, a, :next_waypoint)
     BasicPOMCP.action_info(pachSim.planner, nextwp_belief, tree_in_info = true)
     pachSim.b = nextwp_belief
-    @info "nextwp_belief support", unique([state.robot for state in support(nextwp_belief)])
     if waypoint_params.show  && flightParams.flight_mode == "waypoint"##
         #future_nodes,future_opacities,future_parents = get_children_from_node(pachSim.msim,pachSim.b,pachSim.planner._tree,o,pachSim.previous_action;depth=waypoint_params.depth,n_actions=waypoint_params.n_actions)
         future_nodes,future_opacities,future_parents = get_children(pachSim.msim,pachSim.b,pachSim.planner._tree;depth=waypoint_params.depth,n_actions=waypoint_params.n_actions)
