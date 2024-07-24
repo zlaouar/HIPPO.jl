@@ -281,12 +281,6 @@ function generate_next_action(data, ws_client, pachSim, flightParams; waypoint_p
 
         dict_list = []
         for i in eachindex(future_nodes)#[2:end]) #Exclude the point already passed as "NextFlightWaypoint"
-            @show future_parents[i].robot
-            @show future_nodes[i].robot
-            @show sqrt(sum((future_parents[i].robot-future_nodes[i].robot).^2))
-            # if i < length(future_nodes)
-            #     @show future_parents[i+1].robot
-            # end
             lc_str = HIPPO.loctostr([HIPPO.convertinds(pachSim.msim, future_nodes[i].robot)])
             lat,lon,_ = pachSim.location_dict[lc_str[1]]
             par_lc_str = HIPPO.loctostr([HIPPO.convertinds(pachSim.msim, future_parents[i].robot)])
