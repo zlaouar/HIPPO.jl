@@ -1,4 +1,4 @@
-function best_a_node(tree::BasicPOMCP.POMCPTree,index::Int)
+function best_a_node_visits(tree::BasicPOMCP.POMCPTree,index::Int)
     root_actions = tree.children[index]
     max_node = 0
     max_visits = 0
@@ -12,9 +12,29 @@ function best_a_node(tree::BasicPOMCP.POMCPTree,index::Int)
     return max_node, max_visits
 end
 
-function best_a_nodes(tree::BasicPOMCP.POMCPTree,index::Int,n::Int)
+function best_a_node_value(tree::BasicPOMCP.POMCPTree,index::Int)
+    root_actions = tree.children[index]
+    max_node = 0
+    max_visits = -Inf
+    for i in root_actions
+        vis = tree.v[i]
+        if vis > max_visits
+            max_node = i
+            max_visits = vis
+        end
+    end
+    return max_node, max_visits
+end
+
+function best_a_nodes_visits(tree::BasicPOMCP.POMCPTree,index::Int,n::Int)
     root_actions = tree.children[index]
     idxs = partialsortperm(tree.n[root_actions], 1:n, rev=true)
+    return root_actions[idxs], tree.n[root_actions][idxs]
+end
+
+function best_a_nodes_value(tree::BasicPOMCP.POMCPTree,index::Int,n::Int)
+    root_actions = tree.children[index]
+    idxs = partialsortperm(tree.v[root_actions], 1:n, rev=true)
     return root_actions[idxs], tree.n[root_actions][idxs]
 end
 
@@ -23,10 +43,10 @@ function recursive_children(ind,s,tree,pomdp,state_list,opac_list,parent_list,pa
         visits = tree.total_n[ind]
         if visits != 0
             if from_node && d==2
-                ais_new,_ = best_a_nodes(tree,ind,1)
+                ais_new,_ = best_a_nodes_value(tree,ind,1)
                 total_vis = tree.n[ais_new[1]]
             else
-                ais_new,_ = best_a_nodes(tree,ind,n_actions)
+                ais_new,_ = best_a_nodes_value(tree,ind,n_actions)
             end
 
             for ai_new in ais_new
@@ -37,6 +57,8 @@ function recursive_children(ind,s,tree,pomdp,state_list,opac_list,parent_list,pa
                 # end
                 if !isterminal(pomdp, s)
                     sp = @gen(:sp)(pomdp, s, tree.a_labels[ai_new])
+                    spro = HIPPO.bounce(pomdp, s.robot, HIPPO.actiondir[tree.a_labels[ai_new]])
+                    sp = HIPPO.FullState(spro,sp.target,sp.visited,sp.battery)
                     if !isterminal(pomdp, sp)
                         sp_idx = findall(x->x==sp,state_list)
                         prob = tree.n[ai_new]/total_vis #prev_prob*(visits/total_vis)
@@ -76,7 +98,7 @@ function get_children(pomdp::PachPOMDP{S,A,O},b,tree::BasicPOMCP.POMCPTree;depth
     opac_list = Float64[]
     parent_list = S[]
     
-    ai_new,_= best_a_nodes(tree,1,1)
+    ai_new,_= best_a_nodes_value(tree,1,1)
     ai_new = ai_new[1]
     root_n = tree.n[ai_new]
     s = first(support(b))
