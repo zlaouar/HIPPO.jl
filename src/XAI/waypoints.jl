@@ -103,6 +103,43 @@ function get_children(pomdp::PachPOMDP{S,A,O},b,tree::BasicPOMCP.POMCPTree;depth
     root_n = tree.n[ai_new]
     s = first(support(b))
     sp = @gen(:sp)(pomdp, s, tree.a_labels[ai_new])
+    spro = HIPPO.bounce(pomdp, s.robot, HIPPO.actiondir[tree.a_labels[ai_new]])
+    sp = HIPPO.FullState(spro,sp.target,sp.visited,sp.battery)
+    push!(state_list,sp)
+    push!(opac_list,tree.n[ai_new]/root_n)
+    push!(parent_list,s)
+
+    new_inds = Int[]
+    for o in POMDPs.observations(pomdp)
+        idx = get(tree.o_lookup,(ai_new,o),nothing)
+        !isnothing(idx) && push!(new_inds,idx)
+    end
+    # [get(tree.o_lookup,(ai_new,o),nothing) for o in POMDPs.observations(pomdp)]
+    total_vis = max(sum(tree.total_n[new_inds]),1)
+
+    for ind in new_inds
+        recursive_children(ind,sp,tree,pomdp,state_list,opac_list,parent_list,sp,total_vis,depth,2,1.0,n_actions,false)
+    end
+
+    opac_thresh = 0.0
+    for i in eachindex(opac_list)
+        opac_list[i]<opac_thresh ? opac_list[i]=opac_thresh : nothing
+    end
+    opac_list = (opac_list).^0.5
+    return (state_list,opac_list,parent_list)
+end
+
+function get_children(pomdp::PachPOMDP{S,A,O},b,s,tree::BasicPOMCP.POMCPTree;depth=2,n_actions=4) where {S,A,O}
+    state_list = S[]
+    opac_list = Float64[]
+    parent_list = S[]
+    
+    ai_new,_= best_a_nodes_value(tree,1,1)
+    ai_new = ai_new[1]
+    root_n = tree.n[ai_new]
+    sp = @gen(:sp)(pomdp, s, tree.a_labels[ai_new])
+    spro = HIPPO.bounce(pomdp, s.robot, HIPPO.actiondir[tree.a_labels[ai_new]])
+    sp = HIPPO.FullState(spro,sp.target,sp.visited,sp.battery)
     push!(state_list,sp)
     push!(opac_list,tree.n[ai_new]/root_n)
     push!(parent_list,s)

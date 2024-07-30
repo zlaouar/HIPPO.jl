@@ -145,7 +145,6 @@ function update_reward(data, ws_client, pachSim, initialized, flightParams; wayp
         sp = HIPPO.FullState(spro,sp.target,sp.visited,sp.battery)
         loc = HIPPO.loctostr([HIPPO.convertinds(pachSim.msim, sp.robot)])
         @info "s: ", pachSim.sinit.robot, " | sp: ", sp.robot , " | loc: ", loc, " | a: ", a 
-        pachSim.sinit = sp
 
         response = location_dict[loc[1]]
         commanded_alt = response[3] + pachSim.flight_params.desired_agl_alt
@@ -161,7 +160,7 @@ function update_reward(data, ws_client, pachSim, initialized, flightParams; wayp
                                                                                     "dwellTime" => 5000.0))))
         if waypoint_params.show && flightParams.flight_mode == "waypoint" ##
             tree = a_info[:tree]
-            future_nodes,future_opacities,future_parents = get_children(pachSim.msim,pachSim.b,tree;depth=waypoint_params.depth,n_actions=waypoint_params.n_actions)
+            future_nodes,future_opacities,future_parents = get_children(pachSim.msim,pachSim.b,pachSim.sinit,tree;depth=waypoint_params.depth,n_actions=waypoint_params.n_actions)
             dict_list = []
             for i in eachindex(future_nodes)#[2:end]) #Exclude the point already passed as "NextFlightWaypoint"
                 lc_str = HIPPO.loctostr([HIPPO.convertinds(pachSim.msim, future_nodes[i].robot)])
@@ -182,6 +181,7 @@ function update_reward(data, ws_client, pachSim, initialized, flightParams; wayp
         nextwp_belief = update(pachSim.up, pachSim.b, a, :next_waypoint)
         BasicPOMCP.action_info(pachSim.planner, nextwp_belief, tree_in_info = true)
         pachSim.b = nextwp_belief
+        pachSim.sinit = sp
     end
 
     return pachSim
@@ -272,7 +272,7 @@ function generate_next_action(data, ws_client, pachSim, flightParams; waypoint_p
     pachSim.b = nextwp_belief
     if waypoint_params.show  && flightParams.flight_mode == "waypoint"##
         #future_nodes,future_opacities,future_parents = get_children_from_node(pachSim.msim,pachSim.b,pachSim.planner._tree,o,pachSim.previous_action;depth=waypoint_params.depth,n_actions=waypoint_params.n_actions)
-        future_nodes,future_opacities,future_parents = get_children(pachSim.msim,pachSim.b,pachSim.planner._tree;depth=waypoint_params.depth,n_actions=waypoint_params.n_actions)
+        future_nodes,future_opacities,future_parents = get_children(pachSim.msim,pachSim.b,sp,pachSim.planner._tree;depth=waypoint_params.depth,n_actions=waypoint_params.n_actions)
         #Add selected action/waypoint from previous tree to points to render
         pushfirst!(future_nodes,sp)
         pushfirst!(future_opacities,maximum(future_opacities))
