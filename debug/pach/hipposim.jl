@@ -140,10 +140,11 @@ function update_reward(data, ws_client, pachSim, initialized, flightParams; wayp
         a, a_info = BasicPOMCP.action_info(pachSim.planner, pachSim.b)
         # inchrome(D3Tree(a_info[:tree]))
         pachSim.previous_action = a
-        sp, _, _ = @gen(:sp,:o,:r)(pachSim.msim, pachSim.sinit, a)
+        sp = @gen(:sp)(pachSim.msim, pachSim.sinit, a)
+        spro = HIPPO.bounce(pachSim.msim, pachSim.sinit.robot, HIPPO.actiondir[a])
+        sp = HIPPO.FullState(spro,sp.target,sp.visited,sp.battery)
         loc = HIPPO.loctostr([HIPPO.convertinds(pachSim.msim, sp.robot)])
         @info "s: ", pachSim.sinit.robot, " | sp: ", sp.robot , " | loc: ", loc, " | a: ", a 
-        pachSim.sinit = sp
 
         response = location_dict[loc[1]]
         commanded_alt = response[3] + pachSim.flight_params.desired_agl_alt
@@ -159,7 +160,7 @@ function update_reward(data, ws_client, pachSim, initialized, flightParams; wayp
                                                                                     "dwellTime" => 5000.0))))
         if waypoint_params.show && flightParams.flight_mode == "waypoint" ##
             tree = a_info[:tree]
-            future_nodes,future_opacities,future_parents = get_children(pachSim.msim,pachSim.b,tree;depth=waypoint_params.depth,n_actions=waypoint_params.n_actions)
+            future_nodes,future_opacities,future_parents = get_children(pachSim.msim,pachSim.b,pachSim.sinit,tree;depth=waypoint_params.depth,n_actions=waypoint_params.n_actions)
             dict_list = []
             for i in eachindex(future_nodes)#[2:end]) #Exclude the point already passed as "NextFlightWaypoint"
                 lc_str = HIPPO.loctostr([HIPPO.convertinds(pachSim.msim, future_nodes[i].robot)])
@@ -180,6 +181,7 @@ function update_reward(data, ws_client, pachSim, initialized, flightParams; wayp
         nextwp_belief = update(pachSim.up, pachSim.b, a, :next_waypoint)
         BasicPOMCP.action_info(pachSim.planner, nextwp_belief, tree_in_info = true)
         pachSim.b = nextwp_belief
+        pachSim.sinit = sp
     end
 
     return pachSim
@@ -207,7 +209,7 @@ function best_action(t::BasicPOMCP.POMCPTree)
     best_v = t.v[best_node]
     @assert !isnan(best_v)
     for node in t.children[h][2:end]
-        if t.v[node] >= best_v
+        if t.v[node] > best_v
             best_v = t.v[node]
             best_node = node
         end
@@ -245,9 +247,11 @@ function generate_next_action(data, ws_client, pachSim, flightParams; waypoint_p
     
     # hnode = BasicPOMCP.POMCPObsNode(pachSim.planner._tree, 1)
     # a = next_action(hnode, previous_action)
-    sp, _, _ = @gen(:sp,:o,:r)(pachSim.msim, pachSim.sinit, a)
+    sp = @gen(:sp)(pachSim.msim, pachSim.sinit, a)
+    spro = HIPPO.bounce(pachSim.msim, pachSim.sinit.robot, HIPPO.actiondir[a])
+    sp = HIPPO.FullState(spro,sp.target,sp.visited,sp.battery)
     loc = HIPPO.loctostr([HIPPO.convertinds(pachSim.msim, sp.robot)])
-    @info "s: ", pachSim.sinit.robot, " | sp: ", sp.robot , " | loc: ", loc, " | a: ", a, "prev a: ", previous_action, " | batt: ", sp.battery
+    @info "s: ", pachSim.sinit.robot, " | sp: ", sp.robot , " | loc: ", loc, " | a: ", a, "prev a: ", previous_action, "support(b)[1].robot:" support(pachSim.b)[1].robot
     response = pachSim.location_dict[loc[1]]
 
     commanded_alt = response[3] + pachSim.flight_params.desired_agl_alt
@@ -265,10 +269,14 @@ function generate_next_action(data, ws_client, pachSim, flightParams; waypoint_p
     #Plan for reaching next waypoint
     nextwp_belief = update(pachSim.up, pachSim.b, a, :next_waypoint)
     BasicPOMCP.action_info(pachSim.planner, nextwp_belief, tree_in_info = true)
-
+    pachSim.b = nextwp_belief
     if waypoint_params.show  && flightParams.flight_mode == "waypoint"##
         #future_nodes,future_opacities,future_parents = get_children_from_node(pachSim.msim,pachSim.b,pachSim.planner._tree,o,pachSim.previous_action;depth=waypoint_params.depth,n_actions=waypoint_params.n_actions)
-        future_nodes,future_opacities,future_parents = get_children(pachSim.msim,pachSim.b,pachSim.planner._tree;depth=waypoint_params.depth,n_actions=waypoint_params.n_actions)
+        future_nodes,future_opacities,future_parents = get_children(pachSim.msim,pachSim.b,sp,pachSim.planner._tree;depth=waypoint_params.depth,n_actions=waypoint_params.n_actions)
+        #Add selected action/waypoint from previous tree to points to render
+        pushfirst!(future_nodes,sp)
+        pushfirst!(future_opacities,maximum(future_opacities))
+        pushfirst!(future_parents,pachSim.sinit)
 
         dict_list = []
         for i in eachindex(future_nodes)#[2:end]) #Exclude the point already passed as "NextFlightWaypoint"
@@ -283,8 +291,6 @@ function generate_next_action(data, ws_client, pachSim, flightParams; waypoint_p
         # @info [future_parents[i].robot => future_nodes[i].robot for i in eachindex(future_nodes)]
         # @info dict_list
     end
-
-    pachSim.b = nextwp_belief
 
     pachSim.previous_action = a
     pachSim.sinit = sp
