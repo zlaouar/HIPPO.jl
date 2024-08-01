@@ -122,6 +122,7 @@ function simulateHIPPO(sim::HIPPOSimulator)
     history = NamedTuple[]
     (sim.anim || sim.display) && (belframe = render(msim, (sp=s, bp=bp)))
     sim.display && display(belframe)
+    sim.logging && push!(history, (s=s, a=a, sp=s, bp=bp, info=info))
     while !isterminal(msim, s) && iter < max_iter
         tm = time()
         #_, info = action_info(sim.planner, sim.b, tree_in_info = true)
@@ -143,7 +144,7 @@ function simulateHIPPO(sim::HIPPOSimulator)
             println("----COLLISION----")
         end
         r_total += d*r
-        d *= discount(msim)
+        d *= discount_factor(msim)
         bp = update(sim.up, b, a, o)
         (sim.anim || sim.display) && (belframe = render(msim, (sp=sp, bp=bp)))
         (sim.anim || sim.display) && (rewardframe = render(msim, (sp=sp, bp=bp), true))

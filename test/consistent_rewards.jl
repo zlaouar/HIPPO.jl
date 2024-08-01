@@ -2,20 +2,14 @@ using Pkg
 
 Pkg.activate(".")
 
-using POMDPs
 using BasicPOMCP
 using POMDPTools
-using DiscreteValueIteration
-using Profile
 using ParticleFilters
-using D3Trees
-using JSON, FileIO
 using StaticArrays
 using HIPPO
-using Random
+using Test
 
-# state = Xoshiro(0x5aa1ded317c45a72, 0x6274e82977b27df2, 0x4f74b5bfae714dfa, 0x60af0bc0a1220e51)
-# Random.seed!(state)
+Pkg.activate("test")
 
 rewarddist = [-3.08638     1.04508  -38.9812     6.39193    7.2648     5.96755     9.32665   -9.62812   -0.114036    7.38693      3.39033   -5.17863  -12.7841;
 -8.50139     2.3827   -30.2106   -74.7224   -33.9783    -3.63283    -4.73628   -6.19297   -4.34958    -6.13309    -36.2926    -7.35857    0.417866;
@@ -33,69 +27,45 @@ rewarddist = [-3.08638     1.04508  -38.9812     6.39193    7.2648     5.96755  
 4.5434      1.84961    5.05996    1.71024  -16.2119   -70.8986    -68.3217   -42.1496    13.7424     14.7261       1.78606    8.92938    0.35768;
 5.93137     2.38837    5.00692    2.17936   -6.58787  -48.8138    -27.0167   -10.6387     1.24938    21.9765       4.26369    6.6729     2.1039;
 6.35598     1.425      2.92712    4.96801   13.0207    -0.589068  -15.8313    10.7642    16.1614     15.3144       3.59158    7.8918     9.1199]
-smallreward = [800.0 2.0 2.0 -20.0;
-                2.0 2.0 2.0 2.0;
-                2.0 2.0 2.0 2.0;
-                2.0 2.0 2.0 2.0;
-                2.0 2.0 2.0 2.0;
-                2.0 2.0 2.0 2.0]
-hallway = [80.0 80.0;
-           50.0 50.0;
-           20.0 20.0;
-           -100.0 -100.0;
-           0.0 0.0;
-           0.0 0.0;
-           0.0 0.0]
-#rewarddist = smallreward
-#rewarddist = hallway
-#rewarddist = load("rewardmat.jld2","rewarddist")
-#rewarddist = rewarddist .+ abs(minimum(rewarddist)) .+ 0.01
+
 rewarddist = abs.(rewarddist)
-mapsize = reverse(size(rewarddist)) #(13,16)
+mapsize = reverse(size(rewarddist))
 maxbatt = 200
-sinit = UnifiedState([3,1], [10,11], vec(trues(mapsize)), maxbatt, false, :up)#rand(initialstate(msim))
-#sinit = UnifiedState([3,1], [4,6], vec(trues(mapsize)), maxbatt, false, :up) #rand(initialstate(msim))
-
-#mapsize = (13,16)
-#sinit = TSState([10,1],[13,16],trues(prod(mapsize)))#rand(initialstate(msim))
-#mapsize = (4,4)
-#sinit = TSState([1,1],[4,4],trues(prod(mapsize)))#rand(initialstate(msim))
-
+sinit = UnifiedState([3,1], [10,11], vec(trues(mapsize)), maxbatt, false, :up)
 
 pomdp = UnifiedPOMDP(sinit, 
                     size=mapsize, 
                     rewarddist=rewarddist, 
-                    maxbatt=maxbatt,
-                    options=Dict(:observation_model=>:falco),
-                    rollout_depth=maxbatt)
+                    maxbatt=maxbatt, options=Dict(:observation_model=>:falco))
 
 p = FunctionPolicy(FixedPolicy())
 greedyrollout = FORollout(GreedyPolicy(pomdp))
 funcrollout = FORollout(p)
-#mdprollout = FORollout(mdp_policy) # change MDP reward mat to pompdp reward mat
-#solver = POMCPSolver(estimate_value = mdprollout, tree_queries=10000, max_time=0.2, c=5) # mdp policy rollout
-#solver = POMCPSolver(estimate_value = funcrollout, tree_queries=10000, max_time=0.2, c=5) # up rollout
-#solver = POMCPSolver(tree_queries=10_000, max_time=0.2, c=100) # random
-solver = POMCPSolver(estimate_value=greedyrollout,tree_queries=10_000, max_time=0.2, c=100, max_depth=100) # random
-
-
+solver = POMCPSolver(estimate_value=greedyrollout,tree_queries=10_000, max_time=0.2, c=100)
 planner = solve(solver,pomdp)
-
-
-b0 = initialstate(pomdp)
 N = 10000
 particle_up = BootstrapFilter(pomdp, N)
-particle_b = initialize_belief(particle_up, b0)
-particle_b._probs = ParticleFilters.probdict(particle_b)
+particle_b = initialize_belief(particle_up, initialstate(pomdp))
 
 
-#a, info = action_info(planner, Deterministic(FullState([13,4],mapsize,vec(trues(mapsize)), maxbatt)), tree_in_info=true)
-#inchrome(D3Tree(info[:tree], init_expand=3))
+@testset "compare rewards from macro and primitive actions" begin
+    function compare_actions(m, macro_action)
+        s = sinit
+        sp = @gen(:sp)(m, s, a) # rand(transition(m, s, macro_action))
+        r_macro = @gen(:r)(m, s, a) # reward(m, s, macro_action, sp)
 
-hipposim = HIPPOSimulator(msim=pomdp, planner=planner, up=particle_up, b=particle_b, sinit=sinit, dt=1/10, max_iter=maxbatt, display=true)
-hist, r_total = simulateHIPPO(hipposim)
+        s = sinit
+        r_primitive = 0.0
+        primitive_actions = HIPPO.primitive_actions_from_macro(s.robot, sp.robot)
+        for a ∈ primitive_actions
+            sp = @gen(:sp)(m, s, a)
+            r_primitive += @gen(:r)(m, s, a)
+            s = sp
+        end
 
-#renderVIPolicy(mdp_policy, basic_pomdp, sinitBasic) # render MDP policy
+        return r_macro, r_primitive
+    end
 
-
-println("Total Reward: ", r_total)
+    r_macro, r_primitive = compare_actions(pomdp, collect(mapsize))
+    @test r_macro ≈ r_primitive
+end

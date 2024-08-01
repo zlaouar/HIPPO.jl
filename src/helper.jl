@@ -6,6 +6,12 @@ function svgstogif(frames)
     end
 end
 
+function BasicPOMCP.estimate_value(estimator::Union{BasicPOMCP.SolvedPORollout,BasicPOMCP.SolvedFORollout}, pomdp::UnifiedPOMDP, start_state, h::BeliefNode, steps::Int)
+    effective_horizon = pomdp.maxbatt-start_state.battery + 1
+    steps_to_go = pomdp.rollout_depth - effective_horizon
+    BasicPOMCP.rollout(estimator, pomdp, start_state, h, steps_to_go)
+end
+
 struct FixedPolicy <: Function end
 
 (::FixedPolicy)(s) = :up
@@ -43,6 +49,16 @@ function cell_list(pos1, pos2)
     return list
 end
 
+function primitive_actions_from_macro(current_pos, macro_action)
+    actions = []
+    cells = cell_list(current_pos, macro_action)
+    push!(actions, orientdir[cells[1] - current_pos])
+    for i ∈ 1:length(cells)-1
+        push!(actions, orientdir[cells[i+1] - cells[i]])
+    end
+    return actions
+end
+
 struct TargetSearchMDPPolicy{P} <: Policy
     vi_policy::P
 end
@@ -57,6 +73,7 @@ function POMDPs.action(p::GreedyPolicy, s)
     else
         return statedir(s.robot, mat_to_inertial_inds(p.pomdp.size, Tuple(argmax(p.pomdp.reward))))
     end
+    # return statedir(s.robot, s.target)
 end
 
 function POMDPs.action(p::TargetSearchMDPPolicy, s)

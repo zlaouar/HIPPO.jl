@@ -26,13 +26,17 @@ function POMDPs.initialstate(m::RewardPOMDP)
     return POMDPTools.Uniform(RewardState(m.robot_init, SVector(x, y), trues(prod(m.size))) for x in 1:m.size[1], y in 1:m.size[2])
 end
 
-POMDPs.discount(m::TargetSearchPOMDP) = 0.95 
+POMDPs.discount(m::TargetSearchPOMDP) = 1.0
+
+discount_factor(m::UnifiedPOMDP) = 0.95
 
 """
     actions
 """
 
 const PRIMITIVE_ACTIONS = (:left, :right, :up, :down, :stay, :nw, :ne, :sw, :se)
+
+const FULL_ACTIONS = (:left, :right, :up, :down, :stay, :nw, :ne, :sw, :se, :investigate)
 
 const ORIENTATIONS = [:left, :right, :up, :down, :nw, :ne, :sw, :se]
 
@@ -47,7 +51,9 @@ function POMDPs.actions(m::UnifiedPOMDP, b::LeafNodeBelief)
     elseif o == :medium 
         return PRIMITIVE_ACTIONS
     elseif o == :high
-        return (PRIMITIVE_ACTIONS..., unique(Vector.(rand(non_cardinal_states_in_fov(m, b.sp), m.num_macro_actions(b))))...)
+        #return (PRIMITIVE_ACTIONS..., unique(Vector.(rand(non_cardinal_states_in_fov(m, b.sp), m.num_macro_actions(b))))...)
+        
+        return PRIMITIVE_ACTIONS
     end
     return PRIMITIVE_ACTIONS
 
@@ -216,6 +222,7 @@ function POMDPs.transition(m::TargetSearchPOMDP, s::UnifiedState, a::MacroAction
     traversed_cells = cell_list(s.robot, a)
     for cell in traversed_cells[1:end-1]
         s.visited[LinearIndices((1:m.size[1], 1:m.size[2]))[cell...]] = 0
+        # TODO: check for termination
     end
     
     new_orientation = orientdir[traversed_cells[end] - traversed_cells[end-1]]
@@ -353,6 +360,8 @@ function POMDPs.reward(m::TargetSearchPOMDP, s::UnifiedState, a::Symbol, sp::Uni
         return 0.0
     end
     
+    γ_horizon = discount_factor(m)^(m.maxbatt-sp.battery) 
+
     reward_running = -1.0
     reward_target = 0.0
     reward_nogo = 0.0
@@ -362,6 +371,7 @@ function POMDPs.reward(m::TargetSearchPOMDP, s::UnifiedState, a::Symbol, sp::Uni
         reward_target = 1000.0 
         return reward_running + reward_target
     end
+
     if sp.robot ∈ m.obstacles
         reward_nogo = typemin(Float64)
     end
@@ -370,7 +380,7 @@ function POMDPs.reward(m::TargetSearchPOMDP, s::UnifiedState, a::Symbol, sp::Uni
     spind = LinearIndices((1:m.size[1], 1:m.size[2]))[sp.robot...]
 
     if !isempty(m.reward) && sp.robot != SA[-1,-1]
-        return reward_running + reward_target + m.reward[inds...]*sp.visited[spind] + reward_nogo
+        return γ_horizon * (reward_running + reward_target + m.reward[inds...]*sp.visited[spind] + reward_nogo)
     end
 end
 
@@ -378,25 +388,34 @@ function POMDPs.reward(m::TargetSearchPOMDP, s::UnifiedState, a::MacroAction, sp
     if isterminal(m, sp) # IS THIS NECCESSARY?
         return 0.0
     end
-
+    
     rtot = 0.0
     cells = cell_list(s.robot, a)
 
     reward_running = -1.0
     reward_target = 0.0
     reward_nogo = 0.0
+    #reward_investigate = 0.0
 
     if sp.robot ∈ m.obstacles
         reward_nogo = typemin(Float64)
     end
-    
-    for cell in cells
-        inds = rewardinds(m, cell)
-        spind = LinearIndices((1:m.size[1], 1:m.size[2]))[cell...]
-        reward_target = isequal(cell, sp.target) ? 1000.0 : 0.0
-        rtot += reward_running + reward_target + m.reward[inds...]*sp.visited[spind] + reward_nogo # THIS DOESN'T CHECK FOR TERMINAL STATE
+
+    if sp.human_in_fov
+        reward_investigate = 1000.0
+    else
+        reward_investigate = -1000.0
     end
-    return rtot * discount(m)^length(cells)
+
+    # TODO: CHECK FOR TERMINAL STATE
+    for i ∈ eachindex(cells)
+        #inds = rewardinds(m, cells[i])
+        #spind = LinearIndices((1:m.size[1], 1:m.size[2]))[cells[i]...]
+        reward_target = isequal(cells[i], sp.target) ? 1000.0 : 0.0
+        rtot += discount_factor(m)^(m.maxbatt-(s.battery-i)) * (reward_running + reward_target + reward_nogo + reward_investigate)
+    end
+
+    return rtot #rtot * discount(m)^length(cells)
 end
 
 function rewardinds(m, pos::Union{SVector{2, Int64},Vector{Int}})
@@ -413,7 +432,7 @@ end
 
 function POMDPs.isterminal(m::TargetSearchPOMDP, s::UnifiedState)
     required_batt = dist(s.robot, m.robot_init)
-    return s.battery - required_batt <= 1 || s.robot == s.target#SA[-1,-1] 
+    return s.battery - required_batt <= 1 || s.robot == SA[-1,-1] # s.target
 end
 
 POMDPs.isterminal(m::RewardPOMDP, s::UnifiedState) = s.robot == SA[-1,-1]
