@@ -129,7 +129,8 @@ function get_children(pomdp::PachPOMDP,b,tree::BasicPOMCP.POMCPTree;depth=2,n_ac
     return (state_list,opac_list,parent_list)
 end
 
-function get_children(pomdp::PachPOMDP{S,A,O},b,s,tree::BasicPOMCP.POMCPTree;depth=2,n_actions=4) where {S,A,O}
+function get_children(pomdp::TargetSearchPOMDP,b,s,tree::BasicPOMCP.POMCPTree;depth=2,n_actions=4)
+    S = statetype(pomdp)
     state_list = S[]
     opac_list = Float64[]
     parent_list = S[]
@@ -166,6 +167,7 @@ end
 
 function get_children_from_node(pomdp::PachPOMDP,b,tree::BasicPOMCP.POMCPTree,obs,aprev;depth=2,n_actions=4)
     #Borrow from next_action?
+    S = statetype(pomdp)
     state_list = S[]
     opac_list = Float64[]
     parent_list = S[]

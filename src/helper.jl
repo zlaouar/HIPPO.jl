@@ -68,7 +68,7 @@ struct GreedyPolicy{P} <: Policy
 end
 
 function POMDPs.action(p::GreedyPolicy, s)
-    if rand() < 0.5
+    if rand() < 1.0
         return statedir(s.robot, s.target)
     else
         return statedir(s.robot, mat_to_inertial_inds(p.pomdp.size, Tuple(argmax(p.pomdp.reward))))

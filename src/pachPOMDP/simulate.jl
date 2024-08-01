@@ -21,11 +21,11 @@ mutable struct FlightParams
     home_location::Vector{Float64}
 end
 mutable struct PachSimulator 
-    msim::PachPOMDP
+    msim::TargetSearchPOMDP
     planner::POMCPPlanner
     up::BasicParticleFilter
     b::ParticleCollection
-    sinit::FullState
+    sinit::TSState
     location_dict::Dict{String, Vector{Float64}}
     previous_action::Symbol
     waypointID::Int

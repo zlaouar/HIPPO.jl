@@ -86,8 +86,6 @@ b0 = initialstate(pomdp)
 N = 10000
 particle_up = BootstrapFilter(pomdp, N)
 particle_b = initialize_belief(particle_up, b0)
-particle_b._probs = ParticleFilters.probdict(particle_b)
-
 
 #a, info = action_info(planner, Deterministic(FullState([13,4],mapsize,vec(trues(mapsize)), maxbatt)), tree_in_info=true)
 #inchrome(D3Tree(info[:tree], init_expand=3))

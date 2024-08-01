@@ -34,11 +34,9 @@ discount_factor(m::UnifiedPOMDP) = 0.95
     actions
 """
 
-const PRIMITIVE_ACTIONS = (:left, :right, :up, :down, :stay, :nw, :ne, :sw, :se)
+const PRIMITIVE_ACTIONS = (:left, :right, :up, :down, :nw, :ne, :sw, :se)
 
-const FULL_ACTIONS = (:left, :right, :up, :down, :stay, :nw, :ne, :sw, :se, :investigate)
-
-const ORIENTATIONS = [:left, :right, :up, :down, :nw, :ne, :sw, :se]
+const FULL_ACTIONS = (:left, :right, :up, :down, :nw, :ne, :sw, :se, :investigate)
 
 function POMDPs.actions(m::UnifiedPOMDP)
     return PRIMITIVE_ACTIONS
@@ -63,7 +61,7 @@ function POMDPs.actions(m::UnifiedPOMDP, b::ParticleCollection)
     # parametrize macro actions initial state and belief
     robot_state = b.particles[1]
     fov_states = non_cardinal_states_in_fov(m, robot_state)
-    newdict = filter(s -> s[1].target ∈ fov_states, b._probs)
+    newdict = filter(s -> s[1].target ∈ fov_states, ParticleFilters.probdict(b))
     if isempty(newdict)
         @warn "---TARGET NOT IN FOV---"
         return PRIMITIVE_ACTIONS
