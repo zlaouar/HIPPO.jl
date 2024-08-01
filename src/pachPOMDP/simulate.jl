@@ -122,20 +122,21 @@ function simulateHIPPO(sim::HIPPOSimulator)
     history = NamedTuple[]
     (sim.anim || sim.display) && (belframe = render(msim, (sp=s, bp=bp)))
     sim.display && display(belframe)
+    sim.logging && push!(history, (s=s, a=a, sp=s, bp=bp, info=info))
     while !isterminal(msim, s) && iter < max_iter
         tm = time()
         #_, info = action_info(sim.planner, sim.b, tree_in_info = true)
         #tree = info[:tree] # maybe set POMCP option tree_in_info = true
         #a_traj = extract_trajectory(root(tree), 5)
         #a = first(a_traj)
-        try 
-            a, info = action_info(sim.planner, b, tree_in_info = true)
-        catch e
+        #try 
+        a, info = action_info(sim.planner, b, tree_in_info = true)
+        #catch e
             #a = :stay
-            @warn "POMCP failed to find an action: ", e
-            push!(history, (s=finalstate, a=a, sp=sp, o=o, r=r, bp=b, info=info))
-            return history, r_total, iter
-        end
+        #    @warn "POMCP failed to find an action: ", e
+        #    push!(history, (s=finalstate, a=a, sp=sp, o=o, r=r, bp=b, info=info))
+        #    return history, r_total, iter
+        #end
         remove_rewards(msim, s.robot) # remove reward at current state
         #display(msim.reward)
         sp, o, r = @gen(:sp,:o,:r)(msim, s, a)
@@ -143,19 +144,19 @@ function simulateHIPPO(sim::HIPPOSimulator)
             println("----COLLISION----")
         end
         r_total += d*r
-        d *= discount(msim)
+        d *= discount_factor(msim)
         bp = update(sim.up, b, a, o)
         (sim.anim || sim.display) && (belframe = render(msim, (sp=sp, bp=bp)))
         (sim.anim || sim.display) && (rewardframe = render(msim, (sp=sp, bp=bp), true))
         #display(belframe)
         sim.display && display(belframe)
         iter += 1
-        println(iter,"- | s: ", s.robot, " | sbatt: ", s.battery, " | a: ", a, 
+        println(iter,"- | s: ", s.robot, " | human: ", s.human_in_fov, " | orient: ", s.orientation, " | sbatt: ", s.battery, " | a: ", a, 
         " | sp_robot:", sp.robot, " | sp_target:", sp.target, " | spbatt: ", sp.battery, " | r:", r, " | o: ", o)
         #println(iter,"- | battery: ", sp.battery, " | dist_to_home: ", dist(sp.robot, msim.robot_init), " | s: ", sp.robot)
         sim.anim && push!(sim.rewardframes, rewardframe)
         sim.anim && push!(sim.belframes, belframe)
-        sim.logging && push!(history, (s=s, a=a, sp=sp, o=o, r=r, bp=b, info=info))
+        sim.logging && push!(history, (s=s, a=a, sp=sp, o=o, r=r, bp=bp, info=info))
         #sim.logging && push!(history, (s=s,a=a))
         finalstate = s
         s = sp

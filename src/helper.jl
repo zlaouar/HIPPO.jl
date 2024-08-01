@@ -6,6 +6,12 @@ function svgstogif(frames)
     end
 end
 
+function BasicPOMCP.estimate_value(estimator::Union{BasicPOMCP.SolvedPORollout,BasicPOMCP.SolvedFORollout}, pomdp::UnifiedPOMDP, start_state, h::BeliefNode, steps::Int)
+    effective_horizon = pomdp.maxbatt-start_state.battery + 1
+    steps_to_go = pomdp.rollout_depth - effective_horizon
+    BasicPOMCP.rollout(estimator, pomdp, start_state, h, steps_to_go)
+end
+
 struct FixedPolicy <: Function end
 
 (::FixedPolicy)(s) = :up
@@ -24,6 +30,35 @@ function statedir(pos1, pos2)
     end
 end
 
+function cell_list(pos1, pos2)
+    pos1 = collect(pos1)
+    list = []
+    while pos1 != pos2
+        if pos1[1] < pos2[1]
+            pos1[1] += 1
+        elseif pos1[1] > pos2[1]
+            pos1[1] -= 1
+        end
+        if pos1[2] < pos2[2]
+            pos1[2] += 1
+        elseif pos1[2] > pos2[2]
+            pos1[2] -= 1
+        end
+        push!(list, copy(pos1))
+    end    
+    return list
+end
+
+function primitive_actions_from_macro(current_pos, macro_action)
+    actions = []
+    cells = cell_list(current_pos, macro_action)
+    push!(actions, orientdir[cells[1] - current_pos])
+    for i ∈ 1:length(cells)-1
+        push!(actions, orientdir[cells[i+1] - cells[i]])
+    end
+    return actions
+end
+
 struct TargetSearchMDPPolicy{P} <: Policy
     vi_policy::P
 end
@@ -33,10 +68,12 @@ struct GreedyPolicy{P} <: Policy
 end
 
 function POMDPs.action(p::GreedyPolicy, s)
-    max_reward_ind = mat_to_inertial_inds(p.pomdp.size, Tuple(argmax(p.pomdp.reward)))
-    a = statedir(s.robot, max_reward_ind)
-    #@info "maxR ind: , $max_reward_ind, | , greedy action: $a"
-    return a
+    if rand() < 0.5
+        return statedir(s.robot, s.target)
+    else
+        return statedir(s.robot, mat_to_inertial_inds(p.pomdp.size, Tuple(argmax(p.pomdp.reward))))
+    end
+    # return statedir(s.robot, s.target)
 end
 
 function POMDPs.action(p::TargetSearchMDPPolicy, s)

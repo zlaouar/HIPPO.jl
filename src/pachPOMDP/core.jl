@@ -1,4 +1,6 @@
 abstract type TSState end
+abstract type PachTemplatePOMDP end
+abstract type TargetSearchPOMDP{S,A,O}  <: POMDP{S,A,O} end
 
 struct BasicState <: TSState
     robot::SVector{2, Int}
@@ -24,8 +26,14 @@ struct FullState <: TSState
     battery::Int
 end
 
-abstract type PachTemplatePOMDP end
-abstract type TargetSearchPOMDP{S,A,O}  <: POMDP{S,A,O} end
+struct UnifiedState <: TSState
+    robot::SVector{2, Int}
+    target::SVector{2, Int}
+    visited::BitVector
+    battery::Int
+    human_in_fov::Bool
+    orientation::Symbol
+end
 
 
 mutable struct BasicPOMDP <: TargetSearchPOMDP{TSState, Symbol, BitArray{1}}
@@ -68,7 +76,7 @@ mutable struct FullPOMDP <: TargetSearchPOMDP{TSState, Symbol, BitArray{1}}
     maxbatt::Int
 end
 
-mutable struct PachPOMDP{S,A,O} <: TargetSearchPOMDP{S, A, O}
+mutable struct PachPOMDP{O} <: TargetSearchPOMDP{TSState, Symbol, O}
     size::SVector{2, Int}
     obstacles::Vector{SVector{}}
     robot_init::SVector{2, Int}
@@ -80,6 +88,22 @@ mutable struct PachPOMDP{S,A,O} <: TargetSearchPOMDP{S, A, O}
     resolution::Int
 end
 
+mutable struct UnifiedPOMDP{O, F<:Function} <: TargetSearchPOMDP{TSState, Symbol, O}
+    size::SVector{2, Int}
+    obstacles::Vector{SVector{}}
+    robot_init::SVector{2, Int}
+    tprob::Float64
+    targetloc::SVector{2, Int}
+    rois::Dict{Vector{Int64}, Float64}
+    reward::Matrix{Float64}
+    maxbatt::Int
+    resolution::Int
+    num_macro_actions::F
+    initial_orientation::Symbol
+    fov_lookup::Dict{Tuple{Int, Int, Symbol}, Vector{Vector{Int}}}
+    rollout_depth::Int
+end
+
 function obs_type(options)
     if options[:observation_model] == :falco
         return Symbol
@@ -88,7 +112,7 @@ function obs_type(options)
     end
 end
 
-function create_target_search_pomdp(sinit::FullState; 
+function create_target_search_pomdp(sinit::TSState; 
                                     roi_points=Dict(), 
                                     size=(10,10), 
                                     rewarddist=Array{Float64}(undef, 0, 0),
@@ -102,9 +126,34 @@ function create_target_search_pomdp(sinit::FullState;
     targetloc = sinit.target
     rois = roi_points
 
-    PachPOMDP{TSState, Symbol, obs_type(options)}(size, obstacles, robot_init, tprob, 
+    PachPOMDP{obs_type(options)}(size, obstacles, robot_init, tprob, 
                                                 targetloc, rois, copy(rewarddist), 
                                                 maxbatt, resolution)
+end
+
+function UnifiedPOMDP(sinit::TSState; 
+        roi_points=Dict(), 
+        size=(10,10), 
+        rewarddist=Array{Float64}(undef, 0, 0),
+        maxbatt=100, 
+        options=Dict(:observation_model=>:falco),
+        obstacles=Vector{SVector{2, Int}}(),
+        resolution=25,
+        num_macro_actions=(b) -> 4,
+        initial_orientation=:up,
+        rollout_depth=prod(size))
+
+    robot_init = sinit.robot
+    tprob = 0.7
+    targetloc = sinit.target
+    rois = roi_points
+
+    fov_lookup = precompute_fov(size, ORIENTATIONS)
+
+    UnifiedPOMDP{obs_type(options), typeof(num_macro_actions)}(size, obstacles, robot_init, tprob, 
+                                    targetloc, rois, copy(rewarddist), 
+                                    maxbatt, resolution, num_macro_actions, 
+                                    initial_orientation, fov_lookup, rollout_depth)
 end
 
 function BasicPOMDP(sinit::BasicState; 

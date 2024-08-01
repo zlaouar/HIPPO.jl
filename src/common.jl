@@ -8,6 +8,20 @@ const actionind = Dict(:left=>1, :right=>2, :up=>3, :down=>4, :stay=>5,
                        :nw=>6, :ne=>7, :sw=>8, :se=>9)
 const actionvals = values(actiondir)
 
+# Camera Characteristics
+const ORIENTATIONS = [:left, :right, :up, :down, :nw, :ne, :sw, :se]
+
+orientdir = Dict{Vector{Int}, Symbol}(
+    [-1, 0] => :left,
+    [1, 0] => :right,
+    [0, 1] => :up,
+    [0, -1] => :down,
+    [0, 0] => :stay,
+    [-1, 1] => :nw,
+    [1, 1] => :ne,
+    [-1, -1] => :sw,
+    [1, -1] => :se
+)
 
 # Observations
 #= const OBSERVATIONS = [BitVector([0,0,0,0,0]), 
@@ -18,7 +32,7 @@ const actionvals = values(actiondir)
                     BitVector([0,0,0,0,1])] =#
 
 const OBSERVATIONS = [:next_waypoint, :gather_action, :target_found]
-
+const E2E_OBSERVATIONS = [:low, :medium, :high]
 # const obsind = Dict(OBSERVATIONS .=> 1:6)
 
 const obsind = Dict(OBSERVATIONS .=> 1:3)
