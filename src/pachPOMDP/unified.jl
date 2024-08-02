@@ -1,7 +1,7 @@
 """
     states (some of these functions are not used since the state space is too large)
 """
-function POMDPs.stateindex(m::TargetSearchPOMDP, s)
+function POMDPs.stateindex(m::UnifiedPOMDP, s)
     if s.robot == SA[-1,-1]
         return m.size[1]^2 * m.size[2]^2 + 1
     else 
@@ -9,7 +9,7 @@ function POMDPs.stateindex(m::TargetSearchPOMDP, s)
     end
 end
 
-function POMDPs.states(m::TargetSearchPOMDP)
+function POMDPs.states(m::UnifiedPOMDP)
     nonterm = vec(collect(UnifiedState(SVector(c[1],c[2]), SVector(c[3],c[4]), BitVector(d), e) 
                     for c in Iterators.product(1:m.size[1], 1:m.size[2], 1:m.size[1], 1:m.size[2]) 
                     for d in Iterators.product(ntuple(s->[0,1],prod(m.size))...))
@@ -18,15 +18,11 @@ function POMDPs.states(m::TargetSearchPOMDP)
     return push!(nonterm, UnifiedState([-1,-1],[-1,-1],trues(prod(m.size)),-1))
 end
 
-function POMDPs.initialstate(m::TargetSearchPOMDP)
+function POMDPs.initialstate(m::UnifiedPOMDP)
     return POMDPTools.Uniform(UnifiedState(m.robot_init, SVector(x, y), trues(prod(m.size)), m.maxbatt, false, m.initial_orientation) for x in 1:m.size[1], y in 1:m.size[2])
 end
 
-function POMDPs.initialstate(m::RewardPOMDP)
-    return POMDPTools.Uniform(RewardState(m.robot_init, SVector(x, y), trues(prod(m.size))) for x in 1:m.size[1], y in 1:m.size[2])
-end
-
-POMDPs.discount(m::TargetSearchPOMDP) = 1.0
+POMDPs.discount(m::UnifiedPOMDP) = 1.0
 
 discount_factor(m::UnifiedPOMDP) = 0.95
 
@@ -123,13 +119,13 @@ function non_cardinal_states_in_fov(m::UnifiedPOMDP, s::UnifiedState)
     return filter(x->norm(x-s.robot)>=2.0, unique(states))
 end
 
-POMDPs.actionindex(m::TargetSearchPOMDP, a) = actionind[a]
+POMDPs.actionindex(m::UnifiedPOMDP, a) = actionind[a]
 
-POMDPs.actiontype(::Type{<:TargetSearchPOMDP}) = Union{Symbol, Vector{Int}}
+POMDPs.actiontype(::Type{<:UnifiedPOMDP}) = Union{Symbol, Vector{Int}}
 
 const MacroAction = Vector{Int}
 
-function bounce(m::TargetSearchPOMDP, pos, offset)
+function bounce(m::UnifiedPOMDP, pos, offset)
     if clamp.(pos + offset, SVector(1,1), m.size) ∈ m.obstacles
         return pos
     end
@@ -180,7 +176,7 @@ function projected_state_random(m, s)
     return rand(unique(states))
 end
 
-function POMDPs.transition(m::TargetSearchPOMDP, s::UnifiedState, a::Symbol)
+function POMDPs.transition(m::UnifiedPOMDP, s::UnifiedState, a::Symbol)
     states = UnifiedState[]
     probs = Float64[]
     nominal_battery_loss = (m.resolution/25)
@@ -204,7 +200,7 @@ function POMDPs.transition(m::TargetSearchPOMDP, s::UnifiedState, a::Symbol)
 
 end
 
-function POMDPs.transition(m::TargetSearchPOMDP, s::UnifiedState, a::MacroAction)
+function POMDPs.transition(m::UnifiedPOMDP, s::UnifiedState, a::MacroAction)
     states = UnifiedState[]
     probs = Float64[]
     gather_info_time = 2*(m.resolution/25)
@@ -247,7 +243,7 @@ function POMDPs.transition(m::TargetSearchPOMDP, s::UnifiedState, a::MacroAction
 end
 
 """
-    observations(m::TargetSearchPOMDP)
+    observations(m::UnifiedPOMDP)
 
 Retrieve observations in TargetSearch observation space
 
@@ -258,8 +254,8 @@ The the observations are ordered as follows:
 """
 
 
-POMDPs.observations(m::TargetSearchPOMDP) = E2E_OBSERVATIONS 
-POMDPs.obsindex(m::TargetSearchPOMDP, o::Symbol) = obsind[o]
+POMDPs.observations(m::UnifiedPOMDP) = E2E_OBSERVATIONS 
+POMDPs.obsindex(m::UnifiedPOMDP, o::Symbol) = obsind[o]
 
 function proximal(sp, a)
     if norm(sp.robot-sp.target) <= 2.0
@@ -288,9 +284,9 @@ function proximal(sp, a)
     # end
 end
 
-#POMDPs.observation(m::TargetSearchPOMDP, s::UnifiedState, a::Symbol, sp::UnifiedState) = observation(m, a, sp)
+#POMDPs.observation(m::UnifiedPOMDP, s::UnifiedState, a::Symbol, sp::UnifiedState) = observation(m, a, sp)
 
-function POMDPs.observation(m::TargetSearchPOMDP, a::Union{Symbol,Vector{Int}}, sp::UnifiedState)
+function POMDPs.observation(m::UnifiedPOMDP, a::Union{Symbol,Vector{Int}}, sp::UnifiedState)
     # if proximal(sp, a) 
     #     if isa(a, MacroAction)
     #         if sp.human_in_fov # not function of action taken
@@ -353,7 +349,7 @@ function POMDPs.observation(m::TargetSearchPOMDP, a::Union{Symbol,Vector{Int}}, 
 
 end
 
-function POMDPs.reward(m::TargetSearchPOMDP, s::UnifiedState, a::Symbol, sp::UnifiedState)
+function POMDPs.reward(m::UnifiedPOMDP, s::UnifiedState, a::Symbol, sp::UnifiedState)
     if isterminal(m, sp) # IS THIS NECCESSARY?
         return 0.0
     end
@@ -382,7 +378,7 @@ function POMDPs.reward(m::TargetSearchPOMDP, s::UnifiedState, a::Symbol, sp::Uni
     end
 end
 
-function POMDPs.reward(m::TargetSearchPOMDP, s::UnifiedState, a::MacroAction, sp::UnifiedState)
+function POMDPs.reward(m::UnifiedPOMDP, s::UnifiedState, a::MacroAction, sp::UnifiedState)
     if isterminal(m, sp) # IS THIS NECCESSARY?
         return 0.0
     end
@@ -428,11 +424,11 @@ function dist(curr, start)
     sum(abs.(curr-start))
 end
 
-function POMDPs.isterminal(m::TargetSearchPOMDP, s::UnifiedState)
+function POMDPs.isterminal(m::UnifiedPOMDP, s::UnifiedState)
     required_batt = dist(s.robot, m.robot_init)
     return s.battery - required_batt <= 1 || s.robot == SA[-1,-1] # s.target
 end
 
 POMDPs.isterminal(m::RewardPOMDP, s::UnifiedState) = s.robot == SA[-1,-1]
 
-#POMDPs.isterminal(m::TargetSearchPOMDP, s::UnifiedState, target) = s.robot == target
+#POMDPs.isterminal(m::UnifiedPOMDP, s::UnifiedState, target) = s.robot == target

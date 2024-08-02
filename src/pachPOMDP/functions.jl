@@ -202,7 +202,7 @@ The the observations are ordered as follows:
 POMDPs.observations(m::TargetSearchPOMDP) = OBSERVATIONS #vec(collect(BitVector([c[1],c[2],c[3],c[4],c[5]]) for c in Iterators.product(0:1, 0:1, 0:1, 0:1, 0:1)))
 POMDPs.obsindex(m::TargetSearchPOMDP, o::Symbol) = obsind[o]
 
-function POMDPs.observation(m::TargetSearchPOMDP, s::TSState, a::Symbol, sp::TSState)
+function POMDPs.observation(m::PachPOMDP, s::TSState, a::Symbol, sp::TSState)
     # TODO: parametrize battery loss for gather info
     if sp.robot == sp.target #sp.robot == [-1,-1]
         return Deterministic(:target_found)
