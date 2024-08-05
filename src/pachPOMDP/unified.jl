@@ -57,6 +57,7 @@ function POMDPs.actions(m::UnifiedPOMDP, b::ParticleCollection)
     # parametrize macro actions initial state and belief
     robot_state = b.particles[1]
     fov_states = non_cardinal_states_in_fov(m, robot_state)
+    @info robot_state.robot, fov_states
     newdict = filter(s -> s[1].target ∈ fov_states, ParticleFilters.probdict(b))
     if isempty(newdict)
         @warn "---TARGET NOT IN FOV---"
@@ -72,14 +73,23 @@ end
 
 function states_in_fov(m::UnifiedPOMDP, s::UnifiedState)
     # TODO: create fov as a function of orientation, altitude, and camera angle
-    states = []
-    # diff = orientdir(s.orientation)
-    for i in -2:2
-        for j in -2:2
-            push!(states, bounce(m, s.robot, SVector(i, j)))
-        end
-    end
-    return unique(states)
+    #x = (s.robot[1] - 0.5) * m.resolution
+    #y = (s.robot[2] - 0.5) * m.resolution
+
+    bbox = getBoundingPolygon(m.camera_info, (s.robot[1] - 0.5) * m.resolution, (s.robot[2] - 0.5) * m.resolution)
+
+    return project_footprint_to_grid(bbox, m.size[1], m.size[2], m.resolution)
+end
+
+function non_cardinal_states_in_fov(m::UnifiedPOMDP, s::UnifiedState)
+    # TODO: create fov as a function of orientation, altitude, and camera angle
+    #x = (s.robot[1] - 0.5) * m.resolution
+    #y = (s.robot[2] - 0.5) * m.resolution
+
+    bbox = getBoundingPolygon(m.camera_info, (s.robot[1] - 0.5) * m.resolution, (s.robot[2] - 0.5) * m.resolution)
+    
+    states = project_footprint_to_grid(bbox, m.size[1], m.size[2], m.resolution)
+    return filter(x->norm(x-s.robot)>=2.0, states)
 end
 
 function cells_in_fov(size, cell, orientation)
@@ -103,21 +113,30 @@ function precompute_fov(size, orientations)
     return fov_lookup
 end
 
+function precompute_camera_footprint(cam_info, size, orientations)
+    fov_lookup = Dict{Tuple{Int, Int, Symbol}, Vector{Vector{Int}}}()
+    for x in 1:size[1], y in 1:size[2], orientation in orientations
+        fov = cells_in_fov(size, [x, y], orientation)
+        fov_lookup[(x, y, orientation)] = fov
+    end
+    return fov_lookup
+end
+
 function is_in_fov(m, target, robot_state, robot_orientation)
     return target ∈ m.fov_lookup[(robot_state[1], robot_state[2], robot_orientation)]
 end
 
-function non_cardinal_states_in_fov(m::UnifiedPOMDP, s::UnifiedState)
-    # TODO: create fov as a function of orientation, altitude, and camera angle
-    states = []
-    # diff = orientdir(s.orientation)
-    for i in -2:2
-        for j in -2:2
-            push!(states, bounce(m, s.robot, SVector(i, j)))
-        end
-    end
-    return filter(x->norm(x-s.robot)>=2.0, unique(states))
-end
+# function non_cardinal_states_in_fov(m::UnifiedPOMDP, s::UnifiedState)
+#     # TODO: create fov as a function of orientation, altitude, and camera angle
+#     states = []
+#     # diff = orientdir(s.orientation)
+#     for i in -2:2
+#         for j in -2:2
+#             push!(states, bounce(m, s.robot, SVector(i, j)))
+#         end
+#     end
+#     return filter(x->norm(x-s.robot)>=2.0, unique(states))
+# end
 
 POMDPs.actionindex(m::UnifiedPOMDP, a) = actionind[a]
 
@@ -363,7 +382,7 @@ function POMDPs.reward(m::UnifiedPOMDP, s::UnifiedState, a::Symbol, sp::UnifiedS
     if isequal(sp.robot, sp.target)# if target is found
         reward_running = 0.0
         reward_target = 1000.0 
-        return reward_running + reward_target
+        #return reward_running + reward_target
     end
 
     if sp.robot ∈ m.obstacles

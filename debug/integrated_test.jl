@@ -61,13 +61,22 @@ sinit = UnifiedState([3,1], [10,11], vec(trues(mapsize)), maxbatt, false, :up)#r
 #mapsize = (4,4)
 #sinit = TSState([1,1],[4,4],trues(prod(mapsize)))#rand(initialstate(msim))
 
+cam_info = HIPPO.CameraInfo(
+    deg2rad(71.5), # horizontal fov
+    deg2rad(56.8), # vertical fov
+    30.0, # altitude
+    deg2rad(0.0), # roll
+    deg2rad(30.0), # pitch
+    deg2rad(0.0) # heading
+)
 
 pomdp = UnifiedPOMDP(sinit, 
                     size=mapsize, 
                     rewarddist=rewarddist, 
                     maxbatt=maxbatt,
                     options=Dict(:observation_model=>:falco),
-                    rollout_depth=maxbatt)
+                    rollout_depth=maxbatt,
+                    camera_info=cam_info)
 
 p = FunctionPolicy(FixedPolicy())
 greedyrollout = FORollout(GreedyPolicy(pomdp))
