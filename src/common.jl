@@ -23,6 +23,29 @@ orientdir = Dict{Vector{Int}, Symbol}(
     [1, -1] => :se
 )
 
+HEADING_VALS = (45.0, 90.0, 135.0, 180.0, 225.0, 270.0, 315.0, 0.0)
+# headingdir = Dict{Float64, Symbol}(
+#     45.0 => :ne,
+#     90.0 => :up,
+#     135.0 => :nw,
+#     180.0 => :left,
+#     225.0 => :sw,
+#     270.0 => :down,
+#     315.0 => :se,
+#     0.0 => :right
+# )
+
+headingdir = Dict{Symbol, Float64}(
+    :ne => 45.0,
+    :up => 90.0,
+    :nw => 135.0,
+    :left => 180.0,
+    :sw => 225.0,
+    :down => 270.0,
+    :se => 315.0,
+    :right => 0.0
+)
+
 # Observations
 #= const OBSERVATIONS = [BitVector([0,0,0,0,0]), 
                     BitVector([1,0,0,0,0]), 

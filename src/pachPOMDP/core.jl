@@ -155,7 +155,8 @@ function UnifiedPOMDP(sinit::TSState;
     targetloc = sinit.target
     rois = roi_points
 
-    fov_lookup = precompute_fov(size, ORIENTATIONS)
+    fov_lookup = precompute_camera_footprint(camera_info, size, ORIENTATIONS)
+    # fov_lookup = precompute_fov(size, ORIENTATIONS)
 
     UnifiedPOMDP{obs_type(options), typeof(num_macro_actions)}(size, obstacles, robot_init, tprob, 
                                     targetloc, rois, copy(rewarddist), maxbatt, resolution, 

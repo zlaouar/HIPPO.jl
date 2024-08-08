@@ -17,14 +17,18 @@ end
 struct CameraInfo
     FOVh::Float64
     FOVv::Float64
+end
+
+mutable struct RobotPose
     altitude::Float64
     roll::Float64
     pitch::Float64
     heading::Float64
 end
 
-function getBoundingPolygon(cam_info::CameraInfo, x::Float64, y::Float64)
-    (;FOVh, FOVv, altitude, roll, pitch, heading) = cam_info
+function getBoundingPolygon(cam_info::CameraInfo, pose::RobotPose, x::Float64, y::Float64)
+    (;FOVh, FOVv) = cam_info
+    (;altitude, roll, pitch, heading) = pose
 
     ray1 = ray(FOVh, FOVv, 1, 1)
     ray2 = ray(FOVh, FOVv, 1, -1)
@@ -66,6 +70,22 @@ function rotateRays(rays::Vector{Vector3D}, roll::Float64, pitch::Float64, yaw::
     end
 
     return rotated_rays
+end
+
+function rotateRay(ray::Vector3D, roll::Float64, pitch::Float64, yaw::Float64)
+    sinα, cosα = sincos(yaw)
+    sinβ, cosβ = sincos(pitch)
+    sinγ, cosγ = sincos(roll)
+
+    m = [
+        cosα*cosβ  cosα*sinβ*sinγ-sinα*cosγ  cosα*sinβ*cosγ+sinα*sinγ;
+        sinα*cosβ  sinα*sinβ*sinγ+cosα*cosγ  sinα*sinβ*cosγ-cosα*sinγ;
+        -sinβ      cosβ*sinγ                 cosβ*cosγ
+    ]
+
+    v = [ray.x, ray.y, ray.z]
+
+    return Vector3D((m * v)...)
 end
 
 function getRayGroundIntersections(rays::Vector{Vector3D}, origin::Vector3D)

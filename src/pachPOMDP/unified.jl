@@ -91,7 +91,16 @@ function non_cardinal_states_in_fov(m::UnifiedPOMDP, s::UnifiedState)
     states = project_footprint_to_grid(bbox, m.size[1], m.size[2], m.resolution)
     return filter(x->norm(x-s.robot)>=2.0, states)
 end
-
+function non_cardinal_states_in_fov(robot, orientation)
+    # TODO: create fov as a function of orientation, altitude, and camera angle
+    #x = (s.robot[1] - 0.5) * m.resolution
+    #y = (s.robot[2] - 0.5) * m.resolution
+    pose.heading = headingdir[orientation]
+    bbox = getBoundingPolygon(camera_info, pose, (robot[1] - 0.5) * m.resolution, (robot[2] - 0.5) * m.resolution)
+    
+    states = project_footprint_to_grid(bbox, m.size[1], m.size[2], m.resolution)
+    return filter(x->norm(x-s.robot)>=2.0, states)
+end
 function cells_in_fov(size, cell, orientation)
     # TODO: create fov as a function of orientation, altitude, and camera angle
     states = []
@@ -104,6 +113,7 @@ function cells_in_fov(size, cell, orientation)
     return unique(states)
 end
 
+
 function precompute_fov(size, orientations)
     fov_lookup = Dict{Tuple{Int, Int, Symbol}, Vector{Vector{Int}}}()
     for x in 1:size[1], y in 1:size[2], orientation in orientations
@@ -114,12 +124,17 @@ function precompute_fov(size, orientations)
 end
 
 function precompute_camera_footprint(cam_info, size, orientations)
+    # pos, orientation (yaw)
     fov_lookup = Dict{Tuple{Int, Int, Symbol}, Vector{Vector{Int}}}()
     for x in 1:size[1], y in 1:size[2], orientation in orientations
-        fov = cells_in_fov(size, [x, y], orientation)
+        fov = non_cardinal_states_in_fov(m, [x, y], orientation)
         fov_lookup[(x, y, orientation)] = fov
     end
     return fov_lookup
+end
+
+function is_in_fov(m, target, robot_state, robot_orientation)
+    return target ∈ m.fov_lookup[(robot_state[1], robot_state[2], robot_orientation)]
 end
 
 function is_in_fov(m, target, robot_state, robot_orientation)
