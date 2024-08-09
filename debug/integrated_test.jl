@@ -64,10 +64,6 @@ sinit = UnifiedState([3,1], [10,11], vec(trues(mapsize)), maxbatt, false, :up)#r
 cam_info = HIPPO.CameraInfo(
     deg2rad(71.5), # horizontal fov
     deg2rad(56.8), # vertical fov
-    30.0, # altitude
-    deg2rad(0.0), # roll
-    deg2rad(30.0), # pitch
-    deg2rad(0.0) # heading
 )
 
 pomdp = UnifiedPOMDP(sinit, 

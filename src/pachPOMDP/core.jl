@@ -102,7 +102,8 @@ mutable struct UnifiedPOMDP{O, F<:Function} <: TargetSearchPOMDP{TSState, Symbol
     initial_orientation::Symbol
     fov_lookup::Dict{Tuple{Int, Int, Symbol}, Vector{Vector{Int}}}
     rollout_depth::Int
-    camera_info::CameraInfo
+    camera_info::CameraInfod
+    pose::RobotPose
 end
 
 function obs_type(options)
@@ -148,20 +149,25 @@ function UnifiedPOMDP(sinit::TSState;
                                 30.0, 
                                 deg2rad(0.0), 
                                 deg2rad(0.0), 
-                                deg2rad(0.0)))
+                                deg2rad(0.0)),
+        pose=RobotPose(0.0, 0.0, 30.0, deg2rad(0.0), deg2rad(-45.0), deg2rad(0.0)))
 
     robot_init = sinit.robot
     tprob = 0.7
     targetloc = sinit.target
     rois = roi_points
 
-    fov_lookup = precompute_camera_footprint(camera_info, size, ORIENTATIONS)
+    pose.x = (robot_init[1] - 0.5) * resolution
+    pose.y = (robot_init[2] - 0.5) * resolution
+    pose.heading = headingdir[initial_orientation]
+
+    fov_lookup = precompute_camera_footprint(camera_info, pose, resolution, size, ORIENTATIONS)
     # fov_lookup = precompute_fov(size, ORIENTATIONS)
 
     UnifiedPOMDP{obs_type(options), typeof(num_macro_actions)}(size, obstacles, robot_init, tprob, 
                                     targetloc, rois, copy(rewarddist), maxbatt, resolution, 
                                     num_macro_actions, initial_orientation, fov_lookup, 
-                                    rollout_depth, camera_info)
+                                    rollout_depth, camera_info, pose)
 end
 
 function BasicPOMDP(sinit::BasicState; 

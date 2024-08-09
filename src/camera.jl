@@ -20,15 +20,17 @@ struct CameraInfo
 end
 
 mutable struct RobotPose
+    x::Float64
+    y::Float64
     altitude::Float64
     roll::Float64
     pitch::Float64
     heading::Float64
 end
 
-function getBoundingPolygon(cam_info::CameraInfo, pose::RobotPose, x::Float64, y::Float64)
+function getBoundingPolygon(cam_info::CameraInfo, pose::RobotPose)
     (;FOVh, FOVv) = cam_info
-    (;altitude, roll, pitch, heading) = pose
+    (;x, y, altitude, roll, pitch, heading) = pose
 
     ray1 = ray(FOVh, FOVv, 1, 1)
     ray2 = ray(FOVh, FOVv, 1, -1)

@@ -71,35 +71,28 @@ function POMDPs.actions(m::UnifiedPOMDP, b::ParticleCollection)
         
 end
 
-function states_in_fov(m::UnifiedPOMDP, s::UnifiedState)
-    # TODO: create fov as a function of orientation, altitude, and camera angle
-    #x = (s.robot[1] - 0.5) * m.resolution
-    #y = (s.robot[2] - 0.5) * m.resolution
+function states_in_fov(m::UnifiedPOMDP, s::UnifiedState, pose::RobotPose)
+    pose.x = s.robot[1] * m.resolution
+    pose.y = s.robot[2] * m.resolution
+    return states_in_fov(m, pose)
+end
 
-    bbox = getBoundingPolygon(m.camera_info, (s.robot[1] - 0.5) * m.resolution, (s.robot[2] - 0.5) * m.resolution)
-
+function states_in_fov(m::UnifiedPOMDP, pose::RobotPose)
+    bbox = getBoundingPolygon(m.camera_info, pose)
     return project_footprint_to_grid(bbox, m.size[1], m.size[2], m.resolution)
 end
 
 function non_cardinal_states_in_fov(m::UnifiedPOMDP, s::UnifiedState)
-    # TODO: create fov as a function of orientation, altitude, and camera angle
-    #x = (s.robot[1] - 0.5) * m.resolution
-    #y = (s.robot[2] - 0.5) * m.resolution
-
-    bbox = getBoundingPolygon(m.camera_info, (s.robot[1] - 0.5) * m.resolution, (s.robot[2] - 0.5) * m.resolution)
-    
+    m.pose.x = (s.robot[1] - 0.5) * m.resolution
+    m.pose.y = (s.robot[2] - 0.5) * m.resolution
+    bbox = getBoundingPolygon(m.camera_info, m.pose)
     states = project_footprint_to_grid(bbox, m.size[1], m.size[2], m.resolution)
     return filter(x->norm(x-s.robot)>=2.0, states)
 end
-function non_cardinal_states_in_fov(robot, orientation)
-    # TODO: create fov as a function of orientation, altitude, and camera angle
-    #x = (s.robot[1] - 0.5) * m.resolution
-    #y = (s.robot[2] - 0.5) * m.resolution
-    pose.heading = headingdir[orientation]
-    bbox = getBoundingPolygon(camera_info, pose, (robot[1] - 0.5) * m.resolution, (robot[2] - 0.5) * m.resolution)
-    
-    states = project_footprint_to_grid(bbox, m.size[1], m.size[2], m.resolution)
-    return filter(x->norm(x-s.robot)>=2.0, states)
+function non_cardinal_states_in_fov(camera_info, pose, size, resolution)
+    bbox = getBoundingPolygon(camera_info, pose)
+    states = project_footprint_to_grid(bbox, size[1], size[2], resolution)
+    return filter(robotpos->norm(robotpos-[pose.x, pose.y])>=2.0, states)
 end
 function cells_in_fov(size, cell, orientation)
     # TODO: create fov as a function of orientation, altitude, and camera angle
@@ -123,11 +116,13 @@ function precompute_fov(size, orientations)
     return fov_lookup
 end
 
-function precompute_camera_footprint(cam_info, size, orientations)
-    # pos, orientation (yaw)
+function precompute_camera_footprint(cam_info, pose, resolution, size, orientations)
     fov_lookup = Dict{Tuple{Int, Int, Symbol}, Vector{Vector{Int}}}()
     for x in 1:size[1], y in 1:size[2], orientation in orientations
-        fov = non_cardinal_states_in_fov(m, [x, y], orientation)
+        pose.x = (x - 0.5) * resolution
+        pose.y = (y - 0.5) * resolution
+        pose.heading = headingdir[orientation]
+        fov = non_cardinal_states_in_fov(cam_info, pose, size, resolution)
         fov_lookup[(x, y, orientation)] = fov
     end
     return fov_lookup
@@ -238,6 +233,7 @@ function POMDPs.transition(m::UnifiedPOMDP, s::UnifiedState, a::MacroAction)
     states = UnifiedState[]
     probs = Float64[]
     gather_info_time = 2*(m.resolution/25)
+    nominal_battery_loss = (m.resolution/25)
 
     sind = LinearIndices((1:m.size[1], 1:m.size[2]))[s.robot...]
     s.visited[sind] = 0
@@ -248,9 +244,11 @@ function POMDPs.transition(m::UnifiedPOMDP, s::UnifiedState, a::MacroAction)
     
     newrobot = a
     traversed_cells = cell_list(s.robot, a)
-    for cell in traversed_cells[1:end-1]
-        s.visited[LinearIndices((1:m.size[1], 1:m.size[2]))[cell...]] = 0
-        # TODO: check for termination
+    for i ∈ eachindex(traversed_cells[1:end-1])
+        if isequal(traversed_cells[i], s.target) || s.battery - (i*nominal_battery_loss) == 0.0
+            return Deterministic(UnifiedState(SA[-1,-1], copy(s.target), s.visited, s.battery - (i * nominal_battery_loss), true, s.orientation))
+        end
+        s.visited[LinearIndices((1:m.size[1], 1:m.size[2]))[traversed_cells[i]...]] = 0
     end
     
     new_orientation = orientdir[traversed_cells[end] - traversed_cells[end-1]]
@@ -436,14 +434,22 @@ function POMDPs.reward(m::UnifiedPOMDP, s::UnifiedState, a::MacroAction, sp::Uni
     end
 
     # TODO: CHECK FOR TERMINAL STATE
-    for i ∈ eachindex(cells)
-        #inds = rewardinds(m, cells[i])
-        #spind = LinearIndices((1:m.size[1], 1:m.size[2]))[cells[i]...]
-        reward_target = isequal(cells[i], sp.target) ? 1000.0 : 0.0
-        rtot += discount_factor(m)^(m.maxbatt-(s.battery-i)) * (reward_running + reward_target + reward_nogo + reward_investigate)
+    if s.robot == [-1,-1]
+        for i ∈ 1:s.battery-sp.battery
+            if isequal(cells[i], sp.target)
+                reward_target = 1000.0
+            end
+            rtot += discount_factor(m)^(m.maxbatt-(s.battery-i)) * (reward_running + reward_target + reward_nogo)
+        end
+        return rtot += discount_factor(m)^(m.maxbatt-s.battery) * reward_investigate
     end
 
-    return rtot #rtot * discount(m)^length(cells)
+    for i ∈ eachindex(cells)
+        reward_target = isequal(cells[i], sp.target) ? 1000.0 : 0.0
+        rtot += discount_factor(m)^(m.maxbatt-(s.battery-i)) * (reward_running + reward_target + reward_nogo)
+    end
+
+    return rtot += discount_factor(m)^(m.maxbatt-s.battery) * reward_investigate#rtot * discount(m)^length(cells)
 end
 
 function rewardinds(m, pos::Union{SVector{2, Int64},Vector{Int}})

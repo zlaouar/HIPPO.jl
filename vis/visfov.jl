@@ -33,10 +33,12 @@ mapsize = reverse(size(rewarddist))
 maxbatt = 200
 sinit = UnifiedState([3,1], [10,11], vec(trues(mapsize)), maxbatt, false, :up)
 
+
 cam_info = HIPPO.CameraInfo(
     deg2rad(71.5), # horizontal fov
     deg2rad(56.8), # vertical fov
 )
+
 
 pomdp = UnifiedPOMDP(sinit, 
                     size=mapsize, 
@@ -46,19 +48,22 @@ pomdp = UnifiedPOMDP(sinit,
                     rollout_depth=100,
                     camera_info=cam_info)
 
-HIPPO.states_in_fov(pomdp, sinit)
-
 x = ((sinit.robot[1]-1) * pomdp.resolution) + pomdp.resolution/2
 y = ((sinit.robot[2]-1) * pomdp.resolution) + pomdp.resolution/2
 z = 30.0
 
 pose = HIPPO.RobotPose(
+    x,
+    y,
     60.0, # altitude
     deg2rad(0.0), # roll
     deg2rad(-45.0), # pitch
     deg2rad(0.0) # heading
 )
-bbox = HIPPO.getBoundingPolygon(cam_info, pose, x, y)
+HIPPO.states_in_fov(pomdp, sinit, pose)
+
+
+bbox = HIPPO.getBoundingPolygon(cam_info, pose)
 
 # bbox = HIPPO.getBoundingPolygon(
 #     deg2rad(71.5),
