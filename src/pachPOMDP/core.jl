@@ -97,12 +97,13 @@ mutable struct UnifiedPOMDP{O, F<:Function} <: TargetSearchPOMDP{TSState, Symbol
     rois::Dict{Vector{Int64}, Float64}
     reward::Matrix{Float64}
     maxbatt::Int
+    currentbatt::Int
     resolution::Int
     num_macro_actions::F
     initial_orientation::Symbol
     fov_lookup::Dict{Tuple{Int, Int, Symbol}, Vector{Vector{Int}}}
     rollout_depth::Int
-    camera_info::CameraInfod
+    camera_info::CameraInfo
     pose::RobotPose
 end
 
@@ -137,13 +138,13 @@ function UnifiedPOMDP(sinit::TSState;
         roi_points=Dict(), 
         size=(10,10), 
         rewarddist=Array{Float64}(undef, 0, 0),
-        maxbatt=100, 
+        maxbatt=100,
         options=Dict(:observation_model=>:falco),
         obstacles=Vector{SVector{2, Int}}(),
         resolution=25,
         num_macro_actions=(b) -> 4,
         initial_orientation=:up,
-        rollout_depth=prod(size),
+        rollout_depth=maxbatt,
         camera_info=CameraInfo(deg2rad(71.5), 
                                 deg2rad(56.8), 
                                 30.0, 
@@ -156,6 +157,7 @@ function UnifiedPOMDP(sinit::TSState;
     tprob = 0.7
     targetloc = sinit.target
     rois = roi_points
+    currentbatt = maxbatt
 
     pose.x = (robot_init[1] - 0.5) * resolution
     pose.y = (robot_init[2] - 0.5) * resolution
@@ -165,7 +167,7 @@ function UnifiedPOMDP(sinit::TSState;
     # fov_lookup = precompute_fov(size, ORIENTATIONS)
 
     UnifiedPOMDP{obs_type(options), typeof(num_macro_actions)}(size, obstacles, robot_init, tprob, 
-                                    targetloc, rois, copy(rewarddist), maxbatt, resolution, 
+                                    targetloc, rois, copy(rewarddist), maxbatt, currentbatt, resolution, 
                                     num_macro_actions, initial_orientation, fov_lookup, 
                                     rollout_depth, camera_info, pose)
 end

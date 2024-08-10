@@ -57,10 +57,10 @@ function POMDPs.actions(m::UnifiedPOMDP, b::ParticleCollection)
     # parametrize macro actions initial state and belief
     robot_state = b.particles[1]
     fov_states = non_cardinal_states_in_fov(m, robot_state)
-    @info robot_state.robot, fov_states
+    #@info robot_state.robot, fov_states
     newdict = filter(s -> s[1].target ∈ fov_states, ParticleFilters.probdict(b))
     if isempty(newdict)
-        @warn "---TARGET NOT IN FOV---"
+        #@warn "---TARGET NOT IN FOV---"
         return PRIMITIVE_ACTIONS
     end
     newdist = SparseCat(keys(newdict), values(newdict))
@@ -386,7 +386,7 @@ function POMDPs.reward(m::UnifiedPOMDP, s::UnifiedState, a::Symbol, sp::UnifiedS
         return 0.0
     end
     
-    γ_horizon = discount_factor(m)^(m.maxbatt-sp.battery) 
+    γ_horizon = discount_factor(m)^(m.currentbatt-sp.battery) 
 
     reward_running = -1.0
     reward_target = 0.0
@@ -439,17 +439,17 @@ function POMDPs.reward(m::UnifiedPOMDP, s::UnifiedState, a::MacroAction, sp::Uni
             if isequal(cells[i], sp.target)
                 reward_target = 1000.0
             end
-            rtot += discount_factor(m)^(m.maxbatt-(s.battery-i)) * (reward_running + reward_target + reward_nogo)
+            rtot += discount_factor(m)^(m.currentbatt-(s.battery-i)) * (reward_running + reward_target + reward_nogo)
         end
-        return rtot += discount_factor(m)^(m.maxbatt-s.battery) * reward_investigate
+        return rtot += discount_factor(m)^(m.currentbatt-s.battery) * reward_investigate
     end
 
     for i ∈ eachindex(cells)
         reward_target = isequal(cells[i], sp.target) ? 1000.0 : 0.0
-        rtot += discount_factor(m)^(m.maxbatt-(s.battery-i)) * (reward_running + reward_target + reward_nogo)
+        rtot += discount_factor(m)^(m.currentbatt-(s.battery-i)) * (reward_running + reward_target + reward_nogo)
     end
 
-    return rtot += discount_factor(m)^(m.maxbatt-s.battery) * reward_investigate#rtot * discount(m)^length(cells)
+    return rtot += discount_factor(m)^(m.currentbatt-s.battery) * reward_investigate#rtot * discount(m)^length(cells)
 end
 
 function rewardinds(m, pos::Union{SVector{2, Int64},Vector{Int}})

@@ -159,7 +159,7 @@ function POMDPTools.ModelTools.render(m::TargetSearchPOMDP, goal,
     #return compose(context((w-sz)/2, (h-sz)/2, sz, (44/59)*sz), legend, hippotrajec, basetrajec, robot, target, grid, outline)
 end
 
-function POMDPTools.ModelTools.render(m::TargetSearchPOMDP{S,A,O}, step) where {S,A,O}
+function POMDPTools.ModelTools.render(m::TargetSearchPOMDP, step)
     #set_default_graphic_size(14cm,14cm)
     nx, ny = m.size
     cells = []
@@ -241,7 +241,7 @@ function rewardinds(m, pos::SVector{2, Int64})
 end
 
 
-function POMDPTools.ModelTools.render(m::TargetSearchPOMDP{S,A,O}, step, plt_reward::Bool) where {S,A,O}
+function POMDPTools.ModelTools.render(m::TargetSearchPOMDP, step, plt_reward::Bool)
     nx, ny = m.size
     cells = []
     

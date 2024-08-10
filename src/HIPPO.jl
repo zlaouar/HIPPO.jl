@@ -71,13 +71,14 @@ export remove_rewards,
        find_closest_grid_point,
        mat_to_inertial_inds
 
-#= include(joinpath(@__DIR__,"baseline","simulate.jl"))
+include(joinpath(@__DIR__,"baseline","simulate.jl"))
 include(joinpath(@__DIR__,"baseline","action.jl"))
 include(joinpath(@__DIR__,"baseline","data.jl"))
 include(joinpath(@__DIR__,"baseline","truth.jl"))
 
 export simulateBaseline,
-       BaselineSimulator =#
+       BaselineSimulator,
+       UnifiedBaselineSimulator
 #include(joinpath(@__DIR__,"basicPOMDP","core_vanilla.jl"))
 #export TSPOMDPBasic, TSStateBasic
 include(joinpath(@__DIR__,"basicPOMDP","functions_vanilla.jl"))
@@ -102,6 +103,8 @@ export rendhist
 
 include(joinpath(@__DIR__,"XAI","waypoints.jl"))
 export get_children, get_children_from_node
+
+include("process_results.jl")
 
 end
 

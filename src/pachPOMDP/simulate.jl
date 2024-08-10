@@ -131,6 +131,8 @@ function simulateHIPPO(sim::HIPPOSimulator)
         #a = first(a_traj)
         #try 
         a, info = action_info(sim.planner, b, tree_in_info = true)
+
+        
         #catch e
             #a = :stay
         #    @warn "POMCP failed to find an action: ", e
@@ -140,18 +142,18 @@ function simulateHIPPO(sim::HIPPOSimulator)
         remove_rewards(msim, s.robot) # remove reward at current state
         #display(msim.reward)
         sp, o, r = @gen(:sp,:o,:r)(msim, s, a)
-        if sp.robot ∈ msim.obstacles
-            println("----COLLISION----")
-        end
+        isterminal(msim, sp) && break
+        sim.msim.currentbatt = sp.battery
+
         r_total += d*r
         d *= discount_factor(msim)
         bp = update(sim.up, b, a, o)
         (sim.anim || sim.display) && (belframe = render(msim, (sp=sp, bp=bp)))
         (sim.anim || sim.display) && (rewardframe = render(msim, (sp=sp, bp=bp), true))
         #display(belframe)
-        sim.display && display(belframe)
+        sim.display && display(rewardframe)
         iter += 1
-        println(iter,"- | s: ", s.robot, " | human: ", s.human_in_fov, " | orient: ", s.orientation, " | sbatt: ", s.battery, " | a: ", a, 
+        sim.verbose && println(iter,"- | s: ", s.robot, " | human: ", s.human_in_fov, " | orient: ", s.orientation, " | sbatt: ", s.battery, " | a: ", a, 
         " | sp_robot:", sp.robot, " | sp_target:", sp.target, " | spbatt: ", sp.battery, " | r:", r, " | o: ", o)
         #println(iter,"- | battery: ", sp.battery, " | dist_to_home: ", dist(sp.robot, msim.robot_init), " | s: ", sp.robot)
         sim.anim && push!(sim.rewardframes, rewardframe)

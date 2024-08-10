@@ -7,7 +7,7 @@ function svgstogif(frames)
 end
 
 function BasicPOMCP.estimate_value(estimator::Union{BasicPOMCP.SolvedPORollout,BasicPOMCP.SolvedFORollout}, pomdp::UnifiedPOMDP, start_state, h::BeliefNode, steps::Int)
-    effective_horizon = pomdp.maxbatt-start_state.battery + 1
+    effective_horizon = pomdp.currentbatt-start_state.battery + 1
     steps_to_go = pomdp.rollout_depth - effective_horizon
     BasicPOMCP.rollout(estimator, pomdp, start_state, h, steps_to_go)
 end
@@ -17,17 +17,32 @@ struct FixedPolicy <: Function end
 (::FixedPolicy)(s) = :up
 
 function statedir(pos1, pos2)
-    if (pos1[1]-pos2[1]) >= 1 # pos2 left of robot
-        return :left
-    elseif (pos1[1]-pos2[1]) <= -1 # pos2 right of robot
-        return :right
-    elseif (pos1[2]-pos2[2]) >= 1 # pos2 below robot
-        return :down
-    elseif (pos1[2]-pos2[2]) <= -1 # pos2 above robot
-        return :up
-    else
-        return :stay
+    # if (pos1[1]-pos2[1]) >= 1 # pos2 left of robot
+    #     return :left
+    # elseif (pos1[1]-pos2[1]) <= -1 # pos2 right of robot
+    #     return :right
+    # elseif (pos1[2]-pos2[2]) >= 1 # pos2 below robot
+    #     return :down
+    # elseif (pos1[2]-pos2[2]) <= -1 # pos2 above robot
+    #     return :up
+    # else
+    #     return :stay
+    # end
+    diff = [0,0]
+    while pos1 != pos2
+        if pos1[1] < pos2[1]
+            diff[1] += 1
+        elseif pos1[1] > pos2[1]
+            diff[1] -= 1
+        end
+        if pos1[2] < pos2[2]
+            diff[2] += 1
+        elseif pos1[2] > pos2[2]
+            diff[2] -= 1
+        end
+        return diff2action[diff]
     end
+
 end
 
 function cell_list(pos1, pos2)
@@ -68,7 +83,7 @@ struct GreedyPolicy{P} <: Policy
 end
 
 function POMDPs.action(p::GreedyPolicy, s)
-    if rand() < 1.0
+    if rand() < 0.5
         return statedir(s.robot, s.target)
     else
         return statedir(s.robot, mat_to_inertial_inds(p.pomdp.size, Tuple(argmax(p.pomdp.reward))))

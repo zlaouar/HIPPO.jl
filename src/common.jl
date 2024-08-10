@@ -4,6 +4,8 @@ const actiondir = Dict(:left=>SVector(-1,0), :right=>SVector(1,0),
                        :nw=>SVector(-1,1), :ne=>SVector(1,1), 
                        :sw=>SVector(-1,-1), :se=>SVector(1,-1))
 
+const diff2action = Dict(map(reverse, collect(actiondir)))
+
 const actionind = Dict(:left=>1, :right=>2, :up=>3, :down=>4, :stay=>5,
                        :nw=>6, :ne=>7, :sw=>8, :se=>9)
 const actionvals = values(actiondir)
@@ -11,7 +13,7 @@ const actionvals = values(actiondir)
 # Camera Characteristics
 const ORIENTATIONS = [:left, :right, :up, :down, :nw, :ne, :sw, :se]
 
-orientdir = Dict{Vector{Int}, Symbol}(
+const orientdir = Dict{Vector{Int}, Symbol}(
     [-1, 0] => :left,
     [1, 0] => :right,
     [0, 1] => :up,
@@ -23,7 +25,7 @@ orientdir = Dict{Vector{Int}, Symbol}(
     [1, -1] => :se
 )
 
-HEADING_VALS = (45.0, 90.0, 135.0, 180.0, 225.0, 270.0, 315.0, 0.0)
+const HEADING_VALS = (45.0, 90.0, 135.0, 180.0, 225.0, 270.0, 315.0, 0.0)
 # headingdir = Dict{Float64, Symbol}(
 #     45.0 => :ne,
 #     90.0 => :up,
@@ -35,7 +37,7 @@ HEADING_VALS = (45.0, 90.0, 135.0, 180.0, 225.0, 270.0, 315.0, 0.0)
 #     0.0 => :right
 # )
 
-headingdir = Dict{Symbol, Float64}(
+const headingdir = Dict{Symbol, Float64}(
     :ne => 45.0,
     :up => 90.0,
     :nw => 135.0,
