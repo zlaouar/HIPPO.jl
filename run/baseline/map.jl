@@ -32,8 +32,8 @@ filevec = ["../data/opdata1.jld2",
 
 #file = filevec[mapid]
 file = filevec[1]
-inputs = load(joinpath("data", file), "inputs")
-db = load(joinpath("data", file), "db")
+inputs = jldopen(joinpath("data", file), "r")["inputs"]
+db = jldopen(joinpath("data", file), "r")["db"]
 
 
 #db = load(joinpath(@__DIR__, "../data/db.jld2"), "db")
@@ -81,82 +81,10 @@ solver = POMCPSolver(tree_queries=10_000, max_time=0.2, c=100) # random
 planner = solve(solver, pomdp)
 
 b0 = initialstate(pomdp)
-N = 10000
+N = 20000
 particle_up = BootstrapFilter(pomdp, N)
 particle_b = initialize_belief(particle_up, b0)
 
-hipposim = HIPPOSimulator(msim=pomdp, planner=planner, up=particle_up, b=particle_b, sinit=sinit, 
-                            dt=1/10, max_iter=maxbatt, display=false, verbose=false)
-bsim = UnifiedBaselineSimulator(msim=pomdp, sinit=sinit, dt=1/4, max_iter=maxbatt, display=false, verbose=false)
-
-hippo_hist_vec = []
-hippo_reward_vec = []
-hippo_targetfound_vec = Bool[]
-baseline_hist_vec = []
-baseline_reward_vec = []
-baseline_targetfound_vec = Bool[]
-#newtarget = HIPPO.newtarget(mapsize, db)
-newtarget = sinit.target
-num_sims = 1
-for i in 1:num_sims
-    println("HIPPO sim: ", i, " of ", num_sims)
-    hippo_hist, hippo_rtot = simulateHIPPO(hipposim)
-
-    
-    pomdp = UnifiedPOMDP(sinit, 
-        size=mapsize, 
-        rewarddist=rewarddist, 
-        maxbatt=maxbatt,
-        camera_info=cam_info)
-
-    hipposim.msim = pomdp
-    bsim.msim = pomdp
-
-    println("Baseline sim: ", i, " of ", num_sims)
-    baseline_hist, baseline_rtot = simulateBaseline(bsim)
-    
-    push!(hippo_targetfound_vec, last(hippo_hist).sp.robot == newtarget)
-    println("HIPPO target and last state: ", newtarget, " ", last(hippo_hist).s.robot)
-    push!(baseline_targetfound_vec, last(baseline_hist).s.robot == newtarget)
-
-    push!(hippo_hist_vec, hippo_hist)
-    push!(hippo_reward_vec, hippo_rtot)
-
-    push!(baseline_hist_vec, baseline_hist)
-    push!(baseline_reward_vec, baseline_rtot)
-
-    newtarget = HIPPO.ind2pos(mapsize, db.ID2grid[HIPPO.chooseTrueCell()])
-    newstate = UnifiedState(sinit.robot, newtarget, sinit.visited, sinit.battery, sinit.human_in_fov, sinit.orientation)
-    pomdp = UnifiedPOMDP(sinit, 
-        size=mapsize, 
-        rewarddist=rewarddist, 
-        maxbatt=maxbatt,
-        camera_info=cam_info)
-
-    hipposim.msim = pomdp
-    bsim.msim = pomdp
-
-    hipposim.sinit = newstate
-    bsim.sinit = newstate    
-end
-
-
-
-#= jldsave(joinpath(@__DIR__, "../results/results.jld2"), 
-            hippo_hist_vec=hippo_hist_vec,
-            hippo_reward_vec=hippo_reward_vec,
-            hippo_targetfound_vec=hippo_targetfound_vec,
-            baseline_hist_vec=baseline_hist_vec,
-            baseline_reward_vec=baseline_reward_vec,
-            baseline_targetfound_vec=baseline_targetfound_vec)
- =#
-
-jldsave("results/icra2025/results.jld2", 
-            hippo_reward_vec=hippo_reward_vec,
-            hippo_targetfound_vec=hippo_targetfound_vec,
-            baseline_reward_vec=baseline_reward_vec,
-            baseline_targetfound_vec=baseline_targetfound_vec,
-            hippo_time=length.(hippo_hist_vec),
-            baseline_time=length.(baseline_hist_vec))
-
-HIPPO.results("results/icra2025/results.jld2")
+bsim = MapBaselineSimulator(msim=pomdp, sinit=sinit, up=particle_up, b=particle_b, 
+                            dt=1/4, max_iter=maxbatt, display=true, verbose=true)
+baseline_hist, baseline_rtot = simulateBaseline(bsim)

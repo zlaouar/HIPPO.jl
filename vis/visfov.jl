@@ -44,7 +44,6 @@ pomdp = UnifiedPOMDP(sinit,
                     size=mapsize, 
                     rewarddist=rewarddist, 
                     maxbatt=maxbatt, 
-                    options=Dict(:observation_model=>:falco),
                     rollout_depth=100,
                     camera_info=cam_info)
 

@@ -29,20 +29,17 @@ function statedir(pos1, pos2)
     #     return :stay
     # end
     diff = [0,0]
-    while pos1 != pos2
-        if pos1[1] < pos2[1]
-            diff[1] += 1
-        elseif pos1[1] > pos2[1]
-            diff[1] -= 1
-        end
-        if pos1[2] < pos2[2]
-            diff[2] += 1
-        elseif pos1[2] > pos2[2]
-            diff[2] -= 1
-        end
-        return diff2action[diff]
+    if pos1[1] < pos2[1]
+        diff[1] += 1
+    elseif pos1[1] > pos2[1]
+        diff[1] -= 1
     end
-
+    if pos1[2] < pos2[2]
+        diff[2] += 1
+    elseif pos1[2] > pos2[2]
+        diff[2] -= 1
+    end
+    return diff2action[diff]
 end
 
 function cell_list(pos1, pos2)

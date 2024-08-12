@@ -11,7 +11,3 @@ function action(curr_pos, next_pos::Vector{Int})
         return :stay
     end
 end 
-
-function action(p::UnifiedPOMDP, s)
-    return statedir(s.robot, mat_to_inertial_inds(p.size, Tuple(argmax(p.reward))))
-end
