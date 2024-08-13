@@ -1,4 +1,4 @@
-Base.@kwdef mutable struct BaselineSimulator 
+Base.@kwdef mutable struct BaselineSimulator <: AbstractSimulator
     msim::TargetSearchPOMDP 
     sinit::TSState         
     rewardframes::Frames    = Frames(MIME("image/png"))
@@ -24,14 +24,14 @@ function convertinds(m::TargetSearchPOMDP, pos::Union{Vector{Int}, Tuple{Int,Int
     return inds
 end
 
-function ind2pos(mapsize::Tuple{Int, Int}, ind::Union{Vector{Int}, Tuple{Int,Int}, Tuple{Float64,Float64}})
+function ind2pos(mapsize, ind::Union{Vector{Int}, Tuple{Int,Int}, Tuple{Float64,Float64}})
     correct_ind = reverse(ind)
     yind = mapsize[2] - correct_ind[2] + 1
     inds = [correct_ind[1], yind]
     return Int.(inds)
 end
 
-function simulateBaseline(sim::BaselineSimulator, pospoints, polypoints)
+function simulate(sim::BaselineSimulator, pospoints, polypoints)
     (;msim,max_iter) = sim
     r_total = 0.0
     d = 1.0

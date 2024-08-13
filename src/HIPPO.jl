@@ -42,7 +42,7 @@ export BasicPOMDP,
 
 include(joinpath(@__DIR__,"pachPOMDP","simulate.jl"))
 export remove_rewards,
-       simulateHIPPO, 
+       simulate,
        predicted_path,
        HIPPOSimulator, 
        PachSimulator,
@@ -58,7 +58,7 @@ include(joinpath(@__DIR__,"baseline","greedy","action.jl"))
 include(joinpath(@__DIR__,"baseline","map","simulate.jl"))
 include(joinpath(@__DIR__,"baseline","map","action.jl"))
 
-export simulateBaseline,
+export simulate,
        BaselineSimulator,
        UnifiedBaselineSimulator,
        MapBaselineSimulator
@@ -77,7 +77,13 @@ export rendhist
 include(joinpath(@__DIR__,"XAI","waypoints.jl"))
 export get_children, get_children_from_node
 
-include("process_results.jl")
+include("simutils.jl")
+export TargetSearchSim,
+       benchmark_planner,
+       reset_pomdp!, 
+       results, 
+       show_benchmark_results,
+       results_avg
 
 end
 

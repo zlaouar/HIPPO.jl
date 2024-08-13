@@ -1,4 +1,4 @@
-Base.@kwdef mutable struct HIPPOSimulator 
+Base.@kwdef mutable struct HIPPOSimulator <: AbstractSimulator
     msim::TargetSearchPOMDP
     planner::POMCPPlanner
     up::BasicParticleFilter
@@ -105,7 +105,7 @@ function loctostr(locvec)
     return [join(locvec[i], ',') for i in eachindex(locvec)]
 end
 
-function simulateHIPPO(sim::HIPPOSimulator)
+function simulate(sim::HIPPOSimulator)
     (;msim,max_iter) = sim 
     r_total = 0.0
     s = sim.sinit
@@ -152,7 +152,6 @@ function simulateHIPPO(sim::HIPPOSimulator)
         (sim.anim || sim.display) && (rewardframe = render(msim, (sp=sp, bp=bp), true))
         #display(belframe)
         sim.display && display(rewardframe)
-        iter += 1
         sim.verbose && println(iter,"- | s: ", s.robot, " | human: ", s.human_in_fov, " | orient: ", s.orientation, " | sbatt: ", s.battery, " | a: ", a, 
         " | sp_robot:", sp.robot, " | sp_target:", sp.target, " | spbatt: ", sp.battery, " | r:", r, " | o: ", o)
         #println(iter,"- | battery: ", sp.battery, " | dist_to_home: ", dist(sp.robot, msim.robot_init), " | s: ", sp.robot)
@@ -163,7 +162,8 @@ function simulateHIPPO(sim::HIPPOSimulator)
         finalstate = s
         s = sp
         b = bp
-        sleep_until(tm += sim.dt)
+        iter += 1
+        sim.display && sleep_until(tm += sim.dt)
     end
     !sim.logging && push!(history, (s=finalstate, a=a, sp=sp, o=o, r=r, bp=b, info=info))
     #!sim.logging && push!(history, (a=a,))

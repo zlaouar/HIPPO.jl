@@ -1,4 +1,4 @@
-Base.@kwdef mutable struct UnifiedBaselineSimulator 
+Base.@kwdef mutable struct UnifiedBaselineSimulator <: AbstractSimulator
     msim::TargetSearchPOMDP 
     sinit::TSState         
     rewardframes::Frames    = Frames(MIME("image/png"))
@@ -9,30 +9,41 @@ Base.@kwdef mutable struct UnifiedBaselineSimulator
     logging::Bool           = true
 end
 
-function simulateBaseline(sim::UnifiedBaselineSimulator)
+function simulate(sim::UnifiedBaselineSimulator)
     (;msim,max_iter) = sim
     r_total = 0.0
     d = 1.0
     s = sim.sinit
+    sp = s
     a = :nothing
     iter = 0
     history = NamedTuple[]
+    sim.logging && push!(history, (s=s, a=a, sp=sp))
     while !isterminal(msim, s, s.target) && iter < max_iter 
         tm = time()
         a = action(msim, s)
         #remove_rewards(msim, s.robot) # remove reward at current state
         newrobot = bounce(msim, s.robot, actiondir[a])
-        s = UnifiedState(newrobot, s.target, vec(trues(size(msim.reward))), s.battery-1, s.human_in_fov, s.orientation)
-        r_total += d*msim.reward[rewardinds(msim, s.robot)...]
-        remove_rewards(msim, s.robot) # remove reward at current state
+        sp = UnifiedState(newrobot, s.target, vec(trues(size(msim.reward))), s.battery-1, s.human_in_fov, s.orientation)
+        isterminal(msim, sp) && break
+
+        r = msim.reward[rewardinds(msim, sp.robot)...]
+        sim.verbose && println(iter,"- | s: ", s.robot, " | a: ", a, " | r: ", r)
+        r_total += d*r
+        remove_rewards(msim, sp.robot) # remove reward at current state
         d *= discount(msim)
-        rewardframe = render(msim, (sp=s,), true)
-        sim.display && display(rewardframe) 
-        sim.display && sleep_until(tm += sim.dt)
+
+        if sim.display
+            rewardframe = render(msim, (sp=sp,), true)
+            display(rewardframe) 
+            sleep_until(tm += sim.dt)
+            push!(sim.rewardframes, rewardframe)
+        end
+
+        sim.logging && push!(history, (s=s, a=a, sp=sp))
+        s = sp
         iter += 1
-        push!(sim.rewardframes, rewardframe)
-        sim.logging && push!(history, (s=s, a=a))
     end
-    !sim.logging && push!(history, (s=s, a=a))
-    return history, r_total, iter, sim.rewardframes
+    #!sim.logging && push!(history, (s=s, a=a, sp=sp))
+    return history, r_total
 end

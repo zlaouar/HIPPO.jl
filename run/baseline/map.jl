@@ -1,4 +1,5 @@
 using HIPPO
+using HIPPO: simulate as simulate_planner
 using POMDPs
 using POMDPTools
 using BasicPOMCP
@@ -87,4 +88,4 @@ particle_b = initialize_belief(particle_up, b0)
 
 bsim = MapBaselineSimulator(msim=pomdp, sinit=sinit, up=particle_up, b=particle_b, 
                             dt=1/4, max_iter=maxbatt, display=true, verbose=true)
-baseline_hist, baseline_rtot = simulateBaseline(bsim)
+baseline_hist, baseline_rtot = simulate_planner(bsim)

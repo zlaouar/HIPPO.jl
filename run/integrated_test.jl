@@ -12,6 +12,7 @@ using D3Trees
 using JSON, FileIO
 using StaticArrays
 using HIPPO
+using HIPPO: simulate as simulate_planner
 using Random
 
 # state = Xoshiro(0x5aa1ded317c45a72, 0x6274e82977b27df2, 0x4f74b5bfae714dfa, 0x60af0bc0a1220e51)
@@ -96,7 +97,7 @@ particle_b = initialize_belief(particle_up, b0)
 #inchrome(D3Tree(info[:tree], init_expand=3))
 
 hipposim = HIPPOSimulator(msim=pomdp, planner=planner, up=particle_up, b=particle_b, sinit=sinit, dt=1/10, max_iter=maxbatt, display=true)
-hist, r_total = simulateHIPPO(hipposim)
+hist, r_total = simulate_planner(hipposim)
 
 #renderVIPolicy(mdp_policy, basic_pomdp, sinitBasic) # render MDP policy
 

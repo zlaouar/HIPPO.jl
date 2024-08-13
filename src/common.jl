@@ -1,3 +1,5 @@
+abstract type AbstractSimulator end
+
 # Actions
 const actiondir = Dict(:left=>SVector(-1,0), :right=>SVector(1,0),
                        :up=>SVector(0, 1), :down=>SVector(0,-1), :stay=>SVector(0,0),
