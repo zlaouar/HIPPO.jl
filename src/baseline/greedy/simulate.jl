@@ -28,7 +28,7 @@ function simulate(sim::UnifiedBaselineSimulator)
         isterminal(msim, sp) && break
 
         r = msim.reward[rewardinds(msim, sp.robot)...]
-        sim.verbose && println(iter,"- | s: ", s.robot, " | a: ", a, " | r: ", r)
+        sim.verbose && println(iter,"- | s: ", s.robot, " | target: ", s.target, " | a: ", a, " | r: ", r)
         r_total += d*r
         remove_rewards(msim, sp.robot) # remove reward at current state
         d *= discount(msim)

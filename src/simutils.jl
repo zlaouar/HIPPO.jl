@@ -12,7 +12,6 @@ end
 #     TargetSearchSim(num_sims, simulator, sinit, reward_vec, targetfound_vec, time_vec)
 # end
 function save_data(rtot, hist, targetfound, fname, gname)
-    rm(fname, force=true)
     jldopen(fname, "a") do file
         group = JLD2.Group(file, "iter" * string(gname))
         group["hippo_reward_vec"] = rtot
@@ -22,17 +21,20 @@ function save_data(rtot, hist, targetfound, fname, gname)
 end
 
 function benchmark_planner(sim::TargetSearchSim, rewarddist, newtarget_func, fname; args=(), verbose=false, save=true)
+    rm(fname, force=true)
     for i ∈ 1:sim.num_sims
-        verbose && @info "sim: ", i
+        #verbose && @info "sim: ", i
         hist, rtot = simulate(sim.simulator)
         save && save_data(rtot, hist, last(hist).sp.robot == sim.simulator.msim.targetloc, fname, i)        
+        verbose && @info "sim: ", i, " | reward: ", rtot, " | time: ", length(hist), "target: ", 
+                sim.simulator.msim.targetloc, " | targetfound: ", last(hist).sp.robot == sim.simulator.msim.targetloc
         #sim.reward_vec[i] = rtot
         #sim.targetfound_vec[i] = last(hist).sp.robot == sim.simulator.msim.targetloc
         #sim.targetfound_vec[i] ? println("Target found") : println("Target not found")
         #sim.time_vec[i] = length(hist)
         newtarget = newtarget_func(args...)
         #newtarget = HIPPO.ind2pos(sim.simulator.msim.size, [1, 1])
-        reset_pomdp!(sim, rewarddist, newtarget)
+        reset_pomdp!(sim.simulator, rewarddist, newtarget)
         GC.gc()
     end
     return sim
@@ -52,18 +54,37 @@ function benchmark_planner(sim::TargetSearchSim, rewarddist, ID2grid, fname, his
     return sim, histvec
 end
 
-function reset_pomdp!(sim::TargetSearchSim, rewarddist, target)
-    pomdp = sim.simulator.msim
-    pomdp.currentbatt = sim.simulator.msim.maxbatt
+function reset_pomdp!(simulator::HIPPOSimulator, rewarddist, target)
+    pomdp = simulator.msim
+    pomdp.currentbatt = copy(simulator.msim.maxbatt)
     pomdp.reward = copy(rewarddist)
-    #sim.simulator.msim.robot_init = robot
-    pomdp.targetloc = target
-    sim.simulator.sinit = UnifiedState(pomdp.robot_init, target, vec(trues(pomdp.size...)), 
+    pomdp.targetloc = copy(target)
+    simulator.sinit = UnifiedState(pomdp.robot_init, target, vec(trues(pomdp.size...)), 
+                                        pomdp.maxbatt, false, pomdp.initial_orientation)
+    simulator.b = initialize_belief(simulator.up, initialstate(pomdp))
+end
+
+function reset_pomdp!(simulator::MapBaselineSimulator, rewarddist, target)
+    pomdp = simulator.msim
+    pomdp.currentbatt = copy(simulator.msim.maxbatt)
+    pomdp.reward = copy(rewarddist)
+    pomdp.targetloc = copy(target)
+    simulator.sinit = UnifiedState(pomdp.robot_init, target, vec(trues(pomdp.size...)), 
+                                        pomdp.maxbatt, false, pomdp.initial_orientation)
+    simulator.b = initialize_belief(simulator.up, initialstate(pomdp))
+end
+
+function reset_pomdp!(simulator::UnifiedBaselineSimulator, rewarddist, target)
+    pomdp = simulator.msim
+    pomdp.currentbatt = copy(simulator.msim.maxbatt)
+    pomdp.reward = copy(rewarddist)
+    pomdp.targetloc = copy(target)
+    simulator.sinit = UnifiedState(pomdp.robot_init, copy(target), vec(trues(pomdp.size...)), 
                                         pomdp.maxbatt, false, pomdp.initial_orientation)
 end
 
 function show_benchmark_results(file::String)
-    data = load(file, nested=true)
+    data = load(file; nested=true)
     data = [collect(values(data[i])) for i ∈ keys(data)]
     targetfound_vec = [sim[1] for sim ∈ data]
     reward_vec = [sim[2] for sim ∈ data]

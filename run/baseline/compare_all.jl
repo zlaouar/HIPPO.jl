@@ -51,7 +51,7 @@ rewarddist = [-3.08638     1.04508  -38.9812     6.39193    7.2648     5.96755  
 4.5434      1.84961    5.05996    1.71024  -16.2119   -70.8986    -68.3217   -42.1496    13.7424     14.7261       1.78606    8.92938    0.35768;
 5.93137     2.38837    5.00692    2.17936   -6.58787  -48.8138    -27.0167   -10.6387     1.24938    21.9765       4.26369    6.6729     2.1039;
 6.35598     1.425      2.92712    4.96801   13.0207    -0.589068  -15.8313    10.7642    16.1614     15.3144       3.59158    7.8918     9.1199]
-#rewarddist = db.reward
+rewarddist = db.reward
 rewarddist = abs.(rewarddist)
 mapsize = reverse(size(rewarddist))
 northstart = HIPPO.ind2pos(mapsize, db.ID2grid[40607])
@@ -66,11 +66,11 @@ maxbatt = 500
 
 target = HIPPO.newtarget(mapsize, db)
 newtarget_func = HIPPO.newtarget
-newtarget_func = () -> [1,1]
+#newtarget_func = () -> [1,1]
 #target = [25,30]
 
-robotinit = [3,1]
-target = [10,11]
+#robotinit = [3,1]
+#target = [10,11]
 sinit = UnifiedState(robotinit, target, vec(trues(mapsize)), maxbatt, false, :up)#rand(initialstate(msim))
 
 
@@ -97,7 +97,7 @@ verbose = false
 display = false
 hipposim = HIPPOSimulator(msim=pomdp, planner=planner, up=particle_up, b=particle_b, sinit=sinit, 
                             dt=1/10, max_iter=max_iter, display=display, verbose=verbose)
-greedysim = UnifiedBaselineSimulator(msim=pomdp, sinit=sinit, dt=1/10, max_iter=max_iter, display=display, verbose=display)
+greedysim = UnifiedBaselineSimulator(msim=pomdp, sinit=sinit, dt=1/10, max_iter=max_iter, display=display, verbose=verbose)
 mapsim = MapBaselineSimulator(msim=pomdp, sinit=sinit, up=particle_up, b=particle_b, 
                                 dt=1/10, max_iter=max_iter, display=display, verbose=verbose)
 
@@ -114,17 +114,19 @@ greedyfile = "results/icra2025/greedy_benchmark_results.jld2"
 mapfile = "results/icra2025/map_benchmark_results.jld2"
 
 #rm(hippofile, force=true)
-rm(greedyfile, force=true)
-rm(mapfile, force=true)
+#rm(greedyfile, force=true)
+#rm(mapfile, force=true)
 
 verbose = true
 println("-------------------------Running benchmarks--------------------------")
 println("HIPPO benchmark--------------------------")
-hippo_benchmark = benchmark_planner(hippo_benchmark, rewarddist, newtarget_func, hippofile; verbose=verbose)#, args=(mapsize, db.ID2grid))
+hippo_benchmark = benchmark_planner(hippo_benchmark, rewarddist, newtarget_func, hippofile; verbose=verbose, args=(mapsize, db.ID2grid))
 println("Greedy benchmark--------------------------")
-greedy_benchmark = benchmark_planner(greedy_benchmark, rewarddist, newtarget_func, greedyfile; verbose=verbose)#, args=(mapsize, db.ID2grid))
+HIPPO.reset_pomdp!(greedysim, rewarddist, newtarget)
+greedy_benchmark = benchmark_planner(greedy_benchmark, rewarddist, newtarget_func, greedyfile; verbose=verbose, args=(mapsize, db.ID2grid))
 println("Map benchmark--------------------------")
-map_benchmark = benchmark_planner(map_benchmark, rewarddist, newtarget_func, mapfile; verbose=verbose)#, args=(mapsize, db.ID2grid))
+HIPPO.reset_pomdp!(mapsim, rewarddist, newtarget)
+map_benchmark = benchmark_planner(map_benchmark, rewarddist, newtarget_func, mapfile; verbose=verbose, args=(mapsize, db.ID2grid))
 
 #map_benchmark, maphist = benchmark_planner(map_benchmark, rewarddist, db, []) # DEBUG
 
