@@ -54,7 +54,7 @@ hallway = [80.0 80.0;
 rewarddist = abs.(rewarddist)
 mapsize = reverse(size(rewarddist)) #(13,16)
 maxbatt = 200
-sinit = UnifiedState([3,1], [10,11], vec(trues(mapsize)), maxbatt, false, :up)#rand(initialstate(msim))
+sinit = UnifiedState([3,1], [1,1], vec(trues(mapsize)), maxbatt, false, :up)#rand(initialstate(msim))
 #sinit = UnifiedState([3,1], [4,6], vec(trues(mapsize)), maxbatt, false, :up) #rand(initialstate(msim))
 
 #mapsize = (13,16)
@@ -71,7 +71,6 @@ pomdp = UnifiedPOMDP(sinit,
                     size=mapsize, 
                     rewarddist=rewarddist, 
                     maxbatt=maxbatt,
-                    options=Dict(:observation_model=>:falco),
                     rollout_depth=maxbatt,
                     camera_info=cam_info)
 
@@ -96,7 +95,7 @@ particle_b = initialize_belief(particle_up, b0)
 #a, info = action_info(planner, Deterministic(FullState([13,4],mapsize,vec(trues(mapsize)), maxbatt)), tree_in_info=true)
 #inchrome(D3Tree(info[:tree], init_expand=3))
 
-hipposim = HIPPOSimulator(msim=pomdp, planner=planner, up=particle_up, b=particle_b, sinit=sinit, dt=1/10, max_iter=maxbatt, display=true)
+hipposim = HIPPOSimulator(msim=pomdp, planner=planner, up=particle_up, b=particle_b, sinit=sinit, dt=1/10, max_iter=maxbatt, display=true, verbose=true)
 hist, r_total = simulate_planner(hipposim)
 
 #renderVIPolicy(mdp_policy, basic_pomdp, sinitBasic) # render MDP policy

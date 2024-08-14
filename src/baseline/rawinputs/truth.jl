@@ -43,6 +43,8 @@ location6 = [
 area80POA = vcat(eastRanchTrail, location1, location2, location5)
 area20POA = vcat(westRanchTrail, location3, location4, location6)
 
+#area80POA_grid = [db.ID2grid[i] for i in area80POA]
+
 function chooseTrueCell()
     # Function chooses a random cell for a person to be in based on Amalfitano's inputs
     # Returns the cell number
@@ -52,7 +54,9 @@ function chooseTrueCell()
     weight20 = ones(length(area20POA))*(0.2/length(area20POA))
     weights = vcat(weight80, weight20)
     sampleSet = vcat(area80POA, area20POA)
+
     return sample(sampleSet, Weights(weights))
 end
 
 newtarget(mapsize, db) = HIPPO.ind2pos(mapsize, db.ID2grid[chooseTrueCell()])
+newtarget(mapsize, id2grid::Dict{Int64, Tuple{Int64, Int64}}) = HIPPO.ind2pos(mapsize, id2grid[chooseTrueCell()]) 

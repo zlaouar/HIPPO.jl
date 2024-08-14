@@ -45,9 +45,17 @@ function POMDPs.actions(m::UnifiedPOMDP, b::LeafNodeBelief)
     elseif o == :medium 
         return PRIMITIVE_ACTIONS
     elseif o == :high
-        #return (PRIMITIVE_ACTIONS..., unique(Vector.(rand(non_cardinal_states_in_fov(m, b.sp), m.num_macro_actions(b))))...)
-        
-        return PRIMITIVE_ACTIONS
+        fov_cells = non_cardinal_states_in_fov(m, b.sp)
+        if !isterminal(m, b.sp) && !isempty(fov_cells)
+            try
+                return (PRIMITIVE_ACTIONS..., unique(Vector.(rand(non_cardinal_states_in_fov(m, b.sp), m.num_macro_actions(b))))...)
+            catch
+                @error "FAILED TO GET MACRO-ACTIONS"
+                @show "s.robot: ", b.sp.robot, " | s.target: ", b.sp.target, " | s.orientation: ", b.sp.orientation
+            end
+        end
+            
+        #return PRIMITIVE_ACTIONS
     end
     return PRIMITIVE_ACTIONS
 
@@ -85,6 +93,7 @@ end
 function non_cardinal_states_in_fov(m::UnifiedPOMDP, s::UnifiedState)
     m.pose.x = (s.robot[1] - 0.5) * m.resolution
     m.pose.y = (s.robot[2] - 0.5) * m.resolution
+    m.pose.heading = headingdir[s.orientation]
     bbox = getBoundingPolygon(m.camera_info, m.pose)
     states = project_footprint_to_grid(bbox, m.size[1], m.size[2], m.resolution)
     return filter(x->norm(x-s.robot)>=2.0, states)
@@ -251,8 +260,13 @@ function POMDPs.transition(m::UnifiedPOMDP, s::UnifiedState, a::MacroAction)
         s.visited[LinearIndices((1:m.size[1], 1:m.size[2]))[traversed_cells[i]...]] = 0
     end
     
-    new_orientation = orientdir[traversed_cells[end] - traversed_cells[end-1]]
-
+    try
+        new_orientation = orientdir[traversed_cells[end] - traversed_cells[end-1]]
+    catch e
+        @info "robot: ", s.robot, " | target: ", s.target, " | action: ", a
+        @info "Traversed cells: ", traversed_cells
+        @info "Orientation: ", s.orientation
+    end
     if new_orientation == :stay
         new_orientation = s.orientation
     end

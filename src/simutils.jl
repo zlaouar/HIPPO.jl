@@ -11,27 +11,41 @@ end
 #                             targetfound_vec=BitVector(undef, num_sims), time_vec=Vector{Int}(undef, num_sims))
 #     TargetSearchSim(num_sims, simulator, sinit, reward_vec, targetfound_vec, time_vec)
 # end
-function benchmark_planner(sim::TargetSearchSim, rewarddist, db)
+function save_data(rtot, hist, targetfound, fname, gname)
+    rm(fname, force=true)
+    jldopen(fname, "a") do file
+        group = JLD2.Group(file, "iter" * string(gname))
+        group["hippo_reward_vec"] = rtot
+        group["hippo_time"] = length(hist)
+        group["hippo_targetfound_vec"] = targetfound
+    end
+end
+
+function benchmark_planner(sim::TargetSearchSim, rewarddist, newtarget_func, fname; args=(), verbose=false, save=true)
     for i ∈ 1:sim.num_sims
+        verbose && @info "sim: ", i
         hist, rtot = simulate(sim.simulator)
-        sim.reward_vec[i] = rtot
-        sim.targetfound_vec[i] = last(hist).sp.robot == sim.simulator.msim.targetloc
-        sim.targetfound_vec[i] ? println("Target found") : println("Target not found")
-        sim.time_vec[i] = length(hist)
-        newtarget = HIPPO.newtarget(sim.simulator.msim.size, db)
+        save && save_data(rtot, hist, last(hist).sp.robot == sim.simulator.msim.targetloc, fname, i)        
+        #sim.reward_vec[i] = rtot
+        #sim.targetfound_vec[i] = last(hist).sp.robot == sim.simulator.msim.targetloc
+        #sim.targetfound_vec[i] ? println("Target found") : println("Target not found")
+        #sim.time_vec[i] = length(hist)
+        newtarget = newtarget_func(args...)
+        #newtarget = HIPPO.ind2pos(sim.simulator.msim.size, [1, 1])
         reset_pomdp!(sim, rewarddist, newtarget)
+        GC.gc()
     end
     return sim
 end
 
-function benchmark_planner(sim::TargetSearchSim, rewarddist, db, histvec)
+function benchmark_planner(sim::TargetSearchSim, rewarddist, ID2grid, fname, histvec::Vector, verbose=false)
     for i ∈ 1:sim.num_sims
         hist, rtot = simulate(sim.simulator)
         sim.reward_vec[i] = rtot
         sim.targetfound_vec[i] = last(hist).sp.robot == sim.simulator.msim.targetloc
-        sim.targetfound_vec[i] ? println("Target found") : println("Target not found")
+        #sim.targetfound_vec[i] ? println("Target found") : println("Target not found")
         sim.time_vec[i] = length(hist)
-        newtarget = HIPPO.newtarget(sim.simulator.msim.size, db)
+        newtarget = HIPPO.newtarget(sim.simulator.msim.size, ID2grid)
         reset_pomdp!(sim, rewarddist, newtarget)
         push!(histvec, hist)
     end
@@ -48,16 +62,35 @@ function reset_pomdp!(sim::TargetSearchSim, rewarddist, target)
                                         pomdp.maxbatt, false, pomdp.initial_orientation)
 end
 
-function show_benchmark_results(file)
-    data = load(file)["benchmarks"]
+function show_benchmark_results(file::String)
+    data = load(file, nested=true)
+    data = [collect(values(data[i])) for i ∈ keys(data)]
+    targetfound_vec = [sim[1] for sim ∈ data]
+    reward_vec = [sim[2] for sim ∈ data]
+    time_vec = [sim[3] for sim ∈ data]
 
-    for sim ∈ data
-        find_ratio = sum(sim.targetfound_vec) / length(sim.targetfound_vec)
-        reward_time = mean(sim.reward_vec ./ sim.time_vec)
-        time = mean(sim.time_vec)
-        println("rtf: ", reward_time, " |  find ratio: ", find_ratio, " |  time: ", time)
+    find_ratio = sum(targetfound_vec) / length(targetfound_vec)
+    reward_time = mean(reward_vec ./ time_vec)
+    time = mean(time_vec)
+    println("rtf: ", reward_time, " |  find ratio: ", find_ratio, " |  time: ", time)
+end
+
+function show_benchmark_results(files::Vector{String})
+    for file ∈ files
+        show_benchmark_results(file)
     end
 end
+
+# function show_benchmark_results(file)
+#     data = load(file)["benchmarks"]
+
+#     for sim ∈ data
+#         find_ratio = sum(sim.targetfound_vec) / length(sim.targetfound_vec)
+#         reward_time = mean(sim.reward_vec ./ sim.time_vec)
+#         time = mean(sim.time_vec)
+#         println("rtf: ", reward_time, " |  find ratio: ", find_ratio, " |  time: ", time)
+#     end
+# end
 
 function results(file)
     data = load(file)

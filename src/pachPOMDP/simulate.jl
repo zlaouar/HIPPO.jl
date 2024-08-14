@@ -117,7 +117,7 @@ function simulate(sim::HIPPOSimulator)
     d = 1.0
     b = sim.b 
     bp = sim.b
-    a = :nothing 
+    a = Union{Symbol, Vector{Int64}}[:nothing]
     info = nothing
     history = NamedTuple[]
     (sim.anim || sim.display) && (belframe = render(msim, (sp=s, bp=bp)))
@@ -130,7 +130,7 @@ function simulate(sim::HIPPOSimulator)
         #a_traj = extract_trajectory(root(tree), 5)
         #a = first(a_traj)
         #try 
-        a, info = action_info(sim.planner, b, tree_in_info = true)
+        a, _ = action_info(sim.planner, b)
 
         
         #catch e
@@ -151,7 +151,7 @@ function simulate(sim::HIPPOSimulator)
         (sim.anim || sim.display) && (belframe = render(msim, (sp=sp, bp=bp)))
         (sim.anim || sim.display) && (rewardframe = render(msim, (sp=sp, bp=bp), true))
         #display(belframe)
-        sim.display && display(rewardframe)
+        sim.display && display(belframe)
         sim.verbose && println(iter,"- | s: ", s.robot, " | human: ", s.human_in_fov, " | orient: ", s.orientation, " | sbatt: ", s.battery, " | a: ", a, 
         " | sp_robot:", sp.robot, " | sp_target:", sp.target, " | spbatt: ", sp.battery, " | r:", r, " | o: ", o)
         #println(iter,"- | battery: ", sp.battery, " | dist_to_home: ", dist(sp.robot, msim.robot_init), " | s: ", sp.robot)

@@ -143,7 +143,6 @@ function UnifiedPOMDP(sinit::TSState;
         obstacles=Vector{SVector{2, Int}}(),
         resolution=25,
         num_macro_actions=(b) -> 4,
-        initial_orientation=:up,
         rollout_depth=maxbatt,
         camera_info=CameraInfo(deg2rad(71.5), 
                                 deg2rad(56.8), 
@@ -154,6 +153,7 @@ function UnifiedPOMDP(sinit::TSState;
         pose=RobotPose(0.0, 0.0, 30.0, deg2rad(0.0), deg2rad(-45.0), deg2rad(0.0)))
 
     robot_init = sinit.robot
+    initial_orientation = sinit.orientation
     tprob = 0.7
     targetloc = sinit.target
     rois = roi_points
