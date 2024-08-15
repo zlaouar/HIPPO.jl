@@ -143,7 +143,9 @@ function simulate(sim::HIPPOSimulator)
         #display(msim.reward)
         sp, o, r = @gen(:sp,:o,:r)(msim, s, a)
         isterminal(msim, sp) && break
-        sim.msim.currentbatt = sp.battery
+        if hasproperty(msim, :currentbatt) 
+            msim.currentbatt = sp.battery
+        end
 
         r_total += d*r
         d *= discount_factor(msim)
@@ -152,7 +154,7 @@ function simulate(sim::HIPPOSimulator)
         (sim.anim || sim.display) && (rewardframe = render(msim, (sp=sp, bp=bp), true))
         #display(belframe)
         sim.display && display(belframe)
-        sim.verbose && println(iter,"- | s: ", s.robot, " | human: ", s.human_in_fov, " | orient: ", s.orientation, " | sbatt: ", s.battery, " | a: ", a, 
+        sim.verbose && println(iter,"- | s: ", s.robot, " | orient: ", s.orientation, " | sbatt: ", s.battery, " | a: ", a, 
         " | sp_robot:", sp.robot, " | sp_target:", sp.target, " | spbatt: ", sp.battery, " | r:", r, " | o: ", o)
         #println(iter,"- | battery: ", sp.battery, " | dist_to_home: ", dist(sp.robot, msim.robot_init), " | s: ", sp.robot)
         sim.anim && push!(sim.rewardframes, rewardframe)

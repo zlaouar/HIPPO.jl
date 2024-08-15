@@ -56,7 +56,9 @@ end
 
 function reset_pomdp!(simulator::HIPPOSimulator, rewarddist, target)
     pomdp = simulator.msim
-    pomdp.currentbatt = copy(simulator.msim.maxbatt)
+    if hasproperty(pomdp, :currentbatt)
+        pomdp.currentbatt = copy(simulator.msim.maxbatt)
+    end
     pomdp.reward = copy(rewarddist)
     pomdp.targetloc = copy(target)
     simulator.sinit = UnifiedState(pomdp.robot_init, target, vec(trues(pomdp.size...)), 

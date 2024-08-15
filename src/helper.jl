@@ -17,17 +17,6 @@ struct FixedPolicy <: Function end
 (::FixedPolicy)(s) = :up
 
 function statedir(pos1, pos2)
-    # if (pos1[1]-pos2[1]) >= 1 # pos2 left of robot
-    #     return :left
-    # elseif (pos1[1]-pos2[1]) <= -1 # pos2 right of robot
-    #     return :right
-    # elseif (pos1[2]-pos2[2]) >= 1 # pos2 below robot
-    #     return :down
-    # elseif (pos1[2]-pos2[2]) <= -1 # pos2 above robot
-    #     return :up
-    # else
-    #     return :stay
-    # end
     diff = [0,0]
     if pos1[1] < pos2[1]
         diff[1] += 1
@@ -39,7 +28,11 @@ function statedir(pos1, pos2)
     elseif pos1[2] > pos2[2]
         diff[2] -= 1
     end
-    return diff2action[diff]
+    if diff == [0,0]
+        return rand([:up, :down, :left, :right])
+    else
+        return diff2action[diff]
+    end
 end
 
 function cell_list(pos1, pos2)
@@ -81,8 +74,14 @@ end
 
 function POMDPs.action(p::GreedyPolicy, s)
     if rand() < 0.5
+        if statedir(s.robot, s.target) == :stay
+            println("STAY ACTION TARGET")
+        end
         return statedir(s.robot, s.target)
     else
+        if statedir(s.robot, mat_to_inertial_inds(p.pomdp.size, Tuple(argmax(p.pomdp.reward)))) == :stay
+            println("STAY ACTION REWARD")
+        end
         return statedir(s.robot, mat_to_inertial_inds(p.pomdp.size, Tuple(argmax(p.pomdp.reward))))
     end
     # return statedir(s.robot, s.target)

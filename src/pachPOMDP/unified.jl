@@ -141,10 +141,6 @@ function is_in_fov(m, target, robot_state, robot_orientation)
     return target ∈ m.fov_lookup[(robot_state[1], robot_state[2], robot_orientation)]
 end
 
-function is_in_fov(m, target, robot_state, robot_orientation)
-    return target ∈ m.fov_lookup[(robot_state[1], robot_state[2], robot_orientation)]
-end
-
 # function non_cardinal_states_in_fov(m::UnifiedPOMDP, s::UnifiedState)
 #     # TODO: create fov as a function of orientation, altitude, and camera angle
 #     states = []
@@ -175,13 +171,7 @@ function bounce(size, pos, offset)
     clamp.(pos + offset, SVector(1,1), size)
 end
 
-function projected_states(m, s, diff)
-    states = []
-    for i in 0:8
-        push!(states, bounce(m, s.robot, diff + SVector(i%3-1, i÷3-1)))
-    end
-    return unique(states)
-end
+
 
 # function projected_states(m, s, diff, camera_angle=π/4)
 #     states = []
@@ -260,13 +250,7 @@ function POMDPs.transition(m::UnifiedPOMDP, s::UnifiedState, a::MacroAction)
         s.visited[LinearIndices((1:m.size[1], 1:m.size[2]))[traversed_cells[i]...]] = 0
     end
     
-    try
-        new_orientation = orientdir[traversed_cells[end] - traversed_cells[end-1]]
-    catch e
-        @info "robot: ", s.robot, " | target: ", s.target, " | action: ", a
-        @info "Traversed cells: ", traversed_cells
-        @info "Orientation: ", s.orientation
-    end
+    new_orientation = orientdir[traversed_cells[end] - traversed_cells[end-1]]
     if new_orientation == :stay
         new_orientation = s.orientation
     end

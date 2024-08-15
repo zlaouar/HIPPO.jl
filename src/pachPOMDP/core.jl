@@ -24,6 +24,7 @@ struct FullState <: TSState
     target::SVector{2, Int}
     visited::BitVector
     battery::Int
+    orientation::Symbol
 end
 
 struct UnifiedState <: TSState
@@ -86,6 +87,10 @@ mutable struct PachPOMDP{O} <: TargetSearchPOMDP{TSState, Symbol, O}
     reward::Matrix{Float64}
     maxbatt::Int
     resolution::Int
+    initial_orientation::Symbol
+    fov_lookup::Dict{Tuple{Int, Int, Symbol}, Vector{Vector{Int}}}
+    camera_info::CameraInfo
+    pose::RobotPose
 end
 
 mutable struct UnifiedPOMDP{O, F<:Function} <: TargetSearchPOMDP{TSState, Symbol, O}
@@ -122,16 +127,30 @@ function create_target_search_pomdp(sinit::TSState;
                                     maxbatt=100, 
                                     options=Dict(:observation_model=>:falco),
                                     obstacles=Vector{SVector{2, Int}}(),
-                                    resolution=25)
-
+                                    resolution=25,
+                                    camera_info=CameraInfo(deg2rad(71.5), 
+                                                            deg2rad(56.8), 
+                                                            30.0, 
+                                                            deg2rad(0.0), 
+                                                            deg2rad(0.0), 
+                                                            deg2rad(0.0)),
+                                    pose=RobotPose(0.0, 0.0, 30.0, deg2rad(0.0), deg2rad(-45.0), deg2rad(0.0)))
+    
     robot_init = sinit.robot
     tprob = 0.7
     targetloc = sinit.target
     rois = roi_points
 
+    pose.x = (robot_init[1] - 0.5) * resolution
+    pose.y = (robot_init[2] - 0.5) * resolution
+    pose.heading = headingdir[sinit.orientation]
+
+    fov_lookup = precompute_camera_footprint(camera_info, pose, resolution, size, ORIENTATIONS)
+
     PachPOMDP{obs_type(options)}(size, obstacles, robot_init, tprob, 
                                                 targetloc, rois, copy(rewarddist), 
-                                                maxbatt, resolution)
+                                                maxbatt, resolution, sinit.orientation,
+                                                fov_lookup, camera_info, pose)
 end
 
 function UnifiedPOMDP(sinit::TSState; 
@@ -153,7 +172,6 @@ function UnifiedPOMDP(sinit::TSState;
         pose=RobotPose(0.0, 0.0, 30.0, deg2rad(0.0), deg2rad(-45.0), deg2rad(0.0)))
 
     robot_init = sinit.robot
-    initial_orientation = sinit.orientation
     tprob = 0.7
     targetloc = sinit.target
     rois = roi_points
@@ -161,14 +179,14 @@ function UnifiedPOMDP(sinit::TSState;
 
     pose.x = (robot_init[1] - 0.5) * resolution
     pose.y = (robot_init[2] - 0.5) * resolution
-    pose.heading = headingdir[initial_orientation]
+    pose.heading = headingdir[sinit.orientation]
 
     fov_lookup = precompute_camera_footprint(camera_info, pose, resolution, size, ORIENTATIONS)
     # fov_lookup = precompute_fov(size, ORIENTATIONS)
 
     UnifiedPOMDP{obs_type(options), typeof(num_macro_actions)}(size, obstacles, robot_init, tprob, 
                                     targetloc, rois, copy(rewarddist), maxbatt, currentbatt, resolution, 
-                                    num_macro_actions, initial_orientation, fov_lookup, 
+                                    num_macro_actions, sinit.orientation, fov_lookup, 
                                     rollout_depth, camera_info, pose)
 end
 

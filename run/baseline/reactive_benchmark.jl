@@ -1,14 +1,39 @@
 using HIPPO
 using HIPPO: simulate as simulate_planner
 using POMDPs
-using BasicPOMCP
 using POMDPTools
+using BasicPOMCP
 using DiscreteValueIteration
-using Profile
 using ParticleFilters
-using D3Trees
-using JSON, FileIO
-using StaticArrays
+using JLD2
+
+#println("ARGS: ", ARGS)
+
+#mapid = parse(Int, ARGS[1]) 
+#startid = parse(Int,ARGS[2])
+
+mapid = 1
+startid = 1
+
+filevec = ["../data/opdata1.jld2", 
+           "../data/opdata2.jld2",
+           "../data/opdata3.jld2",
+           "../data/opdata4.jld2",
+           "../data/opdata5.jld2"]
+
+#file = filevec[mapid]
+file = filevec[1]
+inputs = jldopen(joinpath("data", file), "r")["inputs"]
+db = jldopen(joinpath("data", file), "r")["db"]
+
+
+#db = load(joinpath(@__DIR__, "../data/db.jld2"), "db")
+#inputs1 = load(joinpath(@__DIR__, "../data/opdata1.jld2"), "inputs")
+#inputs2 = load(joinpath(@__DIR__, "../data/opdata2.jld2"), "inputs")
+#inputs3 = load(joinpath(@__DIR__, "../data/opdata3.jld2"), "inputs")
+#inputs4 = load(joinpath(@__DIR__, "../data/opdata4.jld2"), "inputs")
+#inputs5 = load(joinpath(@__DIR__, "../data/opdata5.jld2"), "inputs")
+
 
 rewarddist = [-3.08638     1.04508  -38.9812     6.39193    7.2648     5.96755     9.32665   -9.62812   -0.114036    7.38693      3.39033   -5.17863  -12.7841;
 -8.50139     2.3827   -30.2106   -74.7224   -33.9783    -3.63283    -4.73628   -6.19297   -4.34958    -6.13309    -36.2926    -7.35857    0.417866;
@@ -26,28 +51,28 @@ rewarddist = [-3.08638     1.04508  -38.9812     6.39193    7.2648     5.96755  
 4.5434      1.84961    5.05996    1.71024  -16.2119   -70.8986    -68.3217   -42.1496    13.7424     14.7261       1.78606    8.92938    0.35768;
 5.93137     2.38837    5.00692    2.17936   -6.58787  -48.8138    -27.0167   -10.6387     1.24938    21.9765       4.26369    6.6729     2.1039;
 6.35598     1.425      2.92712    4.96801   13.0207    -0.589068  -15.8313    10.7642    16.1614     15.3144       3.59158    7.8918     9.1199]
-smallreward = [800.0 2.0 2.0 -20.0;
-                2.0 2.0 2.0 2.0;
-                2.0 2.0 2.0 2.0;
-                2.0 2.0 2.0 2.0;
-                2.0 2.0 2.0 2.0;
-                2.0 2.0 2.0 2.0]
-hallway = [80.0 80.0;
-           50.0 50.0;
-           20.0 20.0;
-           -100.0 -100.0;
-           0.0 0.0;
-           0.0 0.0;
-           0.0 0.0]
-#rewarddist = smallreward
-#rewarddist = hallway
-#rewarddist = load("rewardmat.jld2","rewarddist")
-#rewarddist = rewarddist .+ abs(minimum(rewarddist)) .+ 0.01
+rewarddist = db.reward
 rewarddist = abs.(rewarddist)
-mapsize = reverse(size(rewarddist)) #(13,16)
-maxbatt = 1000
-sinit = FullState([3,1], [10,11], vec(trues(mapsize)), maxbatt, :up)#rand(initialstate(msim))
-#sinit = FullState([3,1], [4,6], vec(trues(mapsize)), maxbatt, :up)#rand(initialstate(msim))
+mapsize = reverse(size(rewarddist))
+northstart = HIPPO.ind2pos(mapsize, db.ID2grid[40607])
+southstart = HIPPO.ind2pos(mapsize, db.ID2grid[19064])
+weststart = HIPPO.ind2pos(mapsize, db.ID2grid[28390])
+northeaststart = HIPPO.ind2pos(mapsize, db.ID2grid[45650])
+
+startvec = [northstart, southstart, weststart, northeaststart]
+
+robotinit = startvec[startid]
+maxbatt = 500
+
+target = HIPPO.newtarget(mapsize, db)
+newtarget_func = HIPPO.newtarget
+#newtarget_func = () -> [1,1]
+#target = [25,30]
+
+#robotinit = [3,1]
+#target = [10,11]
+sinit = FullState(robotinit, target, vec(trues(mapsize)), maxbatt, :up)#rand(initialstate(msim))
+
 
 cam_info = HIPPO.CameraInfo(
     deg2rad(71.5), # horizontal fov
@@ -61,37 +86,28 @@ pomdp = create_target_search_pomdp(sinit,
                                     camera_info=cam_info,
                                     options=Dict(:observation_model=>:falco))
 
-#basic_pomdp = BasicPOMDP(sinitBasic, size=mapsize)
-#mdp_solver = ValueIterationSolver() # creates the solver
-#mdp_policy = solve(mdp_solver, UnderlyingMDP(basic_pomdp))
-
-#p = FunctionPolicy(FixedPolicy())
-#mdprollout = FORollout(TargetSearchMDPPolicy(mdp_policy))
 greedyrollout = FORollout(GreedyPolicy(pomdp))
-#funcrollout = FORollout(p)
-#mdprollout = FORollout(mdp_policy) # change MDP reward mat to pompdp reward mat
-#solver = POMCPSolver(estimate_value = mdprollout, tree_queries=10000, max_time=0.2, c=5) # mdp policy rollout
-#solver = POMCPSolver(estimate_value = funcrollout, tree_queries=10000, max_time=0.2, c=5) # up rollout
-#solver = POMCPSolver(tree_queries=10_000, max_time=0.2, c=5) # random
-solver = POMCPSolver(estimate_value=greedyrollout,tree_queries=10_000, max_time=0.2, c=100) # random
-
-
-planner = solve(solver,pomdp)
-
-
+solver = POMCPSolver(estimate_value=greedyrollout, tree_queries=10_000, max_time=0.2, c=100) # random
+planner = solve(solver, pomdp)
 b0 = initialstate(pomdp)
-N = 10000
-particle_up = BootstrapFilter(pomdp, N)
+particle_up = BootstrapFilter(pomdp, 10000)
 particle_b = initialize_belief(particle_up, b0)
 
+max_iter = maxbatt
+verbose = true
+display = true
+hipposim = HIPPOSimulator(msim=pomdp, planner=planner, up=particle_up, b=particle_b, sinit=sinit, 
+                            dt=1/10, max_iter=max_iter, display=display, verbose=verbose)
 
-#a, info = action_info(planner, Deterministic(FullState([13,4],mapsize,vec(trues(mapsize)), maxbatt)), tree_in_info=true)
-#inchrome(D3Tree(info[:tree], init_expand=3))
+num_sims = 1
+newtarget = sinit.target
 
-hipposim = HIPPOSimulator(msim=pomdp, planner=planner, up=particle_up, b=particle_b, sinit=sinit, dt=1/10, max_iter=maxbatt, display=true)
-hist, r_total = simulate_planner(hipposim)
+hippo_benchmark = TargetSearchSim(num_sims=num_sims, simulator=hipposim, sinit=sinit)
 
-#renderVIPolicy(mdp_policy, basic_pomdp, sinitBasic) # render MDP policy
+hippofile = "results/icra2025/hippo_reactive_benchmark_results_50.jld2"
+verbose = true
+println("-------------------------Running benchmarks--------------------------")
+println("HIPPO benchmark--------------------------")
+hippo_benchmark = benchmark_planner(hippo_benchmark, rewarddist, newtarget_func, hippofile; verbose=verbose, args=(mapsize, db.ID2grid))
 
-
-println("Total Reward: ", r_total)
+show_benchmark_results(hippofile)
