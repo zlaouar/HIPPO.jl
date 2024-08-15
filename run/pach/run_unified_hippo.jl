@@ -88,14 +88,18 @@ function initialize(rewarddist, location_dict, keepout_zones, resolution, flight
 
     obstacles = get_obstacles(keepout_zones, mapsize)
 
+    cam_info = HIPPO.CameraInfo(
+    deg2rad(71.5), # horizontal fov
+    deg2rad(56.8), # vertical fov
+)
     msolve = UnifiedPOMDP(sinit, 
                             size=mapsize, 
                             rewarddist=rewarddist, 
                             maxbatt=maxbatt, 
-                            options=Dict(:observation_model=>:falco),
                             obstacles=obstacles,
                             resolution=resolution,
-                            rollout_depth=maxbatt)
+                            rollout_depth=maxbatt,
+                            camera_info=cam_info)
 
     solver = POMCPSolver(tree_queries=50000, max_time=1.0, c=200, tree_in_info=true) #max_depth=3,c=1000,
     b0 = initialstate(msolve)
@@ -221,8 +225,7 @@ function best_action(t::BasicPOMCP.POMCPTree)
 end
 
 function next_action(data, ws_client, pachSim, flightParams; waypoint_params=WaypointParams(false,0,0))
-    (msim, up, b, sinit, previous_action) = (pachSim.msim, pachSim.up, pachSim.b, 
-                                             pachSim.sinit, pachSim.previous_action)
+    previous_action = pachSim.previous_action
     println("data: ", data)
     score = data["score"]
 
@@ -235,21 +238,10 @@ function next_action(data, ws_client, pachSim, flightParams; waypoint_params=Way
     end
 
     println("score: ", score, " | o: ", o)
-    #b = update(up, b, previous_action, o)
-    #pachSim.b = b
-
-    # remove_rewards(pachSim.msim, sinit.robot) # remove reward at current state
-    #tree, b = conditional_path(pachSim)
-    #@warn "rewards: ", pachSim.msim.reward
-    # inchrome(D3Tree(pachSim.planner._tree))
 
     a = best_action(pachSim.planner._tree)
     
-    # hnode = BasicPOMCP.POMCPObsNode(pachSim.planner._tree, 1)
-    # a = next_action(hnode, previous_action)
     sp = @gen(:sp)(pachSim.msim, pachSim.sinit, a)
-    #spro = HIPPO.bounce(pachSim.msim, pachSim.sinit.robot, HIPPO.actiondir[a])
-    #sp = HIPPO.UnifiedState(spro, sp.target, sp.visited, sp.battery, sp.human_in_fov, sp.orientation)
     loc = HIPPO.loctostr([HIPPO.convertinds(pachSim.msim, sp.robot)])
     @info "s: ", pachSim.sinit.robot, " | sp: ", sp.robot , " | loc: ", loc, " | a: ", a, "prev a: ", previous_action
     response = pachSim.location_dict[loc[1]]
@@ -303,7 +295,6 @@ function main()
                 println("Executing Action: ", action)
 
                 if action == "CalculatePath"
-                    # @info "In Calc Path"
                     println("initialized: ", initialized)
                     pachSim = update_reward(arguments, ws_client, pachSim, initialized, flightParams; waypoint_params=way_params)
                     initialized = true
@@ -314,8 +305,6 @@ function main()
                     end
                     
                 elseif action == "FlightStatus"
-                    # println("=========================")
-                    # @info "In FS"
                     if initialized 
                         pachSim = generate_next_action(arguments, ws_client, pachSim, flightParams; waypoint_params=way_params)
                     else
@@ -326,7 +315,6 @@ function main()
                     pachSim = next_action(arguments, ws_client, pachSim, flightParams; waypoint_params=way_params)
 
                 elseif action == "FlightParams"
-                    # @info "In FP"
                     flightParams = update_params(arguments)
                     flight_params_updated = true
                     println("Updated Params")
