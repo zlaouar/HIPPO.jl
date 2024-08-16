@@ -25,8 +25,8 @@ include("common.jl")
 
 include(joinpath(@__DIR__,"camera.jl"))
 include(joinpath(@__DIR__,"pachPOMDP","core.jl"))
-include(joinpath(@__DIR__,"pachPOMDP","functions.jl"))
-include(joinpath(@__DIR__,"pachPOMDP","unified.jl"))
+include(joinpath(@__DIR__,"pachPOMDP","reactive_model.jl"))
+include(joinpath(@__DIR__,"pachPOMDP","unified_model.jl"))
 
 export BasicPOMDP,
        RewardPOMDP, 

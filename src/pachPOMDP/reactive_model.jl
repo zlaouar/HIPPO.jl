@@ -44,30 +44,6 @@ end
 POMDPs.discount(m::PachPOMDP) = 0.95 
 discount_factor(m::PachPOMDP) = discount(m)
 
-
-
-# function POMDPs.transition(m::PachPOMDP{<:}, s, a)
-#     states = FullState[]
-#     probs = Float64[]
-#     remaining_prob = 1.0
-
-#     if isequal(s.robot, s.target)
-#         return Deterministic(FullState(SA[-1,-1], copy(s.target), s.visited, s.battery))
-#     end
-    
-#     newrobot = bounce(m, s.robot, actiondir[a])
-
-#     push!(states, FullState(newrobot, s.target, copy(s.visited), s.battery-(m.resolution/25)))
-#     push!(probs, remaining_prob)
-
-#     for sp ∈ states
-#         sind = LinearIndices((1:m.size[1], 1:m.size[2]))[s.robot...]
-#         sp.visited[sind] = 0
-#     end
-
-#     return SparseCat(states, probs)
-
-# end
 function projected_states(m, s)
     return m.fov_lookup[(s.robot[1], s.robot[2], s.orientation)]
 end
@@ -87,6 +63,7 @@ function projected_state_random(m, s)
     end
     return rand(unique(states))
 end
+
 function projected_state_random(m, s)
     projected_states = m.fov_lookup[(s.robot[1], s.robot[2], s.orientation)]
     if !isempty(projected_states)
@@ -95,55 +72,6 @@ function projected_state_random(m, s)
         return s.robot
     end
 end
-
-# function projected_states(m, s, a)
-#     if s.robot[1]-s.target[1] >= 2.0 && a == :left 
-#         states = [bounce(m, s.robot, SVector(-1,0)), 
-#                   bounce(m, s.robot, SVector(-2,0))]
-#     elseif s.robot[1]-s.target[1] <= 2.0 && a == :right
-#         states = [bounce(m, s.robot, SVector(1,0)), 
-#                   bounce(m, s.robot, SVector(2,0))]
-#     elseif s.robot[2]-s.target[2] >= 2.0 && a == :down
-#         states = [bounce(m, s.robot, SVector(0,-1)), 
-#                   bounce(m, s.robot, SVector(0,-2))]
-#     elseif s.robot[2]-s.target[2] <= 2.0 && a == :up
-#         states = [bounce(m, s.robot, SVector(0,1)), 
-#                   bounce(m, s.robot, SVector(0,2))]
-#     elseif (s.robot[1]-s.target[1] >= 2.0) && (s.robot[2]-s.target[2] >= 2.0) && a == :sw
-#         states = [bounce(m, s.robot, SVector(-1,-1)), 
-#                   bounce(m, s.robot, SVector(-2,-2))]
-#     elseif (s.robot[1]-s.target[1] <= 2.0) && (s.robot[2]-s.target[2] >= 2.0) && a == :se
-#         states = [bounce(m, s.robot, SVector(1,-1)), 
-#                   bounce(m, s.robot, SVector(2,-2))]
-#     elseif (s.robot[1]-s.target[1] >= 2.0) && (s.robot[2]-s.target[2] <= 2.0) && a == :nw
-#         states = [bounce(m, s.robot, SVector(-1,1)), 
-#                   bounce(m, s.robot, SVector(-2,2))]
-#     elseif (s.robot[1]-s.target[1] <= 2.0) && (s.robot[2]-s.target[2] <= 2.0) && a == :ne
-#         states = [bounce(m, s.robot, SVector(1,1)), 
-#                   bounce(m, s.robot, SVector(2,2))]
-#     else
-#         states = []
-#     end
-
-
-#     # elseif s.robot[1]-s.target[1] <= 2.0 && a == :right
-#     #     states = [s.robot + SVector(1,0), s.robot + SVector(2,0)]
-#     # elseif s.robot[2]-s.target[2] >= 2.0 && a == :down
-#     #     states = [s.robot + SVector(0,-1), s.robot + SVector(0,-2)]
-#     # elseif s.robot[2]-s.target[2] <= 2.0 && a == :up
-#     #     states = [s.robot + SVector(0,1), s.robot + SVector(0,2)]
-#     # elseif (s.robot[1]-s.target[1] >= 2.0) && (s.robot[2]-s.target[2] >= 2.0) && a == :sw
-#     #     states = [s.robot + SVector(-1,-1), s.robot + SVector(-2,-2)]
-#     # elseif (s.robot[1]-s.target[1] <= 2.0) && (s.robot[2]-s.target[2] >= 2.0) && a == :se
-#     #     states = [s.robot + SVector(1,-1), s.robot + SVector(2,-2)]
-#     # elseif (s.robot[1]-s.target[1] >= 2.0) && (s.robot[2]-s.target[2] <= 2.0) && a == :nw
-#     #     states = [s.robot + SVector(-1,1), s.robot + SVector(-2,2)]
-#     # elseif (s.robot[1]-s.target[1] <= 2.0) && (s.robot[2]-s.target[2] <= 2.0) && a == :ne
-#     #     states = [s.robot + SVector(1,1), s.robot + SVector(2,2)]
-#     # else
-#     #     states = []
-#     # end
-# end
 
 function POMDPs.transition(m::PachPOMDP, s, a)
     states = FullState[]
@@ -170,20 +98,24 @@ function POMDPs.transition(m::PachPOMDP, s, a)
     push!(states, FullState(newrobot, s.target, copy(s.visited), s.battery-(m.resolution/25), a))
 
     # FALCO gather_action is executed
-    if norm(s.robot-s.target) <= 2.0*sqrt(2.0)
+    if norm(s.robot-s.target) <= 2.0*sqrt(2.0) # robot goes to target
         push!(probs, wp_reached_prob)
-        #locs = projected_states(m, s, s.target-s.robot)
-        locs = projected_states(m, s)
-        #@info locs
-        loc_prob = gather_info_prob/length(locs)
-        for loc in locs
-            dist = norm(loc-s.robot)
-            # TO-DO model float battery loss as a function of distance (remove round())
-            battery_loss = round(dist) == 0.0 ? (m.resolution/25) + gather_info_time : round(dist)*(m.resolution/25) + gather_info_time
-            #@info "battery_loss: ", battery_loss
-            push!(states, FullState(loc, s.target, copy(s.visited), s.battery-battery_loss, s.orientation))
-            push!(probs, loc_prob)
-        end
+
+        dist = norm(s.target-s.robot)
+        battery_loss = round(dist) == 0.0 ? (m.resolution/25) + gather_info_time : round(dist)*(m.resolution/25) + gather_info_time
+        push!(states, FullState(copy(s.target), s.target, copy(s.visited), s.battery - battery_loss, s.orientation))
+        push!(probs, gather_info_prob)
+
+        #@info "state: ", last(states).robot, " target: ", last(states).target, " battery: ", last(states).battery
+        # locs = projected_states(m, s)
+        # loc_prob = gather_info_prob/length(locs)
+        # for loc in locs
+        #     dist = norm(loc-s.robot)
+        #     # TO-DO model float battery loss as a function of distance (remove round())
+        #     battery_loss = round(dist) == 0.0 ? (m.resolution/25) + gather_info_time : round(dist)*(m.resolution/25) + gather_info_time
+        #     push!(states, FullState(loc, s.target, copy(s.visited), s.battery-battery_loss, s.orientation))
+        #     push!(probs, loc_prob)
+        # end
     else
         push!(probs, wp_reached_false_prob)
         locs = projected_states(m, s)
@@ -192,18 +124,11 @@ function POMDPs.transition(m::PachPOMDP, s, a)
             dist = norm(loc-s.robot)
             # TO-DO model float battery loss as a function of distance (remove round())
             battery_loss = round(dist) == 0.0 ? (m.resolution/25) + gather_info_time : round(dist)*(m.resolution/25) + gather_info_time
-            #@info "battery_loss: ", battery_loss
             push!(states, FullState(loc, s.target, copy(s.visited), s.battery-battery_loss, s.orientation))
             push!(probs, loc_prob)
         end
     end
 
-    #for sp ∈ states
-    #    sind = LinearIndices((1:m.size[1], 1:m.size[2]))[s.robot...]
-    #    sp.visited[sind] = 0
-    #end
-
-    #@info "batt losses: ", [s.battery-sp.battery for sp in states]
     return SparseCat(states, probs)
 
 end
@@ -220,15 +145,15 @@ The the observations are ordered as follows:
 """
 
 
-POMDPs.observations(m::PachPOMDP) = OBSERVATIONS #vec(collect(BitVector([c[1],c[2],c[3],c[4],c[5]]) for c in Iterators.product(0:1, 0:1, 0:1, 0:1, 0:1)))
+POMDPs.observations(m::PachPOMDP) = OBSERVATIONS
 POMDPs.obsindex(m::PachPOMDP, o::Symbol) = obsind[o]
 
 function POMDPs.observation(m::PachPOMDP, s::TSState, a::Symbol, sp::TSState)
     # TODO: parametrize battery loss for gather info
-    if sp.robot == sp.target || sp.robot == [-1,-1]
-        return Deterministic(:target_found)
-    elseif s.battery - sp.battery > m.resolution/25
+    if s.battery - sp.battery > m.resolution/25
         return Deterministic(:gather_info)
+    elseif sp.robot == sp.target || sp.robot == [-1,-1]
+        return Deterministic(:target_found)
         # return SparseCat(OBSERVATIONS, [0.0, 0.9, 0.1])
     elseif s.battery - sp.battery == m.resolution/25
         return Deterministic(:next_waypoint)
@@ -237,38 +162,6 @@ function POMDPs.observation(m::PachPOMDP, s::TSState, a::Symbol, sp::TSState)
         println(s==sp ? "same state" : "diff state")
         error("Invalid battery loss: ", s.battery - sp.battery)
     end
-    
-    
-    #=
-    
-    if norm(sp.robot-sp.target) <= 2.0
-        if sp.robot[1]-sp.target[1] >= 2.0 && a == :left 
-            return SparseCat(OBSERVATIONS, [0.2, 0.8])
-        elseif sp.robot[1]-sp.target[1] <= 2.0 && a == :right
-            return SparseCat(OBSERVATIONS, [0.2, 0.8])
-        elseif sp.robot[2]-sp.target[2] >= 2.0 && a == :down
-            return SparseCat(OBSERVATIONS, [0.2, 0.8])
-        elseif sp.robot[2]-sp.target[2] <= 2.0 && a == :up
-            return SparseCat(OBSERVATIONS, [0.2, 0.8])
-        elseif (sp.robot[1]-sp.target[1] >= 2.0) && (sp.robot[2]-sp.target[2] >= 2.0) && a == :sw
-            return SparseCat(OBSERVATIONS, [0.2, 0.8])
-        elseif (sp.robot[1]-sp.target[1] <= 2.0) && (sp.robot[2]-sp.target[2] >= 2.0) && a == :se
-            return SparseCat(OBSERVATIONS, [0.2, 0.8])
-        elseif (sp.robot[1]-sp.target[1] >= 2.0) && (sp.robot[2]-sp.target[2] <= 2.0) && a == :nw
-            return SparseCat(OBSERVATIONS, [0.2, 0.8])
-        elseif (sp.robot[1]-sp.target[1] <= 2.0) && (sp.robot[2]-sp.target[2] <= 2.0) && a == :ne
-            return SparseCat(OBSERVATIONS, [0.2, 0.8])
-        else
-
-            return SparseCat(OBSERVATIONS, [0.95, 0.05])
-        end
-    else
-        return SparseCat(OBSERVATIONS, [0.95, 0.05])
-    end
-
-    return SparseCat(OBSERVATIONS, probs)
-    =#
-
 end
 
 function POMDPs.reward(m::PachPOMDP, s::FullState, a::Symbol, sp::FullState)
