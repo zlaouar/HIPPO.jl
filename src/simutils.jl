@@ -58,11 +58,14 @@ function reset_pomdp!(simulator::HIPPOSimulator, rewarddist, target)
     pomdp = simulator.msim
     if hasproperty(pomdp, :currentbatt)
         pomdp.currentbatt = copy(simulator.msim.maxbatt)
+        simulator.sinit = UnifiedState(pomdp.robot_init, target, vec(trues(pomdp.size...)), 
+                                        pomdp.maxbatt, false, pomdp.initial_orientation)
     end
+    simulator.sinit = FullState(pomdp.robot_init, target, vec(trues(pomdp.size...)), 
+                                    pomdp.maxbatt, pomdp.initial_orientation)
     pomdp.reward = copy(rewarddist)
     pomdp.targetloc = copy(target)
-    simulator.sinit = UnifiedState(pomdp.robot_init, target, vec(trues(pomdp.size...)), 
-                                        pomdp.maxbatt, false, pomdp.initial_orientation)
+    
     simulator.b = initialize_belief(simulator.up, initialstate(pomdp))
 end
 
@@ -89,13 +92,13 @@ function show_benchmark_results(file::String)
     data = load(file; nested=true)
     data = [collect(values(data[i])) for i ∈ keys(data)]
     targetfound_vec = [sim[1] for sim ∈ data]
-    reward_vec = [sim[2] for sim ∈ data]
-    time_vec = [sim[3] for sim ∈ data]
+    reward_vec = [sim[3] for sim ∈ data]
+    time_vec = [sim[2] for sim ∈ data]
 
     find_ratio = sum(targetfound_vec) / length(targetfound_vec)
     reward_time = mean(reward_vec ./ time_vec)
     time = mean(time_vec)
-    println("rtf: ", reward_time, " |  find ratio: ", find_ratio, " |  time: ", time)
+    println("average reward: ", reward_time, " |  find ratio: ", find_ratio, " |  time: ", time)
 end
 
 function show_benchmark_results(files::Vector{String})
