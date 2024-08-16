@@ -48,7 +48,11 @@ function projected_states(m, s)
     return m.fov_lookup[(s.robot[1], s.robot[2], s.orientation)]
 end
 
-function projected_states(m, s, diff)
+function projected_states(m, s, orientation::Symbol)
+    return m.fov_lookup[(s.robot[1], s.robot[2], orientation)]
+end
+
+function projected_states(m, s, diff::Vector{Int})
     states = []
     for i in 0:8
         push!(states, bounce(m, s.robot, diff + SVector(i%3-1, i÷3-1)))
@@ -92,13 +96,11 @@ function POMDPs.transition(m::PachPOMDP, s, a)
     newrobot = bounce(m, s.robot, actiondir[a])
 
     # drone reached next waypoint
-    if a == :stay 
-        println("STAY")
-    end
     push!(states, FullState(newrobot, s.target, copy(s.visited), s.battery-(m.resolution/25), a))
 
+    fov_cells = projected_states(m, s, a)
     # FALCO gather_action is executed
-    if norm(s.robot-s.target) <= 2.0*sqrt(2.0) # robot goes to target
+    if s.target ∈ fov_cells #norm(s.robot-s.target) <= 2.0*sqrt(2.0) # robot goes to target
         push!(probs, wp_reached_prob)
 
         dist = norm(s.target-s.robot)
@@ -118,9 +120,9 @@ function POMDPs.transition(m::PachPOMDP, s, a)
         # end
     else
         push!(probs, wp_reached_false_prob)
-        locs = projected_states(m, s)
-        loc_prob = gather_info_false_prob/length(locs)
-        for loc in locs
+        #locs = projected_states(m, s)
+        loc_prob = gather_info_false_prob/length(fov_cells)
+        for loc in fov_cells
             dist = norm(loc-s.robot)
             # TO-DO model float battery loss as a function of distance (remove round())
             battery_loss = round(dist) == 0.0 ? (m.resolution/25) + gather_info_time : round(dist)*(m.resolution/25) + gather_info_time
@@ -149,7 +151,10 @@ POMDPs.observations(m::PachPOMDP) = OBSERVATIONS
 POMDPs.obsindex(m::PachPOMDP, o::Symbol) = obsind[o]
 
 function POMDPs.observation(m::PachPOMDP, s::TSState, a::Symbol, sp::TSState)
-    # TODO: parametrize battery loss for gather info
+    # # TODO: parametrize battery loss for gather info
+    # if norm(sp.robot - s.robot) > 1 #&& s.battery - sp.battery > m.resolution/25 && (sp.robot-s.robot) != actiondir[a]
+    #     return Deterministic(:gather_info)
+
     if s.battery - sp.battery > m.resolution/25
         return Deterministic(:gather_info)
     elseif sp.robot == sp.target || sp.robot == [-1,-1]
