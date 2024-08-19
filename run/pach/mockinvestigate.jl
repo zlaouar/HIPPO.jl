@@ -9,7 +9,7 @@ function investigate_with_latlon()
       println("HIPPO sending investigate action")
       #data, success = readguarded(ws_client)
       response = JSON.json(Dict("action" => "Investigate",
-        "args" => Dict("event" => "gather-info", "lat" => 0.0, "lon" => 0.0)))
+        "args" => Dict("event" => "gather-info", "coordinate", [40.010995, -105.243904, 1600])))
       write(ws_client, response)
   end
 end
