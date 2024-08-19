@@ -18,6 +18,44 @@ struct WaypointParams
     n_actions::Int
 end
 
+mutable struct WaypointBank
+    # The purpose of this structure is to house the most recent waypoints reported by the drone's state.
+    # That way, when we get a falco image, we can look back in time to find the waypoint that corresponds to that image.
+    # "Time"
+    waypoints::Vector{Dict{String, Float64}}
+    bankLength::Int
+    maxLength::Int
+
+    function WaypointBank(waypoints::Vector{Dict{String, Float64}}, maxLength=10)
+        new(waypoints, length(waypoints), maxLength)
+    end
+end
+
+# called every time "AircraftStatus" action is received
+function addWaypoint(bank::WaypointBank, timestamp::Float64, latitude::Float64, longitude::Float64)
+    waypoint = Dict("timestamp" => timestamp, "latitude" => latitude, "longitude" => longitude)
+    push!(bank.waypoints, waypoint)
+    bank.bankLength += 1
+    if bank.bankLength > bank.maxLength
+        popfirst!(bank.waypoints)
+        bank.bankLength -= 1
+    end
+    return waypoint
+end
+
+function findWaypointInTime(bank::WaypointBank, time::Int, tolerance::Any)
+    if !isa(tolerance, Int)
+        tolerance = 0
+    end
+    for i in 1:bank.bankLength
+        waypoint = bank.waypoints[i]
+        if abs(parse(Int, waypoint["timestamp"]) - time) < tolerance
+            return waypoint
+        end
+    end
+    return nothing
+end
+
 function generate_predicted_path(location_dict, pachSim, ws_client)
     locvec, b, sinit = predicted_path(pachSim; pathlen=15)
     @info locvec
@@ -224,7 +262,7 @@ function best_action(t::BasicPOMCP.POMCPTree)
     return t.a_labels[best_node]
 end
 
-function next_action(data, ws_client, pachSim, flightParams; waypoint_params=WaypointParams(false,0,0))
+function next_action(data, ws_client, pachSim, flightParams; waypoint_params=WaypointParams(false,0,0), coordBank=WaypointBank, delay=0)
     previous_action = pachSim.previous_action
     println("data: ", data)
     score = data["score"]
@@ -276,11 +314,17 @@ function main()
     flightParams = nothing
     initialized = false
 
+    streaminit = false
+    wpbank = WaypointBank(Vector{Dict{String,Float64}}(), 20)
+    streamStartTime = nothing
+    observationTime = nothing
+    waypoint = nothing
+    tte = nothing
+
     show_way = false
     way_depth = 2
     way_actions = 4
-    way_params = WaypointParams(show_way,way_depth,way_actions)
-
+    way_params = WaypointParams(show_way, way_depth, way_actions)
     flight_params_updated = false
 
     open("ws://127.0.0.1:8082") do ws_client
@@ -291,10 +335,26 @@ function main()
                 payload = JSON.parse(String(data))
                 action = payload["action"]
                 arguments = payload["args"]
-
                 println("Executing Action: ", action)
 
-                if action == "CalculatePath"
+                if action == "AircraftStatus"
+                    if !streaminit && arguments["isStreaming"] == true
+                        streamStartTime = time()
+                        streaminit = true
+                    end
+                    if arguments["isStreaming"] == false
+                        streaminit = false
+                        observationTime = nothing
+                    end
+                elseif action == "AircraftState"
+                    if isnothing(waypoint) || time() > waypoint["timestamp"] + 0.5
+                        waypoint = addWaypoint(wpbank,
+                                    time(), 
+                                    arguments["latitude"], 
+                                    arguments["longitude"])
+                    end
+                    
+                elseif action == "CalculatePath"
                     println("initialized: ", initialized)
                     pachSim = update_reward(arguments, ws_client, pachSim, initialized, flightParams; waypoint_params=way_params)
                     initialized = true
@@ -303,17 +363,28 @@ function main()
                         pachSim.flight_params = flightParams
                         flight_params_updated = false
                     end
-                    
+
                 elseif action == "FlightStatus"
                     if initialized 
                         pachSim = generate_next_action(arguments, ws_client, pachSim, flightParams; waypoint_params=way_params)
                     else
                         println("FlightStatus: Not initialized, waiting on new params")
                     end
-                
-                elseif action == "ConfidenceScore"
-                    pachSim = next_action(arguments, ws_client, pachSim, flightParams; waypoint_params=way_params)
 
+                elseif action == "ConfidenceScore"
+                    """
+                    possible case issue:
+                        If the drone is streaming before falco is initialized, the coordinte it will lookup will be further in the past.
+                        tte depends on the time the drone starts streaming and the time the falco score is received.
+                        This can be fixed with a flag to indicate if falco is initialized, but it is not implemented yet.
+                    """
+                    tte = nothing
+                    if isnothing(observationTime) && !isnothing(streamStartTime)
+                        observationTime = time()
+                        tte = observationTime - streamStartTime
+                        println("Time to Execute: ", tte)
+                    end
+                    pachSim = next_action(arguments, ws_client, pachSim, flightParams; waypoint_params=way_params, coordBank=wpbank, delay=tte)
                 elseif action == "FlightParams"
                     flightParams = update_params(arguments)
                     flight_params_updated = true
@@ -333,5 +404,4 @@ function main()
         end
     end
 end
-
 main()
