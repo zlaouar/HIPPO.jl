@@ -292,7 +292,9 @@ function main()
                 action = payload["action"]
                 arguments = payload["args"]
 
-                println("Executing Action: ", action)
+                if action != "AircraftState"
+                    println("Received Action: ", action)
+                end
 
                 if action == "CalculatePath"
                     println("initialized: ", initialized)
@@ -305,11 +307,12 @@ function main()
                     end
                     
                 elseif action == "FlightStatus"
-                    if initialized 
-                        pachSim = generate_next_action(arguments, ws_client, pachSim, flightParams; waypoint_params=way_params)
-                    else
-                        println("FlightStatus: Not initialized, waiting on new params")
-                    end
+                    #if initialized 
+                    #    pachSim = generate_next_action(arguments, ws_client, pachSim, flightParams; waypoint_params=way_params)
+                    #else
+                    #    println("FlightStatus: Not initialized, waiting on new params")
+                    #end
+                    nothing
                 
                 elseif action == "ConfidenceScore"
                     pachSim = next_action(arguments, ws_client, pachSim, flightParams; waypoint_params=way_params)
