@@ -1,5 +1,5 @@
-Base.@kwdef mutable struct HIPPOSimulator <: AbstractSimulator
-    msim::TargetSearchPOMDP
+Base.@kwdef mutable struct HIPPOSimulator{POMDP_TYPE} <: AbstractSimulator
+    msim::POMDP_TYPE
     planner::POMCPPlanner
     up::BasicParticleFilter
     b::ParticleCollection
@@ -105,7 +105,7 @@ function loctostr(locvec)
     return [join(locvec[i], ',') for i in eachindex(locvec)]
 end
 
-function simulate(sim::HIPPOSimulator)
+function simulate(sim::HIPPOSimulator{<:PachPOMDP}; custom_reward=false)
     (;msim,max_iter) = sim 
     r_total = 0.0
     s = sim.sinit
@@ -141,11 +141,85 @@ function simulate(sim::HIPPOSimulator)
         #end
         remove_rewards(msim, s.robot) # remove reward at current state
         #display(msim.reward)
-        sp, o, r = @gen(:sp,:o,:r)(msim, s, a)
-        isterminal(msim, sp) && break
-        if hasproperty(msim, :currentbatt) 
-            msim.currentbatt = sp.battery
+        if custom_reward
+            sp, o = @gen(:sp, :o)(msim, s, a)
+            r = sim_reward(msim, s, a, sp)
+        else
+            sp, o, r = @gen(:sp,:o,:r)(msim, s, a)
         end
+
+        isterminal(msim, sp) && break
+        
+        r_total += d*r
+        d *= discount_factor(msim)
+        bp = update(sim.up, b, a, o)
+        (sim.anim || sim.display) && (belframe = render(msim, (sp=sp, bp=bp)))
+        (sim.anim || sim.display) && (rewardframe = render(msim, (sp=sp, bp=bp), true))
+        #display(belframe)
+        sim.display && display(belframe)
+        sim.verbose && println(iter,"- | s: ", s.robot, " | orient: ", s.orientation, " | sbatt: ", s.battery, " | a: ", a, 
+        " | sp_robot:", sp.robot, " | sp_target:", sp.target, " | spbatt: ", sp.battery, " | r:", r, " | o: ", o)
+        #println(iter,"- | battery: ", sp.battery, " | dist_to_home: ", dist(sp.robot, msim.robot_init), " | s: ", sp.robot)
+        sim.anim && push!(sim.rewardframes, rewardframe)
+        sim.anim && push!(sim.belframes, belframe)
+        sim.logging && push!(history, (s=s, a=a, sp=sp, o=o, r=r, bp=bp, info=info))
+        #sim.logging && push!(history, (s=s,a=a))
+        finalstate = s
+        s = sp
+        b = bp
+        iter += 1
+        sim.display && sleep_until(tm += sim.dt)
+    end
+    !sim.logging && push!(history, (s=finalstate, a=a, sp=sp, o=o, r=r, bp=b, info=info))
+    #!sim.logging && push!(history, (a=a,))
+    return history, r_total, iter, sim.rewardframes, sim.belframes
+end
+
+function simulate(sim::HIPPOSimulator{<:UnifiedPOMDP}; custom_reward=false)
+    (;msim,max_iter) = sim 
+    r_total = 0.0
+    s = sim.sinit
+    sp = nothing 
+    finalstate = nothing
+    o = nothing
+    r = 0.0
+    iter = 0
+    d = 1.0
+    b = sim.b 
+    bp = sim.b
+    a = Union{Symbol, Vector{Int64}}[:nothing]
+    info = nothing
+    history = NamedTuple[]
+    (sim.anim || sim.display) && (belframe = render(msim, (sp=s, bp=bp)))
+    sim.display && display(belframe)
+    sim.logging && push!(history, (s=s, a=a, sp=s, bp=bp, info=info))
+    while !isterminal(msim, s) && iter < max_iter
+        tm = time()
+        #_, info = action_info(sim.planner, sim.b, tree_in_info = true)
+        #tree = info[:tree] # maybe set POMCP option tree_in_info = true
+        #a_traj = extract_trajectory(root(tree), 5)
+        #a = first(a_traj)
+        #try 
+        a, _ = action_info(sim.planner, b)
+
+        
+        #catch e
+            #a = :stay
+        #    @warn "POMCP failed to find an action: ", e
+        #    push!(history, (s=finalstate, a=a, sp=sp, o=o, r=r, bp=b, info=info))
+        #    return history, r_total, iter
+        #end
+        remove_rewards(msim, s.robot) # remove reward at current state
+        #display(msim.reward)
+        if custom_reward
+            sp, o = @gen(:sp, :o)(msim, s, a)
+            r = sim_reward(msim, s, a, sp)
+        else
+            sp, o, r = @gen(:sp,:o,:r)(msim, s, a)
+        end
+        isterminal(msim, sp) && break
+        
+        msim.currentbatt = sp.battery
 
         r_total += d*r
         d *= discount_factor(msim)

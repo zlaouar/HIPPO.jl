@@ -94,12 +94,12 @@ particle_up = BootstrapFilter(pomdp, 10000)
 particle_b = initialize_belief(particle_up, b0)
 
 max_iter = maxbatt
-verbose = true
-display = true
+verbose = false
+display = false
 hipposim = HIPPOSimulator(msim=pomdp, planner=planner, up=particle_up, b=particle_b, sinit=sinit, 
                             dt=1/10, max_iter=max_iter, display=display, verbose=verbose)
 
-num_sims = 1
+num_sims = 50
 newtarget = sinit.target
 
 hippo_benchmark = TargetSearchSim(num_sims=num_sims, simulator=hipposim, sinit=sinit)

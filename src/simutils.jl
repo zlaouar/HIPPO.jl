@@ -11,6 +11,31 @@ end
 #                             targetfound_vec=BitVector(undef, num_sims), time_vec=Vector{Int}(undef, num_sims))
 #     TargetSearchSim(num_sims, simulator, sinit, reward_vec, targetfound_vec, time_vec)
 # end
+sim_reward(m::TargetSearchPOMDP, s::TSState, a, sp::TSState) = sim_reward(m, sp)
+
+function sim_reward(m::TargetSearchPOMDP, sp::TSState)
+    reward_running = -1.0
+    reward_target = 0.0
+
+    # if isequal(sp.robot, sp.target)# if target is found
+    #     reward_running = 0.0
+    #     reward_target = 1000.0 
+    #     return reward_running + reward_target
+    # end
+
+    if isterminal(m, sp) # IS THIS NECCESSARY?
+        return 0.0
+    end
+
+    inds = rewardinds(m, sp.robot)
+    spind = LinearIndices((1:m.size[1], 1:m.size[2]))[sp.robot...]
+
+    if !isempty(m.reward) && sp.robot != SA[-1,-1]
+        #return reward_running + reward_target + m.reward[inds...]*sp.visited[spind] + reward_nogo
+        return m.reward[inds...]*sp.visited[spind]
+    end
+end
+
 function save_data(rtot, hist, targetfound, fname, gname)
     jldopen(fname, "a") do file
         group = JLD2.Group(file, "iter" * string(gname))
@@ -24,7 +49,7 @@ function benchmark_planner(sim::TargetSearchSim, rewarddist, newtarget_func, fna
     rm(fname, force=true)
     for i ∈ 1:sim.num_sims
         #verbose && @info "sim: ", i
-        hist, rtot = simulate(sim.simulator)
+        hist, rtot = simulate(sim.simulator, custom_reward=true)
         save && save_data(rtot, hist, last(hist).sp.robot == sim.simulator.msim.targetloc, fname, i)        
         verbose && @info "sim: ", i, " | reward: ", rtot, " | time: ", length(hist), "target: ", 
                 sim.simulator.msim.targetloc, " | targetfound: ", last(hist).sp.robot == sim.simulator.msim.targetloc

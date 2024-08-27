@@ -12,7 +12,7 @@ Base.@kwdef mutable struct MapBaselineSimulator <: AbstractSimulator
     logging::Bool           = true
 end
 
-function simulate(sim::MapBaselineSimulator)
+function simulate(sim::MapBaselineSimulator; custom_reward=false)
     (;msim,max_iter) = sim
     r_total = 0.0
     d = 1.0
@@ -22,12 +22,17 @@ function simulate(sim::MapBaselineSimulator)
     iter = 0
     history = NamedTuple[]
     sim.logging && push!(history, (s=s, a=a, sp=s, bp=b))
-    while !isterminal(msim, s, s.target) && iter < max_iter 
+    while !isterminal(msim, s) && iter < max_iter 
         tm = time()
         a = mapaction(msim, b)
         sim.verbose && println(iter,"- | s: ", s.robot, " | a: ", a, " | mode: ", mode(b).target)
         #remove_rewards(msim, s.robot) # remove reward at current state
-        sp, o, r = @gen(:sp, :o, :r)(msim, s, a)
+        if custom_reward
+            sp, o = @gen(:sp, :o)(msim, s, a)
+            r = sim_reward(msim, s, a, sp)
+        else
+            sp, o, r = @gen(:sp,:o,:r)(msim, s, a)
+        end
         isterminal(msim, sp) && break
         b = update(sim.up, b, a, o)
         # try

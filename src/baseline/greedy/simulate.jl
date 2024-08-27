@@ -9,7 +9,7 @@ Base.@kwdef mutable struct UnifiedBaselineSimulator <: AbstractSimulator
     logging::Bool           = true
 end
 
-function simulate(sim::UnifiedBaselineSimulator)
+function simulate(sim::UnifiedBaselineSimulator; custom_reward=false)
     (;msim,max_iter) = sim
     r_total = 0.0
     d = 1.0
@@ -19,7 +19,7 @@ function simulate(sim::UnifiedBaselineSimulator)
     iter = 0
     history = NamedTuple[]
     sim.logging && push!(history, (s=s, a=a, sp=sp))
-    while !isterminal(msim, s, s.target) && iter < max_iter 
+    while !isterminal(msim, s) && iter < max_iter 
         tm = time()
         a = action(msim, s)
         #remove_rewards(msim, s.robot) # remove reward at current state
@@ -27,7 +27,12 @@ function simulate(sim::UnifiedBaselineSimulator)
         sp = UnifiedState(newrobot, s.target, vec(trues(size(msim.reward))), s.battery-1, s.human_in_fov, s.orientation)
         isterminal(msim, sp) && break
 
-        r = msim.reward[rewardinds(msim, sp.robot)...]
+        if custom_reward
+            r = sim_reward(msim, s, a, sp)
+        else
+            r = msim.reward[rewardinds(msim, sp.robot)...]
+        end
+        
         sim.verbose && println(iter,"- | s: ", s.robot, " | target: ", s.target, " | a: ", a, " | r: ", r)
         r_total += d*r
         remove_rewards(msim, sp.robot) # remove reward at current state

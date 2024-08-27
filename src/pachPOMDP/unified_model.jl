@@ -38,6 +38,20 @@ function POMDPs.actions(m::UnifiedPOMDP)
     return PRIMITIVE_ACTIONS
 end
 
+# function POMDPs.actions(m::UnifiedPOMDP, b::LeafNodeBelief)
+#     o = currentobs(b)
+#     if o == :low
+#         return PRIMITIVE_ACTIONS
+#     elseif o == :medium 
+#         return PRIMITIVE_ACTIONS
+#     elseif o == :high
+#         fov_cells = non_cardinal_states_in_fov(m, b.sp)
+#         if !isterminal(m, b.sp) && !isempty(fov_cells)
+#             return (PRIMITIVE_ACTIONS..., unique(Vector.(rand(non_cardinal_states_in_fov(m, b.sp), m.num_macro_actions(b))))...)
+#         end
+#     end
+#     return PRIMITIVE_ACTIONS
+# end
 function POMDPs.actions(m::UnifiedPOMDP, b::LeafNodeBelief)
     o = currentobs(b)
     if o == :low
@@ -45,21 +59,17 @@ function POMDPs.actions(m::UnifiedPOMDP, b::LeafNodeBelief)
     elseif o == :medium 
         return PRIMITIVE_ACTIONS
     elseif o == :high
+        #if b.sp.human_in_fov && rand() < 0.3
+        #    return [Vector(b.sp.target)]
+        #end
         fov_cells = non_cardinal_states_in_fov(m, b.sp)
         if !isterminal(m, b.sp) && !isempty(fov_cells)
-            try
-                return (PRIMITIVE_ACTIONS..., unique(Vector.(rand(non_cardinal_states_in_fov(m, b.sp), m.num_macro_actions(b))))...)
-            catch
-                @error "FAILED TO GET MACRO-ACTIONS"
-                @show "s.robot: ", b.sp.robot, " | s.target: ", b.sp.target, " | s.orientation: ", b.sp.orientation
-            end
+            return (PRIMITIVE_ACTIONS..., unique(Vector.(rand(non_cardinal_states_in_fov(m, b.sp), m.num_macro_actions(b))))...)
         end
-            
-        #return PRIMITIVE_ACTIONS
     end
     return PRIMITIVE_ACTIONS
-
 end
+
 
 function POMDPs.actions(m::UnifiedPOMDP, b::ParticleCollection)
     # parametrize macro actions initial state and belief
@@ -218,7 +228,7 @@ function POMDPs.transition(m::UnifiedPOMDP, s::UnifiedState, a::Symbol)
     
     newrobot = bounce(m, s.robot, actiondir[a])
 
-    human_in_fov = a == :stay ? s.human_in_fov : is_in_fov(m, s.target, newrobot, a)
+    human_in_fov = is_in_fov(m, s.target, newrobot, a)
 
     # TO-DO model float battery loss as a function of distance (remove round())
     push!(states, UnifiedState(newrobot, s.target, copy(s.visited), s.battery-nominal_battery_loss, human_in_fov, a))
@@ -250,7 +260,12 @@ function POMDPs.transition(m::UnifiedPOMDP, s::UnifiedState, a::MacroAction)
         s.visited[LinearIndices((1:m.size[1], 1:m.size[2]))[traversed_cells[i]...]] = 0
     end
     
-    new_orientation = orientdir[traversed_cells[end] - traversed_cells[end-1]]
+    try
+        new_orientation = orientdir[traversed_cells[end] - traversed_cells[end-1]]
+    catch
+        @info s 
+        println("ERROR: ", s.robot, " | ", a, " | ", traversed_cells)
+    end
     if new_orientation == :stay
         new_orientation = s.orientation
     end
@@ -261,15 +276,22 @@ function POMDPs.transition(m::UnifiedPOMDP, s::UnifiedState, a::MacroAction)
 
     # TODO: human_in_fov should be known from target and orientation
     human_in_fov = is_in_fov(m, s.target, s.robot, new_orientation)
-
+    
     battery_loss = round(distance) == 0.0 ? (m.resolution/25) + gather_info_time : round(distance)*(m.resolution/25) + gather_info_time
     push!(states, UnifiedState(newrobot, s.target, copy(s.visited), s.battery-battery_loss, human_in_fov, new_orientation))
-    # push!(states, UnifiedState(newrobot, s.target, copy(s.visited), s.battery-battery_loss, true, new_orientation))
-    # push!(probs, 0.2, 0.8)
+   
+    # if is_in_fov(m, s.target, s.robot, s.orientation)
+    #     push!(probs, 0.7)
+    #     distance = norm(s.target-s.robot)
+    #     battery_loss = round(distance) == 0.0 ? (m.resolution/25) + gather_info_time : round(distance)*(m.resolution/25) + gather_info_time
+    #     push!(states, UnifiedState(s.target, s.target, copy(s.visited), s.battery - battery_loss, false, new_orientation))
+    #     push!(probs, 0.3)
+    # else
+    #     push!(probs, 1.0)
+    # end
     push!(probs, 1.0)
    
     return SparseCat(states, probs)
-
 end
 
 """

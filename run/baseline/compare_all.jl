@@ -101,7 +101,7 @@ greedysim = UnifiedBaselineSimulator(msim=pomdp, sinit=sinit, dt=1/10, max_iter=
 mapsim = MapBaselineSimulator(msim=pomdp, sinit=sinit, up=particle_up, b=particle_b, 
                                 dt=1/10, max_iter=max_iter, display=display, verbose=verbose)
 
-num_sims = 20
+num_sims = 50
 newtarget = sinit.target
 
 hippo_benchmark = TargetSearchSim(num_sims=num_sims, simulator=hipposim, sinit=sinit)
@@ -109,9 +109,9 @@ greedy_benchmark = TargetSearchSim(num_sims=num_sims, simulator=greedysim, sinit
 map_benchmark = TargetSearchSim(num_sims=num_sims, simulator=mapsim, sinit=sinit)
 
 
-hippofile = "results/icra2025/hippo_benchmark_results.jld2"
-greedyfile = "results/icra2025/greedy_benchmark_results.jld2"
-mapfile = "results/icra2025/map_benchmark_results.jld2"
+hippofile = "results/icra2025/hippo_unified_benchmark_results_50.jld2"
+greedyfile = "results/icra2025/greedy_benchmark_results_50.jld2"
+mapfile = "results/icra2025/map_benchmark_results_50.jld2"
 
 #rm(hippofile, force=true)
 #rm(greedyfile, force=true)

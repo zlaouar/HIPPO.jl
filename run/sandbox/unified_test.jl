@@ -96,7 +96,7 @@ particle_b = initialize_belief(particle_up, b0)
 #inchrome(D3Tree(info[:tree], init_expand=3))
 
 hipposim = HIPPOSimulator(msim=pomdp, planner=planner, up=particle_up, b=particle_b, sinit=sinit, dt=1/10, max_iter=maxbatt, display=true, verbose=true)
-hist, r_total = simulate_planner(hipposim)
+hist, r_total = simulate_planner(hipposim, custom_reward=true)
 
 #renderVIPolicy(mdp_policy, basic_pomdp, sinitBasic) # render MDP policy
 
