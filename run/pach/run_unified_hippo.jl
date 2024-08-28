@@ -224,7 +224,7 @@ function best_action(t::BasicPOMCP.POMCPTree)
     return t.a_labels[best_node]
 end
 
-function next_action(data, ws_client, pachSim, flightParams; waypoint_params=WaypointParams(false,0,0))
+function process_confidence_score(data, ws_client, pachSim, flightParams; waypoint_params=WaypointParams(false,0,0))
     previous_action = pachSim.previous_action
     println("data: ", data)
     score = data["score"]
@@ -235,9 +235,31 @@ function next_action(data, ws_client, pachSim, flightParams; waypoint_params=Way
         o = :medium 
     else 
         o = :high
+        return generate_next_action(data, ws_client, pachSim, flightParams)
+    end
+end
+
+function waypoint_reached(data, ws_client, pachSim, flightParams; waypoint_params=WaypointParams(false,0,0))
+    println("data: ", data)
+    event = data["event"]
+
+    if event == "waypoint-reached"
+        generate_next_action(pachSim.latest_obs, ws_client, pachSim, flightParams; waypoint_params=WaypointParams(false,0,0))
+    end
+end
+
+function generate_next_action(confidence_score, ws_client, pachSim, flightParams; waypoint_params=WaypointParams(false,0,0))
+    previous_action = pachSim.previous_action
+
+    if confidence_score < 0.33
+        o = :low
+    elseif score >= 0.33 && confidence_score < 0.66 
+        o = :medium 
+    else 
+        o = :high
     end
 
-    println("score: ", score, " | o: ", o)
+    println("score: ", confidence_score, " | o: ", o)
 
     a = best_action(pachSim.planner._tree)
     
@@ -307,15 +329,18 @@ function main()
                     end
                     
                 elseif action == "FlightStatus"
-                    #if initialized 
-                    #    pachSim = generate_next_action(arguments, ws_client, pachSim, flightParams; waypoint_params=way_params)
-                    #else
-                    #    println("FlightStatus: Not initialized, waiting on new params")
-                    #end
-                    nothing
+                    if initialized 
+                       pachSim = waypoint_reached(arguments, ws_client, pachSim, flightParams; waypoint_params=way_params)
+                    else
+                       println("FlightStatus: Not initialized, waiting on new params")
+                    end
                 
                 elseif action == "ConfidenceScore"
-                    pachSim = next_action(arguments, ws_client, pachSim, flightParams; waypoint_params=way_params)
+                    if initialized
+                        pachSim = process_confidence_score(arguments, ws_client, pachSim, flightParams; waypoint_params=way_params)
+                    else
+                        println("FlightStatus: Not initialized, waiting on new params")
+                    end
 
                 elseif action == "FlightParams"
                     flightParams = update_params(arguments)
