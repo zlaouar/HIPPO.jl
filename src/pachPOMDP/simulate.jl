@@ -30,7 +30,7 @@ mutable struct PachSimulator
     previous_action::Symbol
     waypointID::Int
     flight_params::FlightParams
-    enable_next_waypoint::Bool
+    #enable_next_waypoint::Bool
     latest_obs::Symbol
 end
 

@@ -113,7 +113,7 @@ function initialize(rewarddist, location_dict, keepout_zones, resolution, flight
     default_waypointID = 0
     pachSim = PachSimulator(msolve, planner, particle_up, particle_b, sinit, 
                             location_dict, default_action, default_waypointID,
-                            flightParams)
+                            flightParams, :low)
                         
     return pachSim
 end
@@ -225,7 +225,6 @@ function best_action(t::BasicPOMCP.POMCPTree)
 end
 
 function process_confidence_score(data, ws_client, pachSim, flightParams; waypoint_params=WaypointParams(false,0,0))
-    previous_action = pachSim.previous_action
     println("data: ", data)
     score = data["score"]
 
@@ -235,8 +234,9 @@ function process_confidence_score(data, ws_client, pachSim, flightParams; waypoi
         o = :medium 
     else 
         o = :high
-        return generate_next_action(data, ws_client, pachSim, flightParams)
+        return generate_next_action(score, ws_client, pachSim, flightParams)
     end
+    println("score: ", score, " | o: ", o)
 end
 
 function waypoint_reached(data, ws_client, pachSim, flightParams; waypoint_params=WaypointParams(false,0,0))
@@ -253,7 +253,7 @@ function generate_next_action(confidence_score, ws_client, pachSim, flightParams
 
     if confidence_score < 0.33
         o = :low
-    elseif score >= 0.33 && confidence_score < 0.66 
+    elseif confidence_score >= 0.33 && confidence_score < 0.66 
         o = :medium 
     else 
         o = :high
