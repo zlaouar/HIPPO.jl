@@ -234,32 +234,29 @@ function process_confidence_score(data, ws_client, pachSim, flightParams; waypoi
         o = :medium 
     else 
         o = :high
-        return generate_next_action(score, ws_client, pachSim, flightParams)
+        pachSim.latest_obs = o
+        return generate_next_action(o, ws_client, pachSim, flightParams)
     end
+    
+    pachSim.latest_obs = o
     println("score: ", score, " | o: ", o)
+    return pachSim
 end
 
 function waypoint_reached(data, ws_client, pachSim, flightParams; waypoint_params=WaypointParams(false,0,0))
     println("data: ", data)
     event = data["event"]
 
+    #println("PACHSIM: ", pachSim)
     if event == "waypoint-reached"
         generate_next_action(pachSim.latest_obs, ws_client, pachSim, flightParams; waypoint_params=WaypointParams(false,0,0))
     end
 end
 
-function generate_next_action(confidence_score, ws_client, pachSim, flightParams; waypoint_params=WaypointParams(false,0,0))
+function generate_next_action(observation, ws_client, pachSim, flightParams; waypoint_params=WaypointParams(false,0,0))
     previous_action = pachSim.previous_action
 
-    if confidence_score < 0.33
-        o = :low
-    elseif confidence_score >= 0.33 && confidence_score < 0.66 
-        o = :medium 
-    else 
-        o = :high
-    end
-
-    println("score: ", confidence_score, " | o: ", o)
+    println("observation: ", observation)
 
     a = best_action(pachSim.planner._tree)
     
