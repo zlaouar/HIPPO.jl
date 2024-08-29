@@ -289,6 +289,22 @@ function generate_next_action(observation, ws_client, pachSim, flightParams; way
     return pachSim
 end
 
+function update_aircraft_model(data, pachSim)
+    if haskey(data, "altitude")
+        alt = data["altitude"]
+    else
+        alt = pachSim.msim.pose.altitude
+    end
+
+    if haskey(data, "gimbalAngle")
+        gimbal = data["gimbalAngle"]
+    else
+        gimbal = pachSim.msim.pose.pitch
+    end
+    pachSim.msim.pose = HIPPO.RobotPose(0.0, 0.0, alt, deg2rad(0.0), deg2rad(gimbal), deg2rad(0.0))
+    return pachSim
+end
+
 function main()
     println("HIPPO: Opening port\n")
     pachSim = nothing
@@ -314,7 +330,7 @@ function main()
                 if action != "AircraftState"
                     println("Received Action: ", action)
                 end
-
+                
                 if action == "CalculatePath"
                     println("initialized: ", initialized)
                     pachSim = update_reward(arguments, ws_client, pachSim, initialized, flightParams; waypoint_params=way_params)
@@ -353,6 +369,11 @@ function main()
                     initialized = false
                     flight_params_updated = false
                     println("HIPPO Reset")
+
+                elseif action=="AircraftState" || action == "AircraftStatus"
+                    if initialized
+                        pachSim = update_aircraft_model(arguments, pachSim)
+                    end
                 end
             end
         end
