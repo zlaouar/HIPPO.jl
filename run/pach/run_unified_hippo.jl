@@ -99,7 +99,8 @@ function initialize(rewarddist, location_dict, keepout_zones, resolution, flight
                             obstacles=obstacles,
                             resolution=resolution,
                             rollout_depth=maxbatt,
-                            camera_info=cam_info)
+                            camera_info=cam_info,
+                            pose=HIPPO.RobotPose(0.0, 0.0, 30.0, deg2rad(0.0), deg2rad(-45.0), deg2rad(0.0)))
 
     solver = POMCPSolver(tree_queries=50000, max_time=1.0, c=200, tree_in_info=true) #max_depth=3,c=1000,
     b0 = initialstate(msolve)
