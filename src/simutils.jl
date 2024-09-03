@@ -79,7 +79,7 @@ function benchmark_planner(sim::TargetSearchSim, rewarddist, ID2grid, fname, his
     return sim, histvec
 end
 
-function reset_pomdp!(simulator::HIPPOSimulator, rewarddist, target)
+function reset_pomdp!(simulator::HIPPOSimulator{<:PachPOMDP}, rewarddist, target)
     pomdp = simulator.msim
     if hasproperty(pomdp, :currentbatt)
         pomdp.currentbatt = copy(simulator.msim.maxbatt)
@@ -88,6 +88,21 @@ function reset_pomdp!(simulator::HIPPOSimulator, rewarddist, target)
     end
     simulator.sinit = FullState(pomdp.robot_init, target, vec(trues(pomdp.size...)), 
                                     pomdp.maxbatt, pomdp.initial_orientation)
+    pomdp.reward = copy(rewarddist)
+    pomdp.targetloc = copy(target)
+    
+    simulator.b = initialize_belief(simulator.up, initialstate(pomdp))
+end
+
+function reset_pomdp!(simulator::HIPPOSimulator{<:UnifiedPOMDP}, rewarddist, target)
+    pomdp = simulator.msim
+    if hasproperty(pomdp, :currentbatt)
+        pomdp.currentbatt = copy(simulator.msim.maxbatt)
+        simulator.sinit = UnifiedState(pomdp.robot_init, target, vec(trues(pomdp.size...)), 
+                                        pomdp.maxbatt, false, pomdp.initial_orientation)
+    end
+    simulator.sinit = UnifiedState(pomdp.robot_init, target, vec(trues(pomdp.size...)), 
+                                    pomdp.maxbatt, false, pomdp.initial_orientation)
     pomdp.reward = copy(rewarddist)
     pomdp.targetloc = copy(target)
     

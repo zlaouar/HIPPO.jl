@@ -1,3 +1,5 @@
+using Pkg
+Pkg.activate(joinpath(@__DIR__,"..",".."))
 using HIPPO
 using HIPPO: simulate as simulate_planner
 using POMDPs
@@ -120,7 +122,14 @@ mapfile = "results/icra2025/map_benchmark_results_50.jld2"
 verbose = true
 println("-------------------------Running benchmarks--------------------------")
 println("HIPPO benchmark--------------------------")
-hippo_benchmark = benchmark_planner(hippo_benchmark, rewarddist, newtarget_func, hippofile; verbose=verbose, args=(mapsize, db.ID2grid))
+try
+    global hippo_benchmark = benchmark_planner(hippo_benchmark, rewarddist, newtarget_func, hippofile; verbose=verbose, args=(mapsize, db.ID2grid))
+    write("results/status_report_hippo.txt", "HIPPO passed")
+catch e
+    println("Error: ", e)
+    write("results/status_report_hippo.txt", "HIPPO failed\n---\n", e)
+end
+
 println("Greedy benchmark--------------------------")
 HIPPO.reset_pomdp!(greedysim, rewarddist, newtarget)
 greedy_benchmark = benchmark_planner(greedy_benchmark, rewarddist, newtarget_func, greedyfile; verbose=verbose, args=(mapsize, db.ID2grid))
