@@ -19,6 +19,7 @@ mutable struct FlightParams
     desired_agl_alt::Float64
     max_speed::Float64
     home_location::Vector{Float64}
+    target_bias::Float64
 end
 mutable struct PachSimulator 
     msim::TargetSearchPOMDP
