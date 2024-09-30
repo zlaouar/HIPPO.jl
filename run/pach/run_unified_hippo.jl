@@ -114,7 +114,7 @@ function initialize(rewarddist, location_dict, keepout_zones, resolution, flight
     default_waypointID = 0
     pachSim = PachSimulator(msolve, planner, particle_up, particle_b, sinit, 
                             location_dict, default_action, default_waypointID,
-                            flightParams, :low)
+                            flightParams, :low, false)
                         
     return pachSim
 end
@@ -236,7 +236,11 @@ function process_confidence_score(data, ws_client, pachSim, flightParams; waypoi
     else 
         o = :high
         pachSim.latest_obs = o
-        return generate_next_action(o, ws_client, pachSim, flightParams)
+
+        if !pachSim.replan_flag
+            return generate_next_action(o, ws_client, pachSim, flightParams)
+            pachSim.replan_flag = true
+        end
     end
     
     pachSim.latest_obs = o
@@ -269,13 +273,27 @@ function generate_next_action(observation, ws_client, pachSim, flightParams; way
     commanded_alt = response[3] + pachSim.flight_params.desired_agl_alt
 
     println("Sending waypoint: ", response)
-    write(ws_client, JSON.json(Dict("action" => "NextFlightWaypoint", "args" => Dict("latitude" => response[1],
-                                                                                    "longitude" => response[2],
-                                                                                    "altitude" => commanded_alt,
-                                                                                    "speed" => pachSim.flight_params.max_speed,
-                                                                                    "waypointID" => pachSim.waypointID,
-                                                                                    "plannerAction" => string(a),
-                                                                                    "dwellTime" => 5000.0))))
+
+    if typeof(a) == Symbol
+        write(ws_client, JSON.json(Dict("action" => "NextFlightWaypoint", 
+                                        "args" => Dict("latitude" => response[1],
+                                                        "longitude" => response[2],
+                                                        "altitude" => commanded_alt,
+                                                        "speed" => pachSim.flight_params.max_speed,
+                                                        "waypointID" => pachSim.waypointID,
+                                                        "plannerAction" => string(a),
+                                                        "dwellTime" => 5000.0))))    
+    else
+        write(ws_client, JSON.json(Dict("action" => "Investigate", 
+                                        "args" => Dict("event" => "gather-info",
+                                                                    "latitude" => response[1],
+                                                                    "longitude" => response[2],
+                                                                    "altitude" => commanded_alt,
+                                                                    "speed" => pachSim.flight_params.max_speed,
+                                                                    "waypointID" => pachSim.waypointID,
+                                                                    "plannerAction" => string(a),
+                                                                    "dwellTime" => 5000.0))))
+    end
 
     
     #Plan for reaching next waypoint
