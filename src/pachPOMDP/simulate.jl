@@ -28,6 +28,7 @@ mutable struct PachSimulator
     sinit::TSState
     location_dict::Dict{String, Vector{Float64}}
     previous_action::Symbol
+    previous_state::TSState
     waypointID::Int
     flight_params::FlightParams
     latest_obs::Symbol
