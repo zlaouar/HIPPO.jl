@@ -4,9 +4,9 @@ Base.@kwdef mutable struct HIPPOSimulator{POMDP_TYPE} <: AbstractSimulator
     up::BasicParticleFilter
     b::ParticleCollection
     sinit::TSState
-    rewardframes::Frames   = Frames(MIME("image/png"))
-    belframes::Frames      = Frames(MIME("image/png"))
     dt::Float64            = 1/10
+    rewardframes::Frames   = Frames(MIME("image/png"), fps=1/dt)
+    belframes::Frames      = Frames(MIME("image/png"), fps=1/dt)
     max_iter::Int          = 500
     display::Bool          = false
     verbose::Bool          = true
