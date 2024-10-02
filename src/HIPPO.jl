@@ -27,6 +27,7 @@ include(joinpath(@__DIR__,"camera.jl"))
 include(joinpath(@__DIR__,"pachPOMDP","core.jl"))
 include(joinpath(@__DIR__,"pachPOMDP","reactive_model.jl"))
 include(joinpath(@__DIR__,"pachPOMDP","unified_model.jl"))
+include(joinpath(@__DIR__,"falcoPOMDP","core.jl"))
 
 export BasicPOMDP,
        RewardPOMDP, 
@@ -38,7 +39,8 @@ export BasicPOMDP,
        FullState,
        UnifiedState,
        UnifiedPOMDP,
-       create_target_search_pomdp
+       create_target_search_pomdp,
+       falcoPOMDP
 
 include(joinpath(@__DIR__,"pachPOMDP","simulate.jl"))
 export remove_rewards,
