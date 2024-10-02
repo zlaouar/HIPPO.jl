@@ -113,7 +113,7 @@ function initialize(rewarddist, location_dict, keepout_zones, resolution, flight
     default_action = :up
     default_waypointID = 0
     pachSim = PachSimulator(msolve, planner, particle_up, particle_b, sinit, 
-                            location_dict, default_action, default_waypointID,
+                            location_dict, default_action, sinit, default_waypointID,
                             flightParams, :low, false)
                         
     return pachSim
@@ -238,8 +238,10 @@ function process_confidence_score(data, ws_client, pachSim, flightParams; waypoi
         pachSim.latest_obs = o
 
         if !pachSim.replan_flag
-            return generate_next_action(o, ws_client, pachSim, flightParams)
+            println("replan flag: ", pachSim.replan_flag)
+            pachSim.sinit = pachSim.previous_state
             pachSim.replan_flag = true
+            return generate_next_action(o, ws_client, pachSim, flightParams)
         end
     end
     
@@ -254,6 +256,7 @@ function waypoint_reached(data, ws_client, pachSim, flightParams; waypoint_param
 
     #println("PACHSIM: ", pachSim)
     if event == "waypoint-reached"
+        pachSim.replan_flag = false
         generate_next_action(pachSim.latest_obs, ws_client, pachSim, flightParams; waypoint_params=WaypointParams(false,0,0))
     end
 end
@@ -302,6 +305,7 @@ function generate_next_action(observation, ws_client, pachSim, flightParams; way
     pachSim.b = nextwp_belief
 
     pachSim.previous_action = a
+    pachSim.previous_state = pachSim.sinit
     pachSim.sinit = sp
     pachSim.waypointID += 1
 
@@ -361,8 +365,10 @@ function main()
                     end
                     
                 elseif action == "FlightStatus"
-                    if initialized 
+                    if initialized && arguments["event"] == "waypoint-reached"
                        pachSim = waypoint_reached(arguments, ws_client, pachSim, flightParams; waypoint_params=way_params)
+                    elseif arguments["event"] == "GatheringInfo"
+                        println("DJI: Drone gathering info")
                     else
                        println("FlightStatus: Not initialized, waiting on new params")
                     end
