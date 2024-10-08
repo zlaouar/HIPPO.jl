@@ -123,7 +123,7 @@ mutable struct HierarchicalPOMDP <: TargetSearchPOMDP{TSState, Symbol, Symbol}
     fov_lookup::Dict{Tuple{Int, Int, Symbol}, Vector{Vector{Int}}}
     camera_info::CameraInfo
     pose::RobotPose
-    falco_belief::DiscreteDistribution{Vector{Float64}}
+    falco_belief::Vector{Float64}
 end
 
 function HierarchicalPOMDP(size=(10,10), 

@@ -1,10 +1,6 @@
 
 
 function falcoPOMDP()
-    ```
-    Transitions T[s', a, s] = p(s'|a,s)
-    ```
-
     # Transition Matrix
     T = zeros(2,3,2) # |S|x|A|x|S|, T[s', a, s] = p(s'|a,s)
     # Alert action
@@ -20,11 +16,6 @@ function falcoPOMDP()
     T[1,3,2]=0.4
     T[2,3,1]=0.4
     T[2,3,2]=0.6
-
-
-    ```
-    Observations O[o, a, s] = p(o|a,s)
-    ```
 
     # Observation Matrix - "Gather info: 2"
     O = zeros(2,3,2) # |O|x|A|x|S|, O[o, a, s] = p(o|a,s)
@@ -43,9 +34,6 @@ function falcoPOMDP()
         end
     end
 
-    ```
-    Rewards R[s, a]
-    ```
 
     # Reward Matrix
     R = zeros(2,3) # |S|x|A|, R[s, a]
