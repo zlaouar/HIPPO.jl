@@ -256,7 +256,7 @@ function POMDPs.transition(m::UnifiedPOMDP, s::UnifiedState, a::MacroAction)
     for i ∈ eachindex(traversed_cells[1:end-1])
         if isequal(traversed_cells[i], s.target) || s.battery - (i*nominal_battery_loss) == 0.0
             return Deterministic(UnifiedState(SA[-1,-1], copy(s.target), s.visited, s.battery - (i * nominal_battery_loss), true, s.orientation))
-        end
+        end 
         s.visited[LinearIndices((1:m.size[1], 1:m.size[2]))[traversed_cells[i]...]] = 0
     end
     

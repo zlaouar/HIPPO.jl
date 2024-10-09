@@ -114,6 +114,49 @@ mutable struct UnifiedPOMDP{O, F<:Function} <: TargetSearchPOMDP{TSState, Symbol
     target_bias::Float64
 end
 
+mutable struct HierarchicalPOMDP <: TargetSearchPOMDP{TSState, Symbol, Symbol}
+    size::SVector{2, Int}
+    robot_init::SVector{2, Int}
+    targetloc::SVector{2, Int}
+    reward::Matrix{Float64}
+    maxbatt::Int
+    resolution::Int
+    initial_orientation::Symbol
+    fov_lookup::Dict{Tuple{Int, Int, Symbol}, Vector{Vector{Int}}}
+    camera_info::CameraInfo
+    pose::RobotPose
+    falco_belief::Vector{Float64}
+end
+
+function HierarchicalPOMDP(size=(10,10), 
+                            rewarddist=Array{Float64}(undef, 0, 0),
+                            resolution=25,
+                            camera_info=CameraInfo(deg2rad(71.5), 
+                                                    deg2rad(56.8), 
+                                                    30.0, 
+                                                    deg2rad(0.0), 
+                                                    deg2rad(0.0), 
+                                                    deg2rad(0.0)),
+                            pose=RobotPose(0.0, 0.0, 30.0, deg2rad(0.0), deg2rad(-45.0), deg2rad(0.0)),
+                            falco_pomdp=falcoPOMDP())
+
+    robot_init = sinit.robot
+    targetloc = sinit.target
+
+    pose.x = (robot_init[1] - 0.5) * resolution
+    pose.y = (robot_init[2] - 0.5) * resolution
+    pose.heading = headingdir[sinit.orientation]
+
+    fov_lookup = precompute_camera_footprint(camera_info, pose, resolution, size, ORIENTATIONS)
+
+    falco_updater = DiscreteUpdater(falco_pomdp)
+    falco_belief = initialize_belief(falco_updater, POMDPModels.DiscreteDistribution{Vector{Float64}}([0.5, 0.5]))
+
+    HierarchicalPOMDP(size, robot_init, targetloc, copy(rewarddist), maxbatt, resolution, 
+                        sinit.orientation, fov_lookup, camera_info, pose, falco_belief)
+
+end
+
 function obs_type(options)
     if options[:observation_model] == :falco
         return Symbol

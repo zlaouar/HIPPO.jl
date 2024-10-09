@@ -67,20 +67,13 @@ cam_info = HIPPO.CameraInfo(
     deg2rad(56.8), # vertical fov
 )
 
-pomdp = UnifiedPOMDP(sinit, 
+pomdp = HierarchicalPOMDP(sinit, 
                     size=mapsize, 
                     rewarddist=rewarddist, 
                     maxbatt=maxbatt,
-                    rollout_depth=maxbatt,
                     camera_info=cam_info)
 
-p = FunctionPolicy(FixedPolicy())
 greedyrollout = FORollout(GreedyPolicy(pomdp))
-funcrollout = FORollout(p)
-#mdprollout = FORollout(mdp_policy) # change MDP reward mat to pompdp reward mat
-#solver = POMCPSolver(estimate_value = mdprollout, tree_queries=10000, max_time=0.2, c=5) # mdp policy rollout
-#solver = POMCPSolver(estimate_value = funcrollout, tree_queries=10000, max_time=0.2, c=5) # up rollout
-#solver = POMCPSolver(tree_queries=10_000, max_time=0.2, c=100) # random
 solver = POMCPSolver(estimate_value=greedyrollout,tree_queries=10_000, max_time=0.2, c=100, max_depth=100) # random
 
 
