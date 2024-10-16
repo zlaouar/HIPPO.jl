@@ -244,7 +244,7 @@ function process_confidence_score(data, ws_client, pachSim, flightParams; waypoi
             println("replan flag: ", pachSim.replan_flag)
             pachSim.sinit = pachSim.previous_state
             pachSim.replan_flag = true
-            return generate_next_action(o, ws_client, pachSim, flightParams)
+            return generate_next_action(o, ws_client, pachSim, flightParams; waypoint_params=waypoint_params)
         end
     end
     
@@ -260,7 +260,7 @@ function waypoint_reached(data, ws_client, pachSim, flightParams; waypoint_param
     #println("PACHSIM: ", pachSim)
     if event == "waypoint-reached"
         pachSim.replan_flag = false
-        generate_next_action(pachSim.latest_obs, ws_client, pachSim, flightParams; waypoint_params=WaypointParams(false,0,0))
+        generate_next_action(pachSim.latest_obs, ws_client, pachSim, flightParams; waypoint_params=waypoint_params)
     end
 end
 
@@ -277,6 +277,23 @@ function generate_next_action(observation, ws_client, pachSim, flightParams; way
     response = pachSim.location_dict[loc[1]]
 
     commanded_alt = response[3] + pachSim.flight_params.desired_agl_alt
+
+    if waypoint_params.show && flightParams.flight_mode == "waypoint" ##
+        tree = pachSim.planner._tree
+        future_nodes,future_opacities,future_parents = get_children(pachSim.msim,pachSim.b,pachSim.sinit,tree;depth=waypoint_params.depth,n_actions=waypoint_params.n_actions)
+        dict_list = []
+        for i in eachindex(future_nodes)#[2:end]) #Exclude the point already passed as "NextFlightWaypoint"
+            lc_str = HIPPO.loctostr([HIPPO.convertinds(pachSim.msim, future_nodes[i].robot)])
+            lat,lon,_ = pachSim.location_dict[lc_str[1]]
+            par_lc_str = HIPPO.loctostr([HIPPO.convertinds(pachSim.msim, future_parents[i].robot)])
+            par_lat,par_lon,_ = pachSim.location_dict[par_lc_str[1]]
+            push!(dict_list,Dict("latitude"=>lat,"longitude"=>lon,"opacity"=>future_opacities[i],"par_latitude"=>par_lat,"par_longitude"=>par_lon))
+        end
+        write(ws_client, JSON.json(Dict("action"=>"FutureWaypoints", "args"=>dict_list)))
+        # @info [future_parents[i].robot => future_nodes[i].robot for i in eachindex(future_nodes)]
+        # @info future_opacities
+        # @info dict_list
+    end
 
     println("Sending waypoint: ", response)
 
@@ -337,7 +354,7 @@ function main()
     flightParams = nothing
     initialized = false
 
-    show_way = false
+    show_way = true
     way_depth = 2
     way_actions = 4
     way_params = WaypointParams(show_way,way_depth,way_actions)
