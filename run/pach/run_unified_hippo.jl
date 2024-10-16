@@ -136,6 +136,7 @@ function update_reward(data, ws_client, pachSim, initialized, flightParams; wayp
         pachSim.msim.obstacles = get_obstacles(keepout_zones, reverse(size(rewarddist)))
         pachSim.location_dict = location_dict
         pachSim.msim.target_bias = flightParams.target_bias
+        @info "Target Bias: $(pachSim.msim.target_bias)"
         println("reward updated")
     else
         global pachSim = initialize(rewarddist, location_dict, keepout_zones, resolution, flightParams)

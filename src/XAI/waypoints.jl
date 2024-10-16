@@ -268,7 +268,6 @@ function recursive_children(ind,s,tree,pomdp::UnifiedPOMDP,state_list,opac_list,
 end
 
 function get_children(pomdp::UnifiedPOMDP,b,s,tree::BasicPOMCP.POMCPTree;depth=2,n_actions=4)
-    @info "WAY"
     S = statetype(pomdp)
     state_list = S[]
     opac_list = Float64[]
