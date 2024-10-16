@@ -414,7 +414,7 @@ function POMDPs.reward(m::UnifiedPOMDP, s::UnifiedState, a::Symbol, sp::UnifiedS
 
     if isequal(sp.robot, sp.target)# if target is found
         reward_running = 0.0
-        reward_target = 1000.0 
+        reward_target = 2*m.target_bias*1000.0 
         #return reward_running + reward_target
     end
 
@@ -426,7 +426,7 @@ function POMDPs.reward(m::UnifiedPOMDP, s::UnifiedState, a::Symbol, sp::UnifiedS
     spind = LinearIndices((1:m.size[1], 1:m.size[2]))[sp.robot...]
 
     if !isempty(m.reward) && sp.robot != SA[-1,-1]
-        return γ_horizon * (reward_running + reward_target + m.reward[inds...]*sp.visited[spind] + reward_nogo)
+        return γ_horizon * (reward_running + reward_target + 2*(1-m.target_bias)*m.reward[inds...]*sp.visited[spind] + reward_nogo)
     end
 end
 
@@ -448,16 +448,16 @@ function POMDPs.reward(m::UnifiedPOMDP, s::UnifiedState, a::MacroAction, sp::Uni
     end
 
     if sp.human_in_fov
-        reward_investigate = 1000.0
+        reward_investigate = 2*m.target_bias*1000.0
     else
-        reward_investigate = -1000.0
+        reward_investigate = 2*m.target_bias*-1000.0
     end
 
     # TODO: CHECK FOR TERMINAL STATE
     if s.robot == [-1,-1]
         for i ∈ 1:s.battery-sp.battery
             if isequal(cells[i], sp.target)
-                reward_target = 1000.0
+                reward_target = 2*m.target_bias*1000.0
             end
             rtot += discount_factor(m)^(m.currentbatt-(s.battery-i)) * (reward_running + reward_target + reward_nogo)
         end
@@ -465,7 +465,7 @@ function POMDPs.reward(m::UnifiedPOMDP, s::UnifiedState, a::MacroAction, sp::Uni
     end
 
     for i ∈ eachindex(cells)
-        reward_target = isequal(cells[i], sp.target) ? 1000.0 : 0.0
+        reward_target = isequal(cells[i], sp.target) ? 2*m.target_bias*1000.0 : 0.0
         rtot += discount_factor(m)^(m.currentbatt-(s.battery-i)) * (reward_running + reward_target + reward_nogo)
     end
 

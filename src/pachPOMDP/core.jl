@@ -91,6 +91,7 @@ mutable struct PachPOMDP{O} <: TargetSearchPOMDP{TSState, Symbol, O}
     fov_lookup::Dict{Tuple{Int, Int, Symbol}, Vector{Vector{Int}}}
     camera_info::CameraInfo
     pose::RobotPose
+    target_bias::Float64
 end
 
 mutable struct UnifiedPOMDP{O, F<:Function} <: TargetSearchPOMDP{TSState, Symbol, O}
@@ -110,6 +111,7 @@ mutable struct UnifiedPOMDP{O, F<:Function} <: TargetSearchPOMDP{TSState, Symbol
     rollout_depth::Int
     camera_info::CameraInfo
     pose::RobotPose
+    target_bias::Float64
 end
 
 mutable struct HierarchicalPOMDP <: TargetSearchPOMDP{TSState, Symbol, Symbol}
@@ -177,7 +179,8 @@ function create_target_search_pomdp(sinit::TSState;
                                                             deg2rad(0.0), 
                                                             deg2rad(0.0), 
                                                             deg2rad(0.0)),
-                                    pose=RobotPose(0.0, 0.0, 30.0, deg2rad(0.0), deg2rad(-45.0), deg2rad(0.0)))
+                                    pose=RobotPose(0.0, 0.0, 30.0, deg2rad(0.0), deg2rad(-45.0), deg2rad(0.0)),
+                                    target_bias=0.5)
     
     robot_init = sinit.robot
     tprob = 0.7
@@ -193,7 +196,7 @@ function create_target_search_pomdp(sinit::TSState;
     PachPOMDP{obs_type(options)}(size, obstacles, robot_init, tprob, 
                                                 targetloc, rois, copy(rewarddist), 
                                                 maxbatt, resolution, sinit.orientation,
-                                                fov_lookup, camera_info, pose)
+                                                fov_lookup, camera_info, pose, target_bias)
 end
 
 function UnifiedPOMDP(sinit::TSState; 
@@ -212,7 +215,7 @@ function UnifiedPOMDP(sinit::TSState;
                                 deg2rad(0.0), 
                                 deg2rad(0.0), 
                                 deg2rad(0.0)),
-        pose=RobotPose(0.0, 0.0, 30.0, deg2rad(0.0), deg2rad(-45.0), deg2rad(0.0)))
+        pose=RobotPose(0.0, 0.0, 30.0, deg2rad(0.0), deg2rad(-45.0), deg2rad(0.0)),target_bias=0.5)
 
     robot_init = sinit.robot
     tprob = 0.7
@@ -230,7 +233,7 @@ function UnifiedPOMDP(sinit::TSState;
     UnifiedPOMDP{obs_type(options), typeof(num_macro_actions)}(size, obstacles, robot_init, tprob, 
                                     targetloc, rois, copy(rewarddist), maxbatt, currentbatt, resolution, 
                                     num_macro_actions, sinit.orientation, fov_lookup, 
-                                    rollout_depth, camera_info, pose)
+                                    rollout_depth, camera_info, pose, target_bias)
 end
 
 function BasicPOMDP(sinit::BasicState; 
@@ -291,6 +294,7 @@ function FullPOMDP(sinit::FullState;
     FullPOMDP(size, obstacles, robot_init, tprob, targetloc, rois, copy(rewarddist), maxbatt)
 end
 
+#Previously broken?
 function PachPOMDP(sinit::FullState; 
                     roi_points=Dict(), 
                     size=(10,10), 

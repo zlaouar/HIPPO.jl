@@ -94,7 +94,7 @@ function initialize(rewarddist, location_dict, keepout_zones, resolution, flight
                                     maxbatt=maxbatt, 
                                     options=Dict(:observation_model=>:falco),
                                     obstacles=obstacles,
-                                    resolution=resolution)
+                                    resolution=resolution,target_bias=flightParams.target_bias)
 
     solver = POMCPSolver(tree_queries=50000, max_time=1.0, c=200, tree_in_info=true) #max_depth=3,c=1000,
     b0 = initialstate(msolve)
@@ -126,6 +126,7 @@ function update_reward(data, ws_client, pachSim, initialized, flightParams; wayp
             generate_predicted_path(location_dict, pachSim, ws_client)
         end
         pachSim.msim.reward = rewarddist
+        pachSim.msim.target_bias = flightParams.target_bias
         pachSim.msim.obstacles = get_obstacles(keepout_zones, reverse(size(rewarddist)))
         pachSim.location_dict = location_dict
         println("reward updated")
@@ -195,7 +196,8 @@ function update_params(data)
     flightParams = HIPPO.FlightParams(data["mode"], 
                     data["altitudeCeiling"], 
                     data["maxSpeed"], 
-                    data["homeLocation"])
+                    data["homeLocation"],
+                    data["targetBias"])
                    # [37.7749, -122.4194]
     return flightParams
 end

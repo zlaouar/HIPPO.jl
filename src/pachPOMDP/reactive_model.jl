@@ -176,7 +176,7 @@ function POMDPs.reward(m::PachPOMDP, s::FullState, a::Symbol, sp::FullState)
 
     if isequal(sp.robot, sp.target)# if target is found
         reward_running = 0.0
-        reward_target = 1000.0 
+        reward_target = 2*m.target_bias*1000.0 
         return reward_running + reward_target
     end
     if sp.robot ∈ m.obstacles
@@ -190,7 +190,7 @@ function POMDPs.reward(m::PachPOMDP, s::FullState, a::Symbol, sp::FullState)
     spind = LinearIndices((1:m.size[1], 1:m.size[2]))[sp.robot...]
 
     if !isempty(m.reward) && sp.robot != SA[-1,-1]
-        return reward_running + reward_target + m.reward[inds...]*sp.visited[spind] + reward_nogo
+        return reward_running + 2*m.target_bias*reward_target + 2*(1-m.target_bias)*m.reward[inds...]*sp.visited[spind] + reward_nogo
     end
 end
 

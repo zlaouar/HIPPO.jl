@@ -100,7 +100,8 @@ function initialize(rewarddist, location_dict, keepout_zones, resolution, flight
                             resolution=resolution,
                             rollout_depth=maxbatt,
                             camera_info=cam_info,
-                            pose=HIPPO.RobotPose(0.0, 0.0, 30.0, deg2rad(0.0), deg2rad(-45.0), deg2rad(0.0)))
+                            pose=HIPPO.RobotPose(0.0, 0.0, 30.0, deg2rad(0.0), deg2rad(-45.0), deg2rad(0.0)),
+                            target_bias=flightParams.target_bias)
 
     solver = POMCPSolver(tree_queries=50000, max_time=1.0, c=200, tree_in_info=true) #max_depth=3,c=1000,
     b0 = initialstate(msolve)
@@ -134,6 +135,8 @@ function update_reward(data, ws_client, pachSim, initialized, flightParams; wayp
         pachSim.msim.reward = rewarddist
         pachSim.msim.obstacles = get_obstacles(keepout_zones, reverse(size(rewarddist)))
         pachSim.location_dict = location_dict
+        pachSim.msim.target_bias = flightParams.target_bias
+        @info "Target Bias: $(pachSim.msim.target_bias)"
         println("reward updated")
     else
         global pachSim = initialize(rewarddist, location_dict, keepout_zones, resolution, flightParams)
@@ -202,7 +205,8 @@ function update_params(data)
     flightParams = HIPPO.FlightParams(data["mode"], 
                     data["altitudeCeiling"], 
                     data["maxSpeed"], 
-                    data["homeLocation"])
+                    data["homeLocation"],
+                    data["targetBias"])
                    # [37.7749, -122.4194]
     return flightParams
 end
@@ -241,7 +245,7 @@ function process_confidence_score(data, ws_client, pachSim, flightParams; waypoi
             println("replan flag: ", pachSim.replan_flag)
             pachSim.sinit = pachSim.previous_state
             pachSim.replan_flag = true
-            return generate_next_action(o, ws_client, pachSim, flightParams)
+            return generate_next_action(o, ws_client, pachSim, flightParams; waypoint_params=waypoint_params)
         end
     end
     
@@ -257,7 +261,7 @@ function waypoint_reached(data, ws_client, pachSim, flightParams; waypoint_param
     #println("PACHSIM: ", pachSim)
     if event == "waypoint-reached"
         pachSim.replan_flag = false
-        generate_next_action(pachSim.latest_obs, ws_client, pachSim, flightParams; waypoint_params=WaypointParams(false,0,0))
+        generate_next_action(pachSim.latest_obs, ws_client, pachSim, flightParams; waypoint_params=waypoint_params)
     end
 end
 
@@ -274,6 +278,23 @@ function generate_next_action(observation, ws_client, pachSim, flightParams; way
     response = pachSim.location_dict[loc[1]]
 
     commanded_alt = response[3] + pachSim.flight_params.desired_agl_alt
+
+    if waypoint_params.show && flightParams.flight_mode == "waypoint" ##
+        tree = pachSim.planner._tree
+        future_nodes,future_opacities,future_parents = get_children(pachSim.msim,pachSim.b,pachSim.sinit,tree;depth=waypoint_params.depth,n_actions=waypoint_params.n_actions)
+        dict_list = []
+        for i in eachindex(future_nodes)#[2:end]) #Exclude the point already passed as "NextFlightWaypoint"
+            lc_str = HIPPO.loctostr([HIPPO.convertinds(pachSim.msim, future_nodes[i].robot)])
+            lat,lon,_ = pachSim.location_dict[lc_str[1]]
+            par_lc_str = HIPPO.loctostr([HIPPO.convertinds(pachSim.msim, future_parents[i].robot)])
+            par_lat,par_lon,_ = pachSim.location_dict[par_lc_str[1]]
+            push!(dict_list,Dict("latitude"=>lat,"longitude"=>lon,"opacity"=>future_opacities[i],"par_latitude"=>par_lat,"par_longitude"=>par_lon))
+        end
+        write(ws_client, JSON.json(Dict("action"=>"FutureWaypoints", "args"=>dict_list)))
+        # @info [future_parents[i].robot => future_nodes[i].robot for i in eachindex(future_nodes)]
+        # @info future_opacities
+        # @info dict_list
+    end
 
     println("Sending waypoint: ", response)
 
@@ -334,7 +355,7 @@ function main()
     flightParams = nothing
     initialized = false
 
-    show_way = false
+    show_way = true
     way_depth = 2
     way_actions = 4
     way_params = WaypointParams(show_way,way_depth,way_actions)
